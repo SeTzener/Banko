@@ -14,7 +14,9 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import banko.composeapp.generated.resources.Res
 import banko.composeapp.generated.resources.compose_multiplatform
+import com.banko.app.ui.components.CircularIndicator
 import com.banko.app.ui.theme.BankoTheme
+import kotlin.random.Random
 
 @Composable
 @Preview
@@ -32,6 +34,11 @@ fun App() {
                         Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        CircularIndicator(
+                            indicatorValue = Random.nextInt(100),
+                            bigTextSuffix = "GB",
+                            smallText = "Remaining",
+                        )
                         Image(painterResource(Res.drawable.compose_multiplatform), null)
                         Text("Compose: $greeting")
                     }
