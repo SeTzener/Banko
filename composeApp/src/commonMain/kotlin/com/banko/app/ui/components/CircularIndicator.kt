@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import com.banko.app.Category
+import com.banko.app.ui.theme.Grey_Nevada
 
 @Composable
 fun CircularIndicator(
@@ -90,7 +91,12 @@ fun CircularIndicator(
                 .size(canvasSize)
                 .drawBehind {
                     val componentSize = size / 1.25f
-                    drawForegroundIndicator(
+                    backgroundIndicator(
+                        componentSize = componentSize,
+                        indicatorStroke = indicatorStroke,
+                        indicatorColor = Grey_Nevada
+                    )
+                    foregroundIndicator(
                         categories = categories,
                         animatedSweepAngles = animatedSweepAngles,
                         startAngle = 150f, // È il punto da cui parte il tag
@@ -117,7 +123,7 @@ fun CircularIndicator(
     }
 }
 
-fun DrawScope.drawForegroundIndicator(
+fun DrawScope.foregroundIndicator(
     categories: List<Category>,
     animatedSweepAngles: List<Float>,
     componentSize: Size,
@@ -145,6 +151,27 @@ fun DrawScope.drawForegroundIndicator(
     }
 }
 
+fun DrawScope.backgroundIndicator(
+    componentSize: Size,
+    indicatorStroke: Float,
+    indicatorColor: Color,
+) {
+    drawArc(
+        size = componentSize,
+        color = indicatorColor,
+        startAngle = 150f,
+        sweepAngle = 240f,
+        useCenter = false,
+        style = Stroke(
+            width = indicatorStroke,
+            cap = StrokeCap.Square
+        ),
+        topLeft = Offset(
+            x = (size.width - componentSize.width) / 2f,
+            y = (size.height - componentSize.height) / 2f
+        )
+    )
+}
 @Composable
 private fun EmbeddedElements(
     dailyBudget: Int,
