@@ -34,7 +34,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
-import com.banko.app.Category
+import com.banko.app.ui.models.Category
 import com.banko.app.ui.theme.Grey_Nevada
 
 @Composable
