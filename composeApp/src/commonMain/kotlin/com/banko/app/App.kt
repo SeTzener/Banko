@@ -9,6 +9,7 @@ import com.arkivanov.decompose.extensions.compose.jetbrains.stack.Children
 import com.arkivanov.decompose.extensions.compose.jetbrains.stack.animation.slide
 import com.arkivanov.decompose.extensions.compose.jetbrains.stack.animation.stackAnimation
 import com.arkivanov.decompose.extensions.compose.jetbrains.subscribeAsState
+import com.banko.app.ui.screens.details.DetailScreenViewModel
 import com.banko.app.ui.screens.details.DetailsScreen
 import com.banko.app.ui.screens.home.HomeScreen
 import com.banko.app.ui.screens.navigation.RootComponent
@@ -27,7 +28,8 @@ fun App(root: RootComponent) {
             ) { child ->
                 when (val instance = child.instance) {
                     is RootComponent.Child.Home -> HomeScreen(instance.component)
-                    is RootComponent.Child.Details -> DetailsScreen(text = instance.component.text ,component = instance.component)
+                    // TODO() add koin to the project and change -> DetailScreenViewModel()
+                    is RootComponent.Child.Details -> DetailsScreen(component = instance.component, viewModel = DetailScreenViewModel())
                 }
             }
         }
