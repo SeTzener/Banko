@@ -5,7 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import com.arkivanov.decompose.ExperimentalDecomposeApi
 import com.arkivanov.decompose.retainedComponent
-import com.banko.app.ui.Screens.navigation.RootComponent
+import com.banko.app.ui.screens.navigation.RootComponent
 
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalDecomposeApi::class)

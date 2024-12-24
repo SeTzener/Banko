@@ -1,4 +1,4 @@
-package com.banko.app.ui.Screens.home
+package com.banko.app.ui.screens.home
 
 import com.arkivanov.decompose.ComponentContext
 import com.arkivanov.decompose.value.MutableValue

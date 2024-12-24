@@ -1,4 +1,4 @@
-package com.banko.app.ui.Screens.navigation
+package com.banko.app.ui.screens.navigation
 
 import com.arkivanov.decompose.ComponentContext
 import com.arkivanov.decompose.ExperimentalDecomposeApi
@@ -6,8 +6,8 @@ import com.arkivanov.decompose.router.stack.StackNavigation
 import com.arkivanov.decompose.router.stack.childStack
 import com.arkivanov.decompose.router.stack.pop
 import com.arkivanov.decompose.router.stack.pushNew
-import com.banko.app.ui.Screens.details.DetailsComponent
-import com.banko.app.ui.Screens.home.HomeComponent
+import com.banko.app.ui.screens.details.DetailsComponent
+import com.banko.app.ui.screens.home.HomeComponent
 import kotlinx.serialization.Serializable
 
 class RootComponent(

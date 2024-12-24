@@ -1,4 +1,4 @@
-package com.banko.app.ui.Screens.details
+package com.banko.app.ui.screens.details
 
 import com.arkivanov.decompose.ComponentContext
 
