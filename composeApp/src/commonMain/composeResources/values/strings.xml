@@ -3,4 +3,7 @@
     <string name="currency_euro">€</string>
     <string name="daily_budget">Daily Budget</string>>
     <string name="monthly_budget">Monthly Budget</string>>
+    <string name="saved_money_yesterday">Money Saved Yesterday:</string>
+    <string name="monthly_income">Money Saved This Month:</string>
+    <string name="app_name">Banko</string>
 </resources>
