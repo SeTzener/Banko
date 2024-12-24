@@ -34,6 +34,10 @@ kotlin {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
             implementation(libs.decompose)
+            implementation(libs.ktor.client.android)
+        }
+        iosMain.dependencies {
+            implementation(libs.ktor.client.ios)
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -47,6 +51,9 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtime.compose)
             implementation(libs.decompose)
             implementation(libs.decompose.extensions)
+            implementation(libs.ktor.client)
+            implementation(libs.ktor.client.negotiation)
+            implementation(libs.ktor.client.serialization)
             implementation(libs.kotlinx.datetime)
             implementation(libs.kotlinx.serialization.json)
         }
