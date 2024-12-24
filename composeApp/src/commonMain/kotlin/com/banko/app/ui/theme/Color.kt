@@ -6,15 +6,15 @@ val Grey_Nevada = Color(0xff616f77)
 
 val Darkmode_Primary = Color(0xBB86FCFF)
 val Darkmode_PrimaryVariant = Color(0x3700B3FF)
-val Darkmode_Secondary = Color(0x03DAC6FF)
-val Dark_Background = Color(0xFF121212)
-val Dark_On_Background = Color(0xFFE1E1E1)
+val Darkmode_Secondary = Color(0xFFDAC6FF)
+val Dark_Surface = Color(0xFF212121)
+val Dark_On_Surface = Color(0xFF303030)
 
 val Brightmode_Primary = Color(0xFF6650A4)
 val Brightmode_PrimaryVariant = Color(0xFF642B73)
 val Brightmode_Secondary = Color(0xFF625b71)
-val Light_Background = Color(0xFFE1E1E1)
-val Light_On_Background = Color(0xFF121212)
+val Light_Surface = Color(0xFFFFFFF0)
+val Light_On_Surface = Color(0xFFF2EFDE)
 
 // A palette that looks well in both dark and light mode, to be used in the graph
 
@@ -37,9 +37,9 @@ val DarkOliveGreen = Color(0xFF556B2F)  // Earthy green tone
 val Teal = Color(0xFF008080)            // Neutral teal
 
 // Orange and Yellow Tones
-val Orange = Color(0xFFFFA500)
+val Orange = Color(0xFFFFA500)          // Light orange
 val Amber = Color(0xFFFFBF00)           // Bright golden yellow
-val Coral = Color(0xFFFF7F50)
+val Coral = Color(0xFFFF7F50)           // Dark orange-red
 
 // Red Tones
 val Firebrick = Color(0xFFB22222)       // Dark red for depth
