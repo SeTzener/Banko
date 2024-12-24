@@ -15,6 +15,7 @@ compose-multiplatform = "1.7.0"
 decompose = "2.2.0-compose-experimental" # Check for the latest version
 junit = "4.13.2"
 kotlin = "2.0.21"
+kotlinxDatetime = "0.6.0"
 serialization = "1.6.1"
 
 [libraries]
@@ -30,6 +31,8 @@ androidx-constraintlayout = { group = "androidx.constraintlayout", name = "const
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activityCompose" }
 androidx-lifecycle-viewmodel = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-viewmodel", version.ref = "androidx-lifecycle" }
 androidx-lifecycle-runtime-compose = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
+
+kotlinx-datetime = { group = "org.jetbrains.kotlinx", name = "kotlinx-datetime", version.ref = "kotlinxDatetime" }
 
 # Navigation
 decompose = { group = "com.arkivanov.decompose", name = "decompose", version.ref = "decompose" }
