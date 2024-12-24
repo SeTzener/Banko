@@ -10,16 +10,16 @@ private val DarkColorScheme = darkColorScheme(
     primary = Darkmode_Primary,
     secondary = Darkmode_Secondary,
     tertiary = Darkmode_PrimaryVariant,
-    background = Dark_Background,
-    onBackground = Dark_On_Background,
+    surface = Dark_Surface,
+    onSurface = Dark_On_Surface,
 )
 
 private val LightColorScheme = lightColorScheme(
     primary = Brightmode_Primary,
     secondary = Brightmode_Secondary,
     tertiary = Brightmode_PrimaryVariant,
-    background = Light_Background,
-    onBackground = Light_On_Background,
+    surface = Light_Surface,
+    onSurface = Light_On_Surface,
 )
 
 @Composable

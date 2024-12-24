@@ -44,12 +44,12 @@ fun CircularIndicator(
     dailyBudgetText: String,
     monthlyBudgetText: String,
     categories: List<Category>,
-    bigTextFontSize: TextUnit = MaterialTheme.typography.titleLarge.fontSize,
-    bigTextColor: Color = MaterialTheme.colorScheme.onBackground,
-    canvasSize: Dp = 300.dp,
+    bigTextFontSize: TextUnit = MaterialTheme.typography.bodyLarge.fontSize,
+    bigTextColor: Color = MaterialTheme.colorScheme.primary,
+    canvasSize: Dp = 256.dp,
     indicatorStroke: Float = 60f,
     dailyBudget: Int = 0,
-    smallTextColor: Color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+    smallTextColor: Color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
     smallTextFontSize: TextUnit = MaterialTheme.typography.bodyMedium.fontSize,
 ) {
     val totalAmount = categories.sumOf { it.amount.toInt() }.toFloat()
@@ -220,7 +220,7 @@ private fun EmbeddedElements(
 private fun CategoryGrid(categories: List<Category>, itemsPerRow: Int = 5) {
     Column(
         modifier = Modifier
-            .fillMaxWidth().offset(y = (-60).dp),
+            .fillMaxWidth().offset(y = (-30).dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         // Break the list into chunks of `itemsPerRow`
@@ -245,14 +245,15 @@ private fun CategoryGrid(categories: List<Category>, itemsPerRow: Int = 5) {
                                 )
                         )
                         Text(
+                            modifier = Modifier.padding(top = 4.dp),
                             text = category.amount.toString(),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onBackground,
+                            color = MaterialTheme.colorScheme.primary,
                         )
                         Text(
                             text = category.name,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
                         )
                     }
                 }

@@ -9,9 +9,9 @@ import com.arkivanov.decompose.extensions.compose.jetbrains.stack.Children
 import com.arkivanov.decompose.extensions.compose.jetbrains.stack.animation.slide
 import com.arkivanov.decompose.extensions.compose.jetbrains.stack.animation.stackAnimation
 import com.arkivanov.decompose.extensions.compose.jetbrains.subscribeAsState
-import com.banko.app.ui.Screens.details.DetailsScreen
-import com.banko.app.ui.Screens.home.HomeScreen
-import com.banko.app.ui.Screens.navigation.RootComponent
+import com.banko.app.ui.screens.details.DetailsScreen
+import com.banko.app.ui.screens.home.HomeScreen
+import com.banko.app.ui.screens.navigation.RootComponent
 import com.banko.app.ui.theme.BankoTheme
 
 @Composable
