@@ -10,7 +10,7 @@ import com.banko.app.api.services.NordigenApiService
 import kotlinx.coroutines.launch
 
 // TODO(): Temporary, change it to actual implementation
-class DetailScreenViewModel : ViewModel() {
+class DetailsScreenViewModel : ViewModel() {
     private val apiService = NordigenApiService(HttpClientProvider.client)
     var screenState: DetailScreenState by mutableStateOf(DetailScreenState())
 
