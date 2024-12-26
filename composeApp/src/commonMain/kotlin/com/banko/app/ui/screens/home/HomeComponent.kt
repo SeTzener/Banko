@@ -13,7 +13,7 @@ class HomeComponent(
 
     fun onEvent(event: HomeEvent){
         when(event) {
-            HomeEvent.buttonClick -> onNavigateToDetails(text.value)
+            HomeEvent.ButtonClick -> onNavigateToDetails(text.value)
             is HomeEvent.UpdateText -> {
                 _text.value = event.text
             }
