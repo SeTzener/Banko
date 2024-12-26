@@ -1,35 +1,78 @@
 package com.banko.app
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material.BottomNavigation
+import androidx.compose.material.BottomNavigationItem
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import org.jetbrains.compose.ui.tooling.preview.Preview
 import com.arkivanov.decompose.extensions.compose.jetbrains.stack.Children
 import com.arkivanov.decompose.extensions.compose.jetbrains.stack.animation.slide
 import com.arkivanov.decompose.extensions.compose.jetbrains.stack.animation.stackAnimation
 import com.arkivanov.decompose.extensions.compose.jetbrains.subscribeAsState
-import com.banko.app.ui.screens.details.DetailScreenViewModel
+import com.arkivanov.decompose.router.stack.replaceCurrent
 import com.banko.app.ui.screens.details.DetailsScreen
+import com.banko.app.ui.screens.details.DetailsScreenViewModel
 import com.banko.app.ui.screens.home.HomeScreen
+import org.jetbrains.compose.ui.tooling.preview.Preview
 import com.banko.app.ui.screens.navigation.RootComponent
+import com.banko.app.ui.screens.navigation.bottomNavItems
+import com.banko.app.ui.screens.settings.SettingsScreen
 import com.banko.app.ui.theme.BankoTheme
+import com.banko.app.ui.theme.Brightmode_Primary
+import com.banko.app.ui.theme.Dark_On_Surface
+import com.banko.app.ui.theme.Dark_Surface
+import com.banko.app.ui.theme.Darkmode_Primary
+import com.banko.app.ui.theme.Light_On_Surface
+import com.banko.app.ui.theme.Light_Surface
+import kotlinx.io.files.SystemFileSystem
 
 @Composable
 @Preview
 fun App(root: RootComponent) {
     BankoTheme {
-        Surface {
-            val childStack by root.childStack.subscribeAsState()
-            Children(
-                stack = childStack,
-                modifier = Modifier.fillMaxSize(),
-                animation = stackAnimation(slide()),
-            ) { child ->
-                when (val instance = child.instance) {
-                    is RootComponent.Child.Home -> HomeScreen(instance.component)
-                    // TODO() add koin to the project and change -> DetailScreenViewModel()
-                    is RootComponent.Child.Details -> DetailsScreen(component = instance.component, viewModel = DetailScreenViewModel())
+        val childStack = root.childStack.subscribeAsState()
+        Scaffold(
+            bottomBar = {
+                BottomNavigation(
+                    backgroundColor = if (isSystemInDarkTheme()) Dark_Surface else Light_Surface,
+                    contentColor = if (isSystemInDarkTheme()) Dark_On_Surface else Light_On_Surface
+                ) {
+                    bottomNavItems.forEach { item ->
+                        BottomNavigationItem(
+                            icon = { Icon(item.icon, contentDescription = item.label) },
+                            label = { Text(item.label) },
+                            selected = childStack.value.active.configuration == item.route,
+                            onClick = {
+                                if (childStack.value.active.configuration != item.route) {
+                                    root.navigation.replaceCurrent(item.route)
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+        ) {
+            Surface {
+                Children(
+                    stack = childStack.value,
+                    modifier = Modifier.fillMaxSize(),
+                    animation = stackAnimation(slide()),
+                ) { child ->
+                    when (val instance = child.instance) {
+                        is RootComponent.Child.Home -> HomeScreen(instance.component)
+                        // TODO() add koin to the project and change -> DetailScreenViewModel()
+                        is RootComponent.Child.Details -> DetailsScreen(
+                            component = instance.component,
+                            viewModel = DetailsScreenViewModel()
+                        )
+                        is RootComponent.Child.Settings -> SettingsScreen(instance.component)
+                    }
                 }
             }
         }
