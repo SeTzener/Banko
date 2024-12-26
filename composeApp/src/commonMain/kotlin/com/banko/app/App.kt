@@ -11,10 +11,14 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import com.arkivanov.decompose.ExperimentalDecomposeApi
 import com.arkivanov.decompose.extensions.compose.jetbrains.stack.Children
 import com.arkivanov.decompose.extensions.compose.jetbrains.stack.animation.slide
 import com.arkivanov.decompose.extensions.compose.jetbrains.stack.animation.stackAnimation
 import com.arkivanov.decompose.extensions.compose.jetbrains.subscribeAsState
+import com.arkivanov.decompose.router.stack.pop
+import com.arkivanov.decompose.router.stack.popTo
+import com.arkivanov.decompose.router.stack.pushNew
 import com.arkivanov.decompose.router.stack.replaceCurrent
 import com.banko.app.ui.screens.details.DetailsScreen
 import com.banko.app.ui.screens.details.DetailsScreenViewModel
@@ -32,6 +36,7 @@ import com.banko.app.ui.theme.Light_On_Surface
 import com.banko.app.ui.theme.Light_Surface
 import kotlinx.io.files.SystemFileSystem
 
+@OptIn(ExperimentalDecomposeApi::class)
 @Composable
 @Preview
 fun App(root: RootComponent) {
@@ -50,7 +55,13 @@ fun App(root: RootComponent) {
                             selected = childStack.value.active.configuration == item.route,
                             onClick = {
                                 if (childStack.value.active.configuration != item.route) {
-                                    root.navigation.replaceCurrent(item.route)
+                                    if (item.route != RootComponent.Configuration.Home) {
+                                        root.navigation.pushNew(item.route)
+                                    } else {
+                                        // This is a workaround to enable navigation to the home screen via the bottom navigation bar
+                                        // Without this, navigating to the home screen from other screens results in a crash
+                                        root.navigation.popTo(index = 0)
+                                    }
                                 }
                             }
                         )
