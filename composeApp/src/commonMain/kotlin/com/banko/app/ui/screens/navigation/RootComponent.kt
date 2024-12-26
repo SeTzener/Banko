@@ -8,13 +8,14 @@ import com.arkivanov.decompose.router.stack.pop
 import com.arkivanov.decompose.router.stack.pushNew
 import com.banko.app.ui.screens.details.DetailsComponent
 import com.banko.app.ui.screens.home.HomeComponent
+import com.banko.app.ui.screens.settings.SettingsComponent
 import kotlinx.serialization.Serializable
 
 class RootComponent(
     componentContext: ComponentContext,
 ) : ComponentContext by componentContext {
 
-    private val navigation = StackNavigation<Configuration>()
+    val navigation = StackNavigation<Configuration>()
     val childStack = childStack(
         source = navigation,
         serializer = Configuration.serializer(),
@@ -45,12 +46,18 @@ class RootComponent(
                     onGoBack = { navigation.pop() }
                 )
             )
+            is Configuration.Settings -> Child.Settings(
+                SettingsComponent(
+                    componentContext = context
+                )
+            )
         }
     }
 
     sealed class Child {
         data class Home(val component: HomeComponent) : Child()
         data class Details(val component: DetailsComponent) : Child()
+        data class Settings(val component: SettingsComponent) : Child()
     }
 
     @Serializable
@@ -61,5 +68,8 @@ class RootComponent(
         @Serializable
         data class Details(val text: String) :
             Configuration() //TODO() Replace text with the Transaction model
+
+        @Serializable
+        data object Settings : Configuration()
     }
 }
