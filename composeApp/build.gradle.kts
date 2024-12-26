@@ -40,6 +40,7 @@ kotlin {
             implementation(libs.ktor.client.ios)
         }
         commonMain.dependencies {
+            implementation(libs.compose.material)
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)
