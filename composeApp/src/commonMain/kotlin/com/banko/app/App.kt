@@ -4,7 +4,6 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.BottomNavigation
 import androidx.compose.material.BottomNavigationItem
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -16,10 +15,8 @@ import com.arkivanov.decompose.extensions.compose.jetbrains.stack.Children
 import com.arkivanov.decompose.extensions.compose.jetbrains.stack.animation.slide
 import com.arkivanov.decompose.extensions.compose.jetbrains.stack.animation.stackAnimation
 import com.arkivanov.decompose.extensions.compose.jetbrains.subscribeAsState
-import com.arkivanov.decompose.router.stack.pop
 import com.arkivanov.decompose.router.stack.popTo
 import com.arkivanov.decompose.router.stack.pushNew
-import com.arkivanov.decompose.router.stack.replaceCurrent
 import com.banko.app.ui.screens.details.DetailsScreen
 import com.banko.app.ui.screens.details.DetailsScreenViewModel
 import com.banko.app.ui.screens.home.HomeScreen
@@ -28,13 +25,10 @@ import com.banko.app.ui.screens.navigation.RootComponent
 import com.banko.app.ui.screens.navigation.bottomNavItems
 import com.banko.app.ui.screens.settings.SettingsScreen
 import com.banko.app.ui.theme.BankoTheme
-import com.banko.app.ui.theme.Brightmode_Primary
 import com.banko.app.ui.theme.Dark_On_Surface
 import com.banko.app.ui.theme.Dark_Surface
-import com.banko.app.ui.theme.Darkmode_Primary
 import com.banko.app.ui.theme.Light_On_Surface
 import com.banko.app.ui.theme.Light_Surface
-import kotlinx.io.files.SystemFileSystem
 
 @OptIn(ExperimentalDecomposeApi::class)
 @Composable

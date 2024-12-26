@@ -23,7 +23,7 @@ class Transaction (
 fun createMockedTransaction(): List<Transaction> {
     val result = mutableListOf<Transaction>()
     var currentDateTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
-    for (i in 1..1000){
+    for (i in 1..100){
         result.add(
             Transaction(
                 id = i,

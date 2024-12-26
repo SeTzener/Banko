@@ -4,18 +4,6 @@ import androidx.compose.ui.graphics.Color
 
 val Grey_Nevada = Color(0xff616f77)
 
-val Darkmode_Primary = Color(0xBB86FCFF)
-val Darkmode_PrimaryVariant = Color(0x3700B3FF)
-val Darkmode_Secondary = Color(0xFFDAC6FF)
-val Dark_Surface = Color(0xFF212121)
-val Dark_On_Surface = Color(0xFF303030)
-
-val Brightmode_Primary = Color(0xFF6650A4)
-val Brightmode_PrimaryVariant = Color(0xFF642B73)
-val Brightmode_Secondary = Color(0xFF625b71)
-val Light_Surface = Color(0xFFFFFFF0)
-val Light_On_Surface = Color(0xFFF2EFDE)
-
 // A palette that looks well in both dark and light mode, to be used in the graph
 
 // Blue Tones
@@ -64,3 +52,15 @@ val MidnightBlue = Color(0xFF191970)    // Dark, saturated blue
 // Additional Green
 val Chartreuse = Color(0xFF7FFF00)      // Bright greenish-yellow
 val Olive = Color(0xFF808000)           // Muted green-brown
+
+val Darkmode_Primary = Color(0xBB86FCFF)
+val Darkmode_PrimaryVariant = Color(0x3700B3FF)
+val Darkmode_Secondary = Teal
+val Dark_Surface = Color(0xFF212121)
+val Dark_On_Surface = Color(0xFF303030)
+
+val Brightmode_Primary = Color(0xFF6650A4)
+val Brightmode_PrimaryVariant = Color(0xFF642B73)
+val Brightmode_Secondary = DarkSlateGray
+val Light_Surface = Color(0xFFFFFFF0)
+val Light_On_Surface = Color(0xFFF2EFDE)
