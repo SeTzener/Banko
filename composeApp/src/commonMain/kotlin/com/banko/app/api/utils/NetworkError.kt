@@ -1,0 +1,18 @@
+package com.banko.app.api.utils
+
+enum class NetworkError: HttpError {
+    REQUEST_TIMEOUT,
+    UNAUTHORIZED,
+    CONFLICT,
+    TOO_MANY_REQUESTS,
+    NO_INTERNET,
+    PAYLOAD_TOO_LARGE,
+    SERVER_ERROR,
+    BAD_REQUEST,
+    FORBIDDEN,
+    NOT_FOUND,
+    MOVED_PERMANENTLY,
+    PAYMENT_REQUIRED,
+    UNAVAILABLE_FOR_LEGAL_REASONS,
+    UNKNOWN,
+}
