@@ -58,6 +58,8 @@ koin-android-compose = { group = "io.insert-koin", name = "koin-androidx-compose
 # Ktor
 ktor-client = { group = "io.ktor", name = "ktor-client-core", version.ref = "ktor" }
 ktor-client-negotiation = { group = "io.ktor", name = "ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-client-logging = { group = "io.ktor", name = "ktor-client-logging", version.ref = "ktor" }
+ktor-client-auth = { group = "io.ktor", name = "ktor-client-auth", version.ref = "ktor" }
 ktor-client-serialization = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
 ktor-client-android = { group = "io.ktor", name = "ktor-client-okhttp", version.ref = "ktor" }
 ktor-client-ios = { group = "io.ktor", name = "ktor-client-darwin", version.ref = "ktor" }
