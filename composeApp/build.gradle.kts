@@ -1,5 +1,7 @@
+import com.codingfeline.buildkonfig.compiler.FieldSpec
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -7,6 +9,7 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinSerialization)
+    alias(libs.plugins.buildKonfig)
 }
 
 kotlin {
@@ -68,6 +71,10 @@ android {
     namespace = "com.banko.app"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     defaultConfig {
         applicationId = "com.banko.app"
         minSdk = libs.versions.android.minSdk.get().toInt()
@@ -93,4 +100,20 @@ android {
 
 dependencies {
     debugImplementation(compose.uiTooling)
+}
+
+val env = Properties().apply {
+    load(project.rootProject.file(".env").reader())
+}
+
+val nordigenId = env["NORDIGEN_ID"] as? String ?: throw IllegalArgumentException("API_KEY is missing in .env file")
+val nordigenSecret = env["NORDIGEN_SECRET"] as? String ?: throw IllegalArgumentException("BASE_URL is missing in .env file")
+
+buildkonfig {
+    packageName = "com.banko.config"
+
+    defaultConfigs {
+        buildConfigField(FieldSpec.Type.STRING, "NORDIGEN_ID", nordigenId)
+        buildConfigField(FieldSpec.Type.STRING, "NORDIGEN_SECRET", nordigenSecret)
+    }
 }
