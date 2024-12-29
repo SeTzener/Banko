@@ -8,5 +8,9 @@ import com.banko.app.ui.screens.navigation.RootComponent
 
 fun MainViewController() = ComposeUIViewController {
     val root = remember { RootComponent(DefaultComponentContext(LifecycleRegistry())) }
-    App(root)
+    val preferences = remember { createDataStore() }
+    App(
+        root = root,
+        prefs = preferences
+    )
 }

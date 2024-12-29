@@ -3,6 +3,7 @@ package com.banko.app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.remember
 import com.arkivanov.decompose.ExperimentalDecomposeApi
 import com.arkivanov.decompose.retainedComponent
 import com.banko.app.ui.screens.navigation.RootComponent
@@ -17,7 +18,7 @@ class MainActivity : ComponentActivity() {
             )
         }
         setContent {
-            App(root)
+            App(root = root, prefs = remember { createDataStore(applicationContext) })
         }
     }
 }

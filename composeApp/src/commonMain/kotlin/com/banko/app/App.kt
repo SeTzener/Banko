@@ -10,6 +10,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import com.arkivanov.decompose.ExperimentalDecomposeApi
 import com.arkivanov.decompose.extensions.compose.jetbrains.stack.Children
 import com.arkivanov.decompose.extensions.compose.jetbrains.stack.animation.slide
@@ -29,11 +31,12 @@ import com.banko.app.ui.theme.Dark_On_Surface
 import com.banko.app.ui.theme.Dark_Surface
 import com.banko.app.ui.theme.Light_On_Surface
 import com.banko.app.ui.theme.Light_Surface
+import kotlinx.coroutines.flow.map
 
 @OptIn(ExperimentalDecomposeApi::class)
 @Composable
 @Preview
-fun App(root: RootComponent) {
+fun App(root: RootComponent, prefs: DataStore<Preferences>) {
     BankoTheme {
         val childStack = root.childStack.subscribeAsState()
         Scaffold(
