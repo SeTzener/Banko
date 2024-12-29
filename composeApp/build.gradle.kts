@@ -57,6 +57,10 @@ kotlin {
             implementation(libs.ktor.client.serialization)
             implementation(libs.kotlinx.datetime)
             implementation(libs.kotlinx.serialization.json)
+            implementation(libs.kotlinx.serialization.core)
+
+            api(libs.datastore)
+            api(libs.datastore.preferences)
         }
     }
 }
