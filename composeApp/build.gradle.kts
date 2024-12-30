@@ -37,10 +37,13 @@ kotlin {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
             implementation(libs.decompose)
+            implementation(libs.koin.android)
+            implementation(libs.koin.android.compose)
             implementation(libs.ktor.client.android)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.ios)
+            implementation(libs.koin.core)
         }
         commonMain.dependencies {
             implementation(libs.compose.material)
@@ -55,6 +58,8 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtime.compose)
             implementation(libs.decompose)
             implementation(libs.decompose.extensions)
+            implementation(libs.koin.compose)
+            implementation(libs.koin.compose.viewmodel)
             implementation(libs.ktor.client)
             implementation(libs.ktor.client.negotiation)
             implementation(libs.ktor.client.serialization)
@@ -63,6 +68,7 @@ kotlin {
 
             api(libs.datastore)
             api(libs.datastore.preferences)
+            api(libs.koin.core)
         }
     }
 }
