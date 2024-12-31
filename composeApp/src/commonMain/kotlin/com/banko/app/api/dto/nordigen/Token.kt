@@ -6,6 +6,6 @@ import kotlinx.serialization.Serializable
 data class Token(
     val access: String,
     val refresh: String,
-    val access_expires: String,
-    val refresh_expires: String
+    val access_expires: Long,
+    val refresh_expires: Long
 )

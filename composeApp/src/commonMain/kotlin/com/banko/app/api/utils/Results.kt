@@ -48,6 +48,7 @@ suspend inline fun <reified T> HttpClient.postSafe(
 ): Result<T, NetworkError> {
     return try {
         val response = post(url, block)
+        println("response status ${response.status.value}")
         when (response.status.value) {
             in 200..299 -> Result.Success(response.body<T>())
             301 -> Result.Error(NetworkError.MOVED_PERMANENTLY)
@@ -65,6 +66,7 @@ suspend inline fun <reified T> HttpClient.postSafe(
             else -> Result.Error(NetworkError.UNKNOWN)
         }
     } catch (e: Exception) {
+        e.printStackTrace()
         when (e) {
             is UnresolvedAddressException -> Result.Error(NetworkError.NO_INTERNET)
             else -> Result.Error(NetworkError.UNKNOWN)
