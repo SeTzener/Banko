@@ -1,7 +1,7 @@
 [versions]
 agp = "8.5.2"
 android-compileSdk = "34"
-android-minSdk = "24"
+android-minSdk = "25"
 android-targetSdk = "34"
 androidx-activityCompose = "1.9.3"
 androidx-appcompat = "1.7.0"
@@ -23,6 +23,7 @@ kotlinxDatetime = "0.6.0"
 ktor = "3.0.2"
 material = "1.7.0"
 serialization = "1.7.3"
+composeMaterialCore = "1.4.0"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -58,6 +59,8 @@ koin-android-compose = { group = "io.insert-koin", name = "koin-androidx-compose
 # Ktor
 ktor-client = { group = "io.ktor", name = "ktor-client-core", version.ref = "ktor" }
 ktor-client-negotiation = { group = "io.ktor", name = "ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-client-logging = { group = "io.ktor", name = "ktor-client-logging", version.ref = "ktor" }
+ktor-client-auth = { group = "io.ktor", name = "ktor-client-auth", version.ref = "ktor" }
 ktor-client-serialization = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
 ktor-client-android = { group = "io.ktor", name = "ktor-client-okhttp", version.ref = "ktor" }
 ktor-client-ios = { group = "io.ktor", name = "ktor-client-darwin", version.ref = "ktor" }
@@ -67,7 +70,9 @@ decompose = { group = "com.arkivanov.decompose", name = "decompose", version.ref
 decompose-extensions = { group = "com.arkivanov.decompose", name = "extensions-compose-jetbrains", version.ref = "decompose" }
 
 # Serialization
+kotlinx-serialization-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-core", version.ref = "serialization" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
+androidx-compose-material-core = { group = "androidx.wear.compose", name = "compose-material-core", version.ref = "composeMaterialCore" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

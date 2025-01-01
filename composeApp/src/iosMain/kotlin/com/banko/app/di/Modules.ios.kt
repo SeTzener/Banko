@@ -1,9 +1,11 @@
 package com.banko.app.di
 
+import com.banko.app.createDataStore
 import org.koin.dsl.module
 
 // Always remember to add the module to Modules.android.kt and Modules.ios.kt
 actual val platformModule = module {
+    single { createDataStore() }
 //    Example 1
 //    singleOf(::MyRepositoryImpl)
 

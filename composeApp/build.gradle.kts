@@ -62,9 +62,13 @@ kotlin {
             implementation(libs.koin.compose.viewmodel)
             implementation(libs.ktor.client)
             implementation(libs.ktor.client.negotiation)
+            implementation(libs.ktor.client.logging)
+            implementation(libs.ktor.client.auth)
+            implementation(libs.ktor.client.negotiation)
             implementation(libs.ktor.client.serialization)
             implementation(libs.kotlinx.datetime)
             implementation(libs.kotlinx.serialization.json)
+            implementation(libs.kotlinx.serialization.core)
 
             api(libs.datastore)
             api(libs.datastore.preferences)
@@ -105,6 +109,7 @@ android {
 }
 
 dependencies {
+    implementation(libs.androidx.compose.material.core)
     debugImplementation(compose.uiTooling)
 }
 
@@ -114,6 +119,7 @@ val env = Properties().apply {
 
 val nordigenId = env["NORDIGEN_ID"] as? String ?: throw IllegalArgumentException("API_KEY is missing in .env file")
 val nordigenSecret = env["NORDIGEN_SECRET"] as? String ?: throw IllegalArgumentException("BASE_URL is missing in .env file")
+val nordigenAccountId = env["NORDIGEN_ACCOUNT_ID"] as? String ?: throw IllegalArgumentException("NORDIGEN_ACCOUNT_ID is missing in .env file")
 
 buildkonfig {
     packageName = "com.banko.config"
@@ -121,5 +127,6 @@ buildkonfig {
     defaultConfigs {
         buildConfigField(FieldSpec.Type.STRING, "NORDIGEN_ID", nordigenId)
         buildConfigField(FieldSpec.Type.STRING, "NORDIGEN_SECRET", nordigenSecret)
+        buildConfigField(FieldSpec.Type.STRING, "NORDIGEN_ACCOUNT_ID", nordigenAccountId)
     }
 }
