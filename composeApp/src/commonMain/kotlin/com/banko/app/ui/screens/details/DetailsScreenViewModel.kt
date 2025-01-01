@@ -5,13 +5,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.banko.app.api.HttpClientProvider
 import com.banko.app.api.services.NordigenApiService
+import com.banko.app.api.utils.Result
 import kotlinx.coroutines.launch
+import org.koin.core.component.KoinComponent
 
 // TODO(): Temporary, change it to actual implementation
-class DetailsScreenViewModel : ViewModel() {
-    private val apiService = NordigenApiService(HttpClientProvider.client)
+class DetailsScreenViewModel : ViewModel(), KoinComponent {
+    // TODO(): create a new client for every service. This one is static
+
+    private val apiService = NordigenApiService()
     var screenState: DetailScreenState by mutableStateOf(DetailScreenState())
 
     init {
@@ -21,8 +24,13 @@ class DetailsScreenViewModel : ViewModel() {
     private fun fetchExampleData() {
         viewModelScope.launch {
             try {
-                val data = apiService.getExampleData()
-                screenState = screenState.copy(data = data.fact)
+                val result = apiService.getInstitution("IT")
+                if (result is Result.Success) {
+                    screenState =
+                        screenState.copy(data = result.data[12].name)
+                } else if (result is Result.Error){
+                    throw Exception(result.error.name)
+                }
             } catch (e: Exception) {
                 println("Error fetching data: ${e.message}")
             }
