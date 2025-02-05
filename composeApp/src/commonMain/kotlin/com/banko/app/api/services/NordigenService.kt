@@ -1,11 +1,9 @@
 package com.banko.app.api.services
 
 import com.banko.app.api.HttpClientProvider
-import com.banko.app.api.dto.nordigen.Accounts
 import com.banko.app.api.dto.nordigen.Institutions
 import com.banko.app.api.dto.nordigen.Balances
 import com.banko.app.api.dto.nordigen.Requisitions
-import com.banko.app.api.dto.nordigen.Transactions
 import com.banko.app.api.utils.NetworkError
 import io.ktor.client.request.header
 import com.banko.app.api.utils.Result
@@ -25,11 +23,6 @@ class NordigenApiService
         HttpClient(
             HttpClientProvider.invoke(get())
         )
-    }
-    suspend fun getAccounts(requisitionId: String): Result<Accounts, NetworkError> {
-        return client.getSafe<Accounts>("$baseUrl$version/requisitions/$requisitionId") {
-            header("Content-Type", "application/json")
-        }
     }
 
     // TODO(): Change country to an enum
@@ -58,14 +51,6 @@ class NordigenApiService
 
     suspend fun getBalances(accountId: String = BuildKonfig.NORDIGEN_ACCOUNT_ID): Result<Balances, NetworkError> {
         return client.getSafe<Balances>("$baseUrl$version/accounts/$accountId/balances/") {
-            header("Content-Type", "application/json")
-        }
-    }
-
-    suspend fun getTransactions(
-        accountId: String = BuildKonfig.NORDIGEN_ACCOUNT_ID
-    ): Result<Transactions, NetworkError> {
-        return client.getSafe<Transactions>("$baseUrl$version/accounts/${accountId}/transactions") {
             header("Content-Type", "application/json")
         }
     }

@@ -47,17 +47,17 @@ class NordigenTokenProvider(
     private suspend fun getCachedTokens() {
         dataStore.edit { prefs ->
             val accessToken = prefs[ACCESS_TOKEN_KEY] ?: ""
-            val accessTokenExpires = prefs[ACCESS_TOKEN_EXPIRES_KEY]
-            val refreshToken = prefs[REFRESH_TOKEN_KEY]
-            val refreshTokenExpires = prefs[REFRESH_TOKEN_EXPIRES_KEY]
+            val accessTokenExpires = prefs[ACCESS_TOKEN_EXPIRES_KEY] ?: 0
+            val refreshToken = prefs[REFRESH_TOKEN_KEY] ?: ""
+            val refreshTokenExpires = prefs[REFRESH_TOKEN_EXPIRES_KEY] ?: 0
 
             currentTokens = BearerTokens(
                 accessToken = accessToken,
                 refreshToken = refreshToken
             )
             expiration = TokensExpiration(
-                accessExpire = accessTokenExpires ?: 0,
-                refreshExpire = refreshTokenExpires ?: 0
+                accessExpire = accessTokenExpires,
+                refreshExpire = refreshTokenExpires
             )
         }
     }

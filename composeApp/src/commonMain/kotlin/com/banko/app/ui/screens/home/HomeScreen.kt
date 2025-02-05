@@ -19,10 +19,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,13 +49,18 @@ import com.banko.app.ui.components.ExpandableCard
 import com.banko.app.ui.components.TextWithIcon
 import com.banko.app.ui.models.Transaction
 import com.banko.app.ui.models.categories
-import com.banko.app.ui.models.createMockedTransaction
+import com.banko.app.ui.theme.colorList
 import org.jetbrains.compose.resources.stringResource
 import kotlin.random.Random
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(component: HomeComponent) {
+    val viewModel = component.viewModel
+    val screenState by viewModel.screenState.collectAsState()
+    LaunchedEffect(Unit) {
+        viewModel.loadData()
+    }
     Column(
         Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -131,12 +139,24 @@ fun HomeScreen(component: HomeComponent) {
                 }
             }
         }
-        val transactions = createMockedTransaction()
-        val groupedTransactions = transactions.groupBy { it.date }
+        val transactions = screenState.transactions
+        val groupedTransactions = transactions.groupBy { it.bookingDate.date }
         Card(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(16.dp).fillMaxSize(),
             border = (BorderStroke(0.dp, Color.LightGray))
         ) {
+            if (transactions.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.onSurface),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(35.dp),
+                        strokeWidth = 5.dp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
             LazyColumn {
                 groupedTransactions.forEach { (date, transactionsForDate) ->
                     stickyHeader {
@@ -207,9 +227,10 @@ fun SwipableTransactionRow(transaction: Transaction, onDetailsClick: () -> Unit)
                 modifier = Modifier
                     .weight(5f)
                     .align(Alignment.CenterVertically)
+                    .padding(end = 5.dp)
             ) {
                 Text(
-                    text = transaction.remittanceInfo,
+                    text = transaction.remittanceInformationUnstructured,
                     color = MaterialTheme.colorScheme.primary,
                     overflow = TextOverflow.Ellipsis,
                     maxLines = 1
@@ -219,6 +240,7 @@ fun SwipableTransactionRow(transaction: Transaction, onDetailsClick: () -> Unit)
                 modifier = Modifier
                     .weight(4f)
                     .align(Alignment.CenterVertically)
+                    .padding(end = 5.dp)
             ) {
                 Text(
                     text = "${transaction.amount} ${transaction.currency}",
@@ -236,7 +258,7 @@ fun SwipableTransactionRow(transaction: Transaction, onDetailsClick: () -> Unit)
                     modifier = Modifier
                         .size(12.dp)
                         .background(
-                            color = transaction.category.color,
+                            color = colorList.random(),
                             shape = MaterialTheme.shapes.small
                         )
                 )
@@ -244,6 +266,7 @@ fun SwipableTransactionRow(transaction: Transaction, onDetailsClick: () -> Unit)
         }
     }
 }
+
 @Composable
 private fun TopContent() {
     Column(
@@ -254,6 +277,7 @@ private fun TopContent() {
         Text(
             text = stringResource(Res.string.app_name),
             style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.primary)
+            color = MaterialTheme.colorScheme.primary
+        )
     }
 }

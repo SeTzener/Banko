@@ -34,4 +34,4 @@ object HttpClientProvider {
     }
 }
 
-internal const val TIMEOUT: Long = 20_000L
+internal const val TIMEOUT: Long = 60_000L

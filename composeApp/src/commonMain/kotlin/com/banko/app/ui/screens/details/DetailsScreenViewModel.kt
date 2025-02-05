@@ -8,10 +8,9 @@ import androidx.lifecycle.viewModelScope
 import com.banko.app.api.services.NordigenApiService
 import com.banko.app.api.utils.Result
 import kotlinx.coroutines.launch
-import org.koin.core.component.KoinComponent
 
 // TODO(): Temporary, change it to actual implementation
-class DetailsScreenViewModel : ViewModel(), KoinComponent {
+class DetailsScreenViewModel : ViewModel() {
     // TODO(): create a new client for every service. This one is static
 
     private val apiService = NordigenApiService()
