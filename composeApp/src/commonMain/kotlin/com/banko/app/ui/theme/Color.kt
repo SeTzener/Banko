@@ -64,3 +64,33 @@ val Brightmode_PrimaryVariant = Color(0xFF642B73)
 val Brightmode_Secondary = DarkSlateGray
 val Light_Surface = Color(0xFFFFFFF0)
 val Light_On_Surface = Color(0xFFF2EFDE)
+
+val colorList: List<Color> = listOf(
+    SteelBlue,
+    DeepSkyBlue,
+    DodgerBlue,
+    DarkMidnightBlue,
+    MediumPurple,
+    Lavender,
+    DarkOrchid,
+    PatriarchPurple,
+    MediumSeaGreen,
+    LimeGreen,
+    DarkOliveGreen,
+    Teal,
+    Orange,
+    Amber,
+    Coral,
+    Firebrick,
+    DarkTurquoise,
+    Aqua,
+    DarkSlateGray,
+    LightSlateGray,
+    Gainsboro,
+    PeachPuff,
+    LightGoldenrodYellow,
+    CadetBlue,
+    MidnightBlue,
+    Chartreuse,
+    Olive
+)
