@@ -2,6 +2,7 @@ package com.banko.app
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.BottomNavigation
 import androidx.compose.material.BottomNavigationItem
 import androidx.compose.material3.Icon
@@ -62,8 +63,10 @@ fun App(root: RootComponent) {
                     }
                 }
             }
-        ) {
-            Surface {
+        ) { paddingValues ->
+            Surface (
+                modifier = Modifier.padding(paddingValues)
+            ) {
                 Children(
                     stack = childStack.value,
                     modifier = Modifier.fillMaxSize(),
