@@ -8,6 +8,7 @@ class HomeComponent(
     componentContext: ComponentContext,
     private val onNavigateToDetails: (String) -> Unit
 ): ComponentContext by componentContext {
+    val viewModel = HomeScreenViewModel()
     private var _text = MutableValue("")
     val text: Value<String> = _text
 
