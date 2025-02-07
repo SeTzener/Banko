@@ -16,7 +16,8 @@ data class Transaction (
     val creditorName: String? = null,
     val creditorAccount: CreditorAccount? = null,
     val debtorName: String? = null,
-    val remittanceInformationStructuredArray: List<String>? = null
+    val remittanceInformationStructuredArray: List<String>? = null,
+    val expenseTag: ExpenseTag? = null
 )
 
 data class CreditorAccount(
