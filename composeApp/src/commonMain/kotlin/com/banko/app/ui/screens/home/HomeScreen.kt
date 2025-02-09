@@ -46,10 +46,10 @@ import banko.composeapp.generated.resources.monthly_income
 import banko.composeapp.generated.resources.payments
 import com.banko.app.ui.components.CircularIndicator
 import com.banko.app.ui.components.ExpandableCard
+import com.banko.app.ui.components.ExpenseTag
 import com.banko.app.ui.components.TextWithIcon
 import com.banko.app.ui.models.Transaction
 import com.banko.app.ui.models.categories
-import com.banko.app.ui.theme.colorList
 import org.jetbrains.compose.resources.stringResource
 import kotlin.random.Random
 
@@ -141,44 +141,41 @@ fun HomeScreen(component: HomeComponent) {
         }
         val transactions = screenState.transactions
         val groupedTransactions = transactions.groupBy { it.bookingDate.date }
-        Card(
-            modifier = Modifier.padding(16.dp).fillMaxSize(),
-            border = (BorderStroke(0.dp, Color.LightGray))
-        ) {
-            if (transactions.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.onSurface),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(35.dp),
-                        strokeWidth = 5.dp,
-                        color = MaterialTheme.colorScheme.primary
+
+        if (transactions.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxSize().padding(start = 5.dp, end = 5.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(35.dp),
+                    strokeWidth = 5.dp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+        LazyColumn {
+            groupedTransactions.forEach { (date, transactionsForDate) ->
+                stickyHeader {
+                    Text(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.onSurface)
+                            .padding(12.dp),
+                        text = date.toString(),
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                }
+
+                items(transactionsForDate) { transaction ->
+                    SwipableTransactionRow(
+                        transaction = transaction,
+                        onDetailsClick = { component.onEvent(HomeEvent.ButtonClick) }
                     )
                 }
             }
-            LazyColumn {
-                groupedTransactions.forEach { (date, transactionsForDate) ->
-                    stickyHeader {
-                        Text(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(MaterialTheme.colorScheme.onSurface)
-                                .padding(12.dp),
-                            text = date.toString(),
-                            color = MaterialTheme.colorScheme.secondary
-                        )
-                    }
-
-                    items(transactionsForDate) { transaction ->
-                        SwipableTransactionRow(
-                            transaction = transaction,
-                            onDetailsClick = { component.onEvent(HomeEvent.ButtonClick) }
-                        )
-                    }
-                }
-            }
         }
+
     }
 }
 
@@ -225,9 +222,9 @@ fun SwipableTransactionRow(transaction: Transaction, onDetailsClick: () -> Unit)
         ) {
             Column(
                 modifier = Modifier
-                    .weight(5f)
+                    .weight(7f)
                     .align(Alignment.CenterVertically)
-                    .padding(end = 5.dp)
+                    .padding(start = 12.dp, end = 7.dp)
             ) {
                 Text(
                     text = transaction.remittanceInformationUnstructured,
@@ -238,11 +235,12 @@ fun SwipableTransactionRow(transaction: Transaction, onDetailsClick: () -> Unit)
             }
             Column(
                 modifier = Modifier
-                    .weight(4f)
+                    .weight(3f)
                     .align(Alignment.CenterVertically)
                     .padding(end = 5.dp)
             ) {
                 Text(
+                    modifier = Modifier.align(Alignment.End),
                     text = "${transaction.amount} ${transaction.currency}",
                     color = MaterialTheme.colorScheme.primary,
                     overflow = TextOverflow.Ellipsis,
@@ -254,14 +252,7 @@ fun SwipableTransactionRow(transaction: Transaction, onDetailsClick: () -> Unit)
                     .weight(1f)
                     .align(Alignment.CenterVertically)
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(12.dp)
-                        .background(
-                            color = colorList.random(),
-                            shape = MaterialTheme.shapes.small
-                        )
-                )
+               ExpenseTag(transaction.expenseTag)
             }
         }
     }

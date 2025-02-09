@@ -1,5 +1,6 @@
 package com.banko.app.api.dto.bankoApi
 
+import androidx.compose.ui.graphics.Color
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.Serializable
 
@@ -7,6 +8,7 @@ import kotlinx.serialization.Serializable
 typealias ModelTransaction = com.banko.app.ui.models.Transaction
 typealias ModelDebtorAccount = com.banko.app.ui.models.DebtorAccount
 typealias ModelCreditorAccount = com.banko.app.ui.models.CreditorAccount
+typealias ModelExpenseTag = com.banko.app.ui.models.ExpenseTag
 
 @Serializable
 data class Transactions(
@@ -31,7 +33,8 @@ data class Transaction(
     val creditorName: String? = null,
     val creditorAccount: CreditorAccount? = null,
     val debtorName: String? = null,
-    val remittanceInformationStructuredArray: List<String>? = null
+    val remittanceInformationStructuredArray: List<String>? = null,
+    val expenseTag: ExpenseTag? = null
 )
 
 @Serializable
@@ -46,6 +49,14 @@ data class DebtorAccount(
     val id: String,
     val iban: String,
     val bban: String
+)
+
+@Serializable
+data class ExpenseTag (
+    val id: String,
+    val name: String,
+    val color: Long,
+    val aka: List<String>?
 )
 
 fun Transaction.toModelItem() = ModelTransaction(
@@ -63,6 +74,7 @@ fun Transaction.toModelItem() = ModelTransaction(
     creditorAccount = creditorAccount?.toModelItem(),
     debtorName = debtorName,
     remittanceInformationStructuredArray = remittanceInformationStructuredArray,
+    expenseTag = expenseTag?.toModelItem()
 )
 
 fun DebtorAccount.toModelItem() = ModelDebtorAccount(
@@ -75,4 +87,11 @@ fun CreditorAccount.toModelItem() = ModelCreditorAccount(
     id = id,
     iban = iban,
     bban = bban
+)
+
+fun ExpenseTag.toModelItem() = ModelExpenseTag(
+    id = id,
+    name = name,
+    color = Color(color),
+    aka = aka ?: emptyList()
 )
