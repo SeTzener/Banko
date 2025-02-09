@@ -54,10 +54,9 @@ data class DebtorAccount(
 @Serializable
 data class ExpenseTag (
     val id: String,
-    val transactionId: String,
     val name: String,
     val color: Long,
-    val aka: List<String>
+    val aka: List<String>?
 )
 
 fun Transaction.toModelItem() = ModelTransaction(
@@ -92,8 +91,7 @@ fun CreditorAccount.toModelItem() = ModelCreditorAccount(
 
 fun ExpenseTag.toModelItem() = ModelExpenseTag(
     id = id,
-    transactionId = transactionId,
     name = name,
     color = Color(color),
-    aka = aka
+    aka = aka ?: emptyList()
 )
