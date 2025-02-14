@@ -11,6 +11,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,6 +31,8 @@ import org.jetbrains.compose.resources.stringResource
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(component: SettingsComponent) {
+    val viewModel = component.viewModel
+    val screenState by viewModel.screenState.collectAsState()
     // Bottom sheet
     var currentBottomSheet by remember { mutableStateOf(BottomSheetType.NONE) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -40,7 +43,13 @@ fun SettingsScreen(component: SettingsComponent) {
             sheetState = sheetState
         ) {
             when (currentBottomSheet) {
-                BottomSheetType.EXPENSE_TAGS -> ExpenseTagsBottomSheetContent {
+                BottomSheetType.EXPENSE_TAGS -> ExpenseTagsBottomSheetContent(
+                    screenState = screenState,
+                    loadNewTags = { viewModel.getExpenseTags() },
+                    onTagUpdate = { viewModel.updateExpenseTag(it) },
+                    onTagCreate = { name, color -> viewModel.createExpenseTag(name, color) },
+                    onTagDelete = { viewModel.deleteExpenseTag(it) }
+                    ) {
                     currentBottomSheet = BottomSheetType.NONE
                 }
 
