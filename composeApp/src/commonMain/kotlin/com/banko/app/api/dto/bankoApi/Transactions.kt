@@ -51,14 +51,6 @@ data class DebtorAccount(
     val bban: String
 )
 
-@Serializable
-data class ExpenseTag (
-    val id: String,
-    val name: String,
-    val color: Long,
-    val aka: List<String>?
-)
-
 fun Transaction.toModelItem() = ModelTransaction(
     id = id,
     bookingDate = LocalDateTime.parse(bookingDate),

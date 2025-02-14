@@ -4,4 +4,6 @@ import com.arkivanov.decompose.ComponentContext
 
 class SettingsComponent(
     componentContext: ComponentContext,
-): ComponentContext by componentContext
+): ComponentContext by componentContext {
+    val viewModel = SettingsScreenViewModel()
+}
