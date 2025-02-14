@@ -1,9 +1,25 @@
 <resources>
-    <string name="currency_nok">NOK</string>
-    <string name="currency_euro">€</string>
-    <string name="daily_budget">Daily Budget</string>>
-    <string name="monthly_budget">Monthly Budget</string>>
-    <string name="saved_money_yesterday">Money Saved Yesterday:</string>
-    <string name="monthly_income">Money Saved This Month:</string>
     <string name="app_name">Banko</string>
+    <string name="currency_euro">€</string>
+    <string name="currency_nok">NOK</string>
+    <string name="daily_budget">Daily Budget</string>>
+    <string name="expense_tag_add_new">+</string>
+    <string name="expense_tag_add_new_button_cancel">Cancel</string>
+    <string name="expense_tag_add_new_button_save">Save</string>
+    <string name="expense_tag_add_new_title">Add New Expense Tag</string>
+    <string name="expense_tag_add_new_text">Add a new tag name and color</string>
+    <string name="expense_tag_colorpicker_button_cancel">Cancel</string>
+    <string name="expense_tag_colorpicker_button_ok">OK</string>
+    <string name="expense_tag_colorpicker_title">Choose a Color</string>
+    <string name="expense_tag_delete_no">No</string>
+    <string name="expense_tag_delete_text">Are you sure you want to delete this tag?</string>
+    <string name="expense_tag_delete_title">Delete Tag</string>
+    <string name="expense_tag_delete_yes">Yes</string>
+    <string name="expense_tags">Expense Tags</string>
+    <string name="expense_tags_bottom_sheet_button_close">Close</string>
+    <string name="expense_tags_title">EXPENSE TAGS</string>
+    <string name="monthly_budget">Monthly Budget</string>>
+    <string name="monthly_income">Money Saved This Month:</string>
+    <string name="saved_money_yesterday">Money Saved Yesterday:</string>
+    <string name="settings">Settings</string>
 </resources>
