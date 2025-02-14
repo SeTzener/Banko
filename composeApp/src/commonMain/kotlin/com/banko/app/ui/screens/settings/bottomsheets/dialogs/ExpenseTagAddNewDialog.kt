@@ -7,7 +7,9 @@ import androidx.compose.foundation.shape.ZeroCornerSize
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonColors
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -29,6 +31,7 @@ import banko.composeapp.generated.resources.expense_tag_add_new_button_save
 import banko.composeapp.generated.resources.expense_tag_add_new_text
 import banko.composeapp.generated.resources.expense_tag_add_new_title
 import banko.composeapp.generated.resources.ic_tag
+import banko.composeapp.generated.resources.ic_tag_filled
 import com.banko.app.api.dto.bankoApi.ExpenseTag
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -67,23 +70,26 @@ fun ExpenseTagAddNewDialog(
                 modifier = Modifier.fillMaxWidth()
                     .padding(top = 25.dp, bottom = 15.dp, start = 5.dp, end = 5.dp)
             ) {
-                IconButton(
+                OutlinedIconButton (
                     onClick = { showColorPicker.value = true },
-                    modifier = Modifier.padding(end = 8.dp).align(Alignment.Bottom),
+                    modifier = Modifier.padding(start = 8.dp,
+                        top = 8.dp,
+                        end = 12.dp,
+                        bottom = 8.dp).align(Alignment.Bottom),
+                    colors = IconButtonColors(
+                        containerColor = Color(color.value),
+                        disabledContentColor = Color(color.value).copy(alpha = 0.5f),
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                    ),
                 ) {
                     Icon(
-                        modifier = Modifier.padding(
-                            start = 8.dp,
-                            top = 8.dp,
-                            end = 12.dp,
-                            bottom = 8.dp
-                        ),
-                        painter = painterResource(resource = Res.drawable.ic_tag),
+                        painter = painterResource(resource = Res.drawable.ic_tag_filled),
                         contentDescription = null,
                         tint = if (color.value == 0L) {
                             Color.White.copy(alpha = 0.5f)
                         } else {
-                            Color(color.value)
+                            MaterialTheme.colorScheme.surface
                         },
                     )
                 }

@@ -1,6 +1,5 @@
 package com.banko.app.ui.screens.settings.bottomsheets
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -31,7 +30,6 @@ import banko.composeapp.generated.resources.expense_tags_title
 import banko.composeapp.generated.resources.ic_delete
 import banko.composeapp.generated.resources.ic_edit
 import banko.composeapp.generated.resources.ic_save
-import banko.composeapp.generated.resources.ic_tag
 import banko.composeapp.generated.resources.ic_tag_filled
 import com.banko.app.api.dto.bankoApi.ExpenseTag
 import com.banko.app.ui.screens.settings.SettingsScreenState
@@ -178,8 +176,7 @@ fun TagItem(
                     painter = painterResource(resource = Res.drawable.ic_tag_filled),
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.surface,
-
-                    )
+                )
             }
         }
         // Tag Name
