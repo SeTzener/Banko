@@ -6,6 +6,7 @@ import com.arkivanov.decompose.router.stack.StackNavigation
 import com.arkivanov.decompose.router.stack.childStack
 import com.arkivanov.decompose.router.stack.pop
 import com.arkivanov.decompose.router.stack.pushNew
+import com.banko.app.ui.models.Transaction
 import com.banko.app.ui.screens.details.DetailsComponent
 import com.banko.app.ui.screens.home.HomeComponent
 import com.banko.app.ui.screens.settings.SettingsComponent
@@ -33,15 +34,15 @@ class RootComponent(
             Configuration.Home -> Child.Home(
                 HomeComponent(
                     componentContext = context,
-                    onNavigateToDetails = { text ->
-                        navigation.pushNew(Configuration.Details(text))
+                    onNavigateToDetails = { transaction ->
+                        navigation.pushNew(Configuration.Details(transaction))
                     }
                 )
             )
 
             is Configuration.Details -> Child.Details(
                 DetailsComponent(
-                    text = config.text,
+                    transaction = config.transaction,
                     componentContext = context,
                     onGoBack = { navigation.pop() }
                 )
@@ -66,8 +67,8 @@ class RootComponent(
         data object Home : Configuration()
 
         @Serializable
-        data class Details(val text: String) :
-            Configuration() //TODO() Replace text with the Transaction model
+        data class Details(val transaction: Transaction) :
+            Configuration()
 
         @Serializable
         data object Settings : Configuration()

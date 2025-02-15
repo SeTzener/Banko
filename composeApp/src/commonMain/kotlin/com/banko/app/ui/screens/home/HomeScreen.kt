@@ -170,7 +170,7 @@ fun HomeScreen(component: HomeComponent) {
                 items(transactionsForDate) { transaction ->
                     SwipableTransactionRow(
                         transaction = transaction,
-                        onDetailsClick = { component.onEvent(HomeEvent.ButtonClick) }
+                        onDetailsClick = { component.onEvent(HomeEvent.ButtonClick, transaction) }
                     )
                 }
             }

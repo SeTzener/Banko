@@ -16,10 +16,6 @@ class DetailsScreenViewModel : ViewModel() {
     private val apiService = NordigenApiService()
     var screenState: DetailScreenState by mutableStateOf(DetailScreenState())
 
-    init {
-        fetchExampleData()
-    }
-
     private fun fetchExampleData() {
         viewModelScope.launch {
             try {
