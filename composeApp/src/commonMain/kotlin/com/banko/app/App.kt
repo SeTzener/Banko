@@ -77,7 +77,6 @@ fun App(root: RootComponent) {
                         // TODO() add koin to the project and change -> DetailScreenViewModel()
                         is RootComponent.Child.Details -> DetailsScreen(
                             component = instance.component,
-                            transaction = instance.component.transaction
                         )
                         is RootComponent.Child.Settings -> SettingsScreen(instance.component)
                     }
