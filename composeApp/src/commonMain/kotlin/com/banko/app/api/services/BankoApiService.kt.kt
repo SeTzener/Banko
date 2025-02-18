@@ -14,7 +14,6 @@ import com.banko.app.api.utils.Result
 import com.banko.app.api.utils.deleteSafe
 import com.banko.app.api.utils.postSafe
 import com.banko.app.api.utils.putSafe
-import com.banko.config.BuildKonfig
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
@@ -74,6 +73,19 @@ class BankoApiService : KoinComponent {
         return client.deleteSafe("$baseUrl/settings/expense-tag/${expenseTagId}") {
             contentType(ContentType.Application.Json)
             AcceptEncoding("application/json")
+        }
+    }
+
+    suspend fun assignExpenseTag(id: String, expenseTagId: String?): Result<Unit, NetworkError> {
+        return client.putSafe("$baseUrl/transactions/expense-tag") {
+            contentType(ContentType.Application.Json)
+            AcceptEncoding("application/json")
+            setBody(
+                mapOf(
+                    "transactionId" to id,
+                    "expenseTagId" to expenseTagId
+                )
+            )
         }
     }
 }
