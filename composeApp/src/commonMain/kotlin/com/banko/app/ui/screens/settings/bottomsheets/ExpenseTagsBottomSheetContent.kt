@@ -31,7 +31,7 @@ import banko.composeapp.generated.resources.ic_delete
 import banko.composeapp.generated.resources.ic_edit
 import banko.composeapp.generated.resources.ic_save
 import banko.composeapp.generated.resources.ic_tag_filled
-import com.banko.app.api.dto.bankoApi.ExpenseTag
+import com.banko.app.ui.models.ExpenseTag
 import com.banko.app.ui.screens.settings.SettingsScreenState
 import com.banko.app.ui.screens.settings.bottomsheets.dialogs.ExpenseTagAddNewDialog
 import com.banko.app.ui.screens.settings.bottomsheets.dialogs.ExpenseTagColorpickerDialog
@@ -44,7 +44,7 @@ fun ExpenseTagsBottomSheetContent(
     screenState: SettingsScreenState,
     loadNewTags: () -> Unit,
     onTagUpdate: (ExpenseTag) -> Unit,
-    onTagCreate: (name: String, color: Long) -> Unit,
+    onTagCreate: (name: String, color: Color) -> Unit,
     onTagDelete: (expanseTagId: String) -> Unit,
     onClose: () -> Unit
 ) {
@@ -153,14 +153,14 @@ fun TagItem(
                 modifier = Modifier.padding(start = 8.dp, top = 8.dp, end = 12.dp, bottom = 8.dp),
                 painter = painterResource(resource = Res.drawable.ic_tag_filled),
                 contentDescription = null,
-                tint = Color(editedColor.value),
+                tint = editedColor.value,
             )
         } else {
             OutlinedIconButton(
                 onClick = { showColorPicker.value = true },
                 colors = IconButtonColors(
-                    containerColor = Color(editedColor.value),
-                    disabledContentColor = Color(editedColor.value).copy(alpha = 0.5f),
+                    containerColor = editedColor.value,
+                    disabledContentColor = editedColor.value.copy(alpha = 0.5f),
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                     disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
                 ),

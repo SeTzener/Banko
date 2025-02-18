@@ -1,10 +1,11 @@
 package com.banko.app.api.repositories
 
-import com.banko.app.api.dto.bankoApi.ExpenseTag
+import com.banko.app.api.dto.bankoApi.toModelItem
 import com.banko.app.api.services.BankoApiService
 import com.banko.app.api.utils.Result
+import com.banko.app.ui.models.ExpenseTag
+import com.banko.app.ui.models.toDto
 import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
 class ExpenseTagRepository(
     private val apiService: BankoApiService = BankoApiService()
@@ -16,34 +17,28 @@ class ExpenseTagRepository(
             return emptyList()
         }
 
-        return (result as Result.Success).data.expenseTags
+        return (result as Result.Success).data.expenseTags.map { it.toModelItem() }
     }
 
     suspend fun updateExpenseTag(expenseTag: ExpenseTag): ExpenseTag? {
-        val result = apiService.updateExpenseTag(expenseTag)
+        val result = apiService.updateExpenseTag(expenseTag.toDto())
         if (result is Result.Error) {
             println("Error: ${result.error}")
             return null
         }
 
-        return (result as Result.Success).data.expenseTag
+        return (result as Result.Success).data.expenseTag.toModelItem()
     }
 
     @OptIn(ExperimentalUuidApi::class)
     suspend fun createExpenseTag(name: String, color: Long): ExpenseTag? {
-        val tag = ExpenseTag(
-            id = Uuid.random().toString(),
-            name = name,
-            color = color,
-            aka = null
-        )
-        val result = apiService.createExpenseTag(tag)
+        val result = apiService.createExpenseTag(name, color)
         if (result is Result.Error) {
             println("Error: ${result.error}")
             return null
         }
 
-        return (result as Result.Success).data.expenseTag
+        return (result as Result.Success).data.expenseTag.toModelItem()
     }
 
     suspend fun deleteExpenseTag(expenseTagId: String) {

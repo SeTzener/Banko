@@ -54,8 +54,7 @@ import banko.composeapp.generated.resources.ic_quill
 import banko.composeapp.generated.resources.ic_save
 import banko.composeapp.generated.resources.ic_tag
 import banko.composeapp.generated.resources.ic_tag_filled
-import com.banko.app.api.dto.bankoApi.ExpenseTag
-import com.banko.app.api.dto.bankoApi.toModelItem
+import com.banko.app.ui.models.ExpenseTag
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -425,7 +424,7 @@ fun DetailsScreen(component: DetailsComponent) {
                                         expanded = expanded,
                                         expenseTags = screenState.expenseTags,
                                         onTagSelected = { tag ->
-                                            transaction = transaction.copy(expenseTag = tag?.toModelItem())
+                                            transaction = transaction.copy(expenseTag = tag)
                                         }
                                     )
                                 }
@@ -502,7 +501,7 @@ private fun ExpenseTagDropdown(
                     Icon(
                         painter = painterResource(Res.drawable.ic_tag_filled),
                         contentDescription = null,
-                        tint = Color(tag.color)
+                        tint = tag.color
                     )
                 },
                 text = {
