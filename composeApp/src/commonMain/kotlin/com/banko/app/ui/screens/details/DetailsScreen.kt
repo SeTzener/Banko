@@ -443,6 +443,7 @@ fun DetailsScreen(component: DetailsComponent) {
                             modifier = Modifier.align(Alignment.Bottom),
                             onClick = {
                                 viewModel.assignExpenseTag(transaction.id, transaction.expenseTag?.id)
+                                oldTag = transaction.expenseTag?.id
                             }
                         ) {
                             Icon(
