@@ -1,7 +1,9 @@
 package com.banko.app.ui.models
 
 import kotlinx.datetime.LocalDateTime
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class Transaction (
     val id: String,
     val bookingDate: LocalDateTime,
@@ -20,12 +22,14 @@ data class Transaction (
     val expenseTag: ExpenseTag? = null
 )
 
+@Serializable
 data class CreditorAccount(
     val id: String,
     val iban: String,
     val bban: String
 )
 
+@Serializable
 data class DebtorAccount(
     val id: String,
     val iban: String,

@@ -1,6 +1,7 @@
 package com.banko.app.ui.screens.details
 
-// TODO(): Temporary, change it to actual implementation
+import com.banko.app.api.dto.bankoApi.ExpenseTag
+
 data class DetailScreenState(
-    val data: String = ""
+    val expenseTags: List<ExpenseTag> = emptyList()
 )

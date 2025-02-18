@@ -1,23 +1,17 @@
 package com.banko.app.ui.screens.home
 
 import com.arkivanov.decompose.ComponentContext
-import com.arkivanov.decompose.value.MutableValue
-import com.arkivanov.decompose.value.Value
+import com.banko.app.ui.models.Transaction
 
 class HomeComponent(
     componentContext: ComponentContext,
-    private val onNavigateToDetails: (String) -> Unit
+    private val onNavigateToDetails: (Transaction) -> Unit
 ): ComponentContext by componentContext {
     val viewModel = HomeScreenViewModel()
-    private var _text = MutableValue("")
-    val text: Value<String> = _text
 
-    fun onEvent(event: HomeEvent){
+    fun onEvent(event: HomeEvent, transaction: Transaction){
         when(event) {
-            HomeEvent.ButtonClick -> onNavigateToDetails(text.value)
-            is HomeEvent.UpdateText -> {
-                _text.value = event.text
-            }
+            HomeEvent.ButtonClick -> onNavigateToDetails(transaction)
         }
     }
 }

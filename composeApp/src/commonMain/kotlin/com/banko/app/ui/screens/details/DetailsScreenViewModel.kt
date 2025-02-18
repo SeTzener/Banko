@@ -1,38 +1,29 @@
 package com.banko.app.ui.screens.details
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.banko.app.api.services.NordigenApiService
-import com.banko.app.api.utils.Result
+import com.banko.app.api.repositories.ExpenseTagRepository
+import com.banko.app.ui.models.ExpenseTag
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-// TODO(): Temporary, change it to actual implementation
 class DetailsScreenViewModel : ViewModel() {
-    // TODO(): create a new client for every service. This one is static
+    private val repository = ExpenseTagRepository()
+    private val _screenState = MutableStateFlow(DetailScreenState())
+    val screenState: StateFlow<DetailScreenState> = _screenState
 
-    private val apiService = NordigenApiService()
-    var screenState: DetailScreenState by mutableStateOf(DetailScreenState())
-
-    init {
-        fetchExampleData()
+    fun getExpenseTags() {
+        viewModelScope.launch {
+            val result = repository.getExpenseTags()
+            _screenState.update { it.copy(expenseTags = result) }
+        }
     }
 
-    private fun fetchExampleData() {
+    fun assignExpenseTag(id: String, expenseTagId: String?) {
         viewModelScope.launch {
-            try {
-                val result = apiService.getInstitution("IT")
-                if (result is Result.Success) {
-                    screenState =
-                        screenState.copy(data = result.data[12].name)
-                } else if (result is Result.Error){
-                    throw Exception(result.error.name)
-                }
-            } catch (e: Exception) {
-                println("Error fetching data: ${e.message}")
-            }
+            repository.assignExpenseTag(id, expenseTagId)
         }
     }
 }

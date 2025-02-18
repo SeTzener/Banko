@@ -53,4 +53,12 @@ class ExpenseTagRepository(
             return
         }
     }
+
+    suspend fun assignExpenseTag(id: String, expenseTagId: String?) {
+        val result = apiService.assignExpenseTag(id, expenseTagId)
+        if (result is Result.Error) {
+            println("Error: ${result.error}")
+            return
+        }
+    }
 }
