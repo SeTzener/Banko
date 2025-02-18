@@ -40,10 +40,10 @@ import org.jetbrains.compose.resources.stringResource
 fun ExpenseTagAddNewDialog(
     isNewTag: MutableState<Boolean>,
     showColorPicker: MutableState<Boolean>,
-    onTagCreate: (name: String, color: Long) -> Unit
+    onTagCreate: (name: String, color: Color) -> Unit
 ) {
     val newName = remember { mutableStateOf("") }
-    val color = remember { mutableStateOf<Long>(0) }
+    val color = remember { mutableStateOf(Color.Unspecified) }
     var isError by remember { mutableStateOf(false) }
 
     if (showColorPicker.value) {
@@ -77,8 +77,8 @@ fun ExpenseTagAddNewDialog(
                         end = 12.dp,
                         bottom = 8.dp).align(Alignment.Bottom),
                     colors = IconButtonColors(
-                        containerColor = Color(color.value),
-                        disabledContentColor = Color(color.value).copy(alpha = 0.5f),
+                        containerColor = color.value,
+                        disabledContentColor = color.value.copy(alpha = 0.5f),
                         contentColor = MaterialTheme.colorScheme.onPrimary,
                         disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
                     ),
@@ -86,7 +86,7 @@ fun ExpenseTagAddNewDialog(
                     Icon(
                         painter = painterResource(resource = Res.drawable.ic_tag_filled),
                         contentDescription = null,
-                        tint = if (color.value == 0L) {
+                        tint = if (color.value == Color.Unspecified) {
                             Color.White.copy(alpha = 0.5f)
                         } else {
                             MaterialTheme.colorScheme.surface
@@ -122,13 +122,13 @@ fun ExpenseTagAddNewDialog(
         confirmButton = {
             TextButton(
                 onClick = {
-                    if (color.value == 0L) {
-                        color.value = Color.Red.toArgb().toLong()
+                    if (color.value == Color.Unspecified) {
+                        color.value = Color.Red
                     }
                     if (newName.value.isEmpty()) {
                         isError = true
                     }
-                    if (color.value != 0L && newName.value.isNotEmpty()) {
+                    if (color.value != Color.Unspecified && newName.value.isNotEmpty()) {
                         onTagCreate(newName.value, color.value)
                         isNewTag.value = false // Close the dialog
                     }

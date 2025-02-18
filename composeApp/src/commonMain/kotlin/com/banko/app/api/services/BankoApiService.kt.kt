@@ -18,6 +18,8 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.http.header.AcceptEncoding
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 class BankoApiService : KoinComponent {
     private val baseUrl = "https://www.bankoapi.space"
@@ -54,16 +56,18 @@ class BankoApiService : KoinComponent {
         }
     }
 
-    suspend fun createExpenseTag(expenseTag: ExpenseTag): Result<UpsertExpenseTag, NetworkError> {
+    @OptIn(ExperimentalUuidApi::class)
+    suspend fun createExpenseTag(name: String, color: Long): Result<UpsertExpenseTag, NetworkError> {
+        val tagId = Uuid.random().toString()
         return client.postSafe("$baseUrl/settings/expense-tag") {
             contentType(ContentType.Application.Json)
             AcceptEncoding("application/json")
             setBody(
                 mapOf(
-                    "id" to expenseTag.id,
-                    "name" to expenseTag.name,
-                    "color" to expenseTag.color.toString(),
-                    "aka" to expenseTag.aka
+                    "id" to tagId,
+                    "name" to name,
+                    "color" to color.toString(),
+                    "aka" to null
                 )
             )
         }

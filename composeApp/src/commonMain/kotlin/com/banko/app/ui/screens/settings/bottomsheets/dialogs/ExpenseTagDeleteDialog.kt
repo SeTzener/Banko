@@ -11,7 +11,7 @@ import banko.composeapp.generated.resources.expense_tag_delete_no
 import banko.composeapp.generated.resources.expense_tag_delete_text
 import banko.composeapp.generated.resources.expense_tag_delete_title
 import banko.composeapp.generated.resources.expense_tag_delete_yes
-import com.banko.app.api.dto.bankoApi.ExpenseTag
+import com.banko.app.ui.models.ExpenseTag
 import org.jetbrains.compose.resources.stringResource
 
 @Composable

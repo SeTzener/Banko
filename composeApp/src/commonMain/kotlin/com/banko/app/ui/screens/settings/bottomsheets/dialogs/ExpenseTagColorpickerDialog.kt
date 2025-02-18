@@ -18,7 +18,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import banko.composeapp.generated.resources.Res
 import banko.composeapp.generated.resources.expense_tag_colorpicker_button_cancel
@@ -30,7 +30,7 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun ExpenseTagColorpickerDialog(
     showColorPicker: MutableState<Boolean>,
-    editedColor: MutableState<Long>
+    editedColor: MutableState<Color>
 ) {
     AlertDialog(
         onDismissRequest = { showColorPicker.value = false },
@@ -67,7 +67,7 @@ fun ExpenseTagColorpickerDialog(
                             .background(color)
                             .padding(50.dp)
                             .clickable {
-                                editedColor.value = color.toArgb().toLong()
+                                editedColor.value = color
                                 showColorPicker.value = false
                             }
                     )

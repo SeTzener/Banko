@@ -1,9 +1,11 @@
 package com.banko.app.ui.screens.settings
 
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.banko.app.api.dto.bankoApi.ExpenseTag
 import com.banko.app.api.repositories.ExpenseTagRepository
+import com.banko.app.ui.models.ExpenseTag
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -30,9 +32,9 @@ class SettingsScreenViewModel: ViewModel() {
         }
     }
 
-    fun createExpenseTag(name: String, color: Long) {
+    fun createExpenseTag(name: String, color: Color) {
         viewModelScope.launch {
-            val result = repository.createExpenseTag(name, color)
+            val result = repository.createExpenseTag(name, color.toArgb().toLong())
             if (result != null) {
                 _screenState.update { it.copy(expenseTags = it.expenseTags + result) }
             }

@@ -1,5 +1,6 @@
 package com.banko.app.api.dto.bankoApi
 
+import androidx.compose.ui.graphics.Color
 import kotlinx.serialization.Serializable
 
 @Serializable
