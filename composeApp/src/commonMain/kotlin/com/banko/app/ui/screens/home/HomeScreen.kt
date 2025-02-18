@@ -41,6 +41,7 @@ import banko.composeapp.generated.resources.account_balance
 import banko.composeapp.generated.resources.app_name
 import banko.composeapp.generated.resources.currency_nok
 import banko.composeapp.generated.resources.daily_budget
+import banko.composeapp.generated.resources.details
 import banko.composeapp.generated.resources.monthly_budget
 import banko.composeapp.generated.resources.monthly_income
 import banko.composeapp.generated.resources.payments
@@ -196,7 +197,7 @@ fun SwipableTransactionRow(transaction: Transaction, onDetailsClick: () -> Unit)
                 .width(85.dp)
                 .height(32.dp)
         ) {
-            Text(text = "Details", color = MaterialTheme.colorScheme.onPrimary)
+            Text(text = stringResource(Res.string.details), color = MaterialTheme.colorScheme.onPrimary)
         }
 
         // Main Transaction Row
