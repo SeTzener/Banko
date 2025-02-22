@@ -4,12 +4,14 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
 
 plugins {
-    alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidApplication)
-    alias(libs.plugins.composeMultiplatform)
-    alias(libs.plugins.composeCompiler)
-    alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.buildKonfig)
+    alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.composeMultiplatform)
+    alias(libs.plugins.kotlinMultiplatform)
+    alias(libs.plugins.kotlinSerialization)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.room)
 }
 
 kotlin {
@@ -69,6 +71,8 @@ kotlin {
             implementation(libs.kotlinx.datetime)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.serialization.core)
+            implementation(libs.room.runtime)
+            implementation(libs.sqlite.bundle)
 
             api(libs.datastore)
             api(libs.datastore.preferences)
@@ -108,9 +112,16 @@ android {
     }
 }
 
+room {
+    schemaDirectory("$projectDir/schemas")
+}
 dependencies {
     implementation(libs.androidx.compose.material.core)
     debugImplementation(compose.uiTooling)
+
+    // Room target platform
+    add("kspIosSimulatorArm64", libs.room.compiler)
+    ksp(libs.room.compiler)
 }
 
 val env = Properties().apply {
