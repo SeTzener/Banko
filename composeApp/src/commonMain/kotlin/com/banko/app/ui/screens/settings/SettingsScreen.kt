@@ -27,11 +27,13 @@ import banko.composeapp.generated.resources.settings
 import com.banko.app.ui.components.SettingsCard
 import com.banko.app.ui.screens.settings.bottomsheets.ExpenseTagsBottomSheetContent
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.annotation.KoinExperimentalAPI
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, KoinExperimentalAPI::class)
 @Composable
 fun SettingsScreen(component: SettingsComponent) {
-    val viewModel = component.viewModel
+    val viewModel = koinViewModel<SettingsScreenViewModel>()
     val screenState by viewModel.screenState.collectAsState()
     // Bottom sheet
     var currentBottomSheet by remember { mutableStateOf(BottomSheetType.NONE) }

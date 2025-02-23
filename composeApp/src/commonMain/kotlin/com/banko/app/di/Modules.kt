@@ -3,6 +3,12 @@ package com.banko.app.di
 import com.banko.app.api.services.NordigenTokenProvider
 import com.banko.app.api.services.OauthNordigenApi
 import com.banko.app.api.services.TokenInterceptor
+import com.banko.app.database.BankoDatabase
+import com.banko.app.database.repository.TransactionsRepository
+import com.banko.app.database.CreateDatabase
+import com.banko.app.database.repository.ExpenseTagRepository
+import com.banko.app.ui.screens.settings.SettingsScreenViewModel
+import org.koin.compose.viewmodel.dsl.viewModelOf
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
@@ -14,6 +20,12 @@ val  sharedModule = module {
     single { TokenInterceptor.Feature(get()) }
     singleOf(::NordigenTokenProvider)
     singleOf(::OauthNordigenApi)
+    single<BankoDatabase> { CreateDatabase(get()).getDatabase() }
+    singleOf(::TransactionsRepository)
+    singleOf(::ExpenseTagRepository)
+
+    // View models
+    viewModelOf(::SettingsScreenViewModel)
 }
 
 //    Example 1
