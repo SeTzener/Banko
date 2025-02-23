@@ -4,9 +4,8 @@ import com.banko.app.database.BankoDatabase
 import com.banko.app.database.Entities.Transaction
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
-import kotlinx.coroutines.flow.Flow
 
-class BankoDatabaseRepository(
+class TransactionsRepository(
     private val bankoDatabase: BankoDatabase,
 
     ){
@@ -19,7 +18,4 @@ class BankoDatabaseRepository(
     suspend fun deleteTransaction(transaction: Transaction) {
         bankoDatabase.bankoDao().deleteTransaction(transaction)
     }
-
-    fun getAllTransactions(): Flow<List<Transaction?>> =
-        bankoDatabase.bankoDao().getAllTransactions()
 }
