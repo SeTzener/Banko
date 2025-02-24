@@ -1,12 +1,19 @@
 package com.banko.app.di
 
+import com.banko.app.ApiExpenseTagRepository
+import com.banko.app.ApiTransasctionRepository
+import com.banko.app.DatabaseTransactionRepository
+import com.banko.app.api.services.BankoApiService
 import com.banko.app.api.services.NordigenTokenProvider
 import com.banko.app.api.services.OauthNordigenApi
 import com.banko.app.api.services.TokenInterceptor
 import com.banko.app.database.BankoDatabase
-import com.banko.app.database.repository.TransactionsRepository
 import com.banko.app.database.CreateDatabase
 import com.banko.app.database.repository.ExpenseTagRepository
+import com.banko.app.domain.AssignExpenseTagToTransactionUseCase
+import com.banko.app.domain.GetAllExpenseTagUseCase
+import com.banko.app.ui.screens.details.DetailsScreenViewModel
+import com.banko.app.ui.screens.home.HomeScreenViewModel
 import com.banko.app.ui.screens.settings.SettingsScreenViewModel
 import org.koin.compose.viewmodel.dsl.viewModelOf
 import org.koin.core.module.Module
@@ -21,11 +28,20 @@ val  sharedModule = module {
     singleOf(::NordigenTokenProvider)
     singleOf(::OauthNordigenApi)
     single<BankoDatabase> { CreateDatabase(get()).getDatabase() }
-    singleOf(::TransactionsRepository)
     singleOf(::ExpenseTagRepository)
+    singleOf(::BankoApiService)
+    singleOf(::DatabaseTransactionRepository)
+    singleOf(::ApiTransasctionRepository)
+    singleOf(::ApiExpenseTagRepository)
 
-    // View models
+    // Use Cases
+    singleOf(::AssignExpenseTagToTransactionUseCase)
+    singleOf(::GetAllExpenseTagUseCase)
+
+    // View Models
     viewModelOf(::SettingsScreenViewModel)
+    viewModelOf(::HomeScreenViewModel)
+    viewModelOf(::DetailsScreenViewModel)
 }
 
 //    Example 1

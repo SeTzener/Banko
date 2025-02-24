@@ -8,7 +8,7 @@ import com.banko.app.ui.models.toDto
 import kotlin.uuid.ExperimentalUuidApi
 
 class ExpenseTagRepository(
-    private val apiService: BankoApiService = BankoApiService()
+    private val apiService: BankoApiService
 ) {
     suspend fun getExpenseTags(): List<ExpenseTag> {
         val result = apiService.getExpenseTags()

@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 
-typealias IconAlign = TextAlign
+private typealias IconAlign = TextAlign
 
 @Composable
 fun TextWithIcon(
