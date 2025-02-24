@@ -47,7 +47,7 @@ fun SettingsScreen(component: SettingsComponent) {
             when (currentBottomSheet) {
                 BottomSheetType.EXPENSE_TAGS -> ExpenseTagsBottomSheetContent(
                     screenState = screenState,
-                    loadNewTags = { viewModel.getExpenseTags() },
+                    loadNewTags = { viewModel.loadExpenseTags() },
                     onTagUpdate = { viewModel.updateExpenseTag(it) },
                     onTagCreate = { name, color -> viewModel.createExpenseTag(name, color) },
                     onTagDelete = { viewModel.deleteExpenseTag(it) }
