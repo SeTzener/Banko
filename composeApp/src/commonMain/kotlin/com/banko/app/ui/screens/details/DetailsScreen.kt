@@ -57,13 +57,16 @@ import banko.composeapp.generated.resources.ic_tag_filled
 import com.banko.app.ui.models.ExpenseTag
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.annotation.KoinExperimentalAPI
 
+@OptIn(KoinExperimentalAPI::class)
 @Composable
 fun DetailsScreen(component: DetailsComponent) {
     var transaction by remember { mutableStateOf(component.transaction) }
     var oldTag by remember { mutableStateOf(transaction.expenseTag?.id) }
-    val viewModel = component.viewModel
-    val screenState by component.viewModel.screenState.collectAsState()
+    val viewModel = koinViewModel<DetailsScreenViewModel>()
+    val screenState by viewModel.screenState.collectAsState()
 
     val isEditing by remember { mutableStateOf(false) }
     val expanded = remember { mutableStateOf(false) }

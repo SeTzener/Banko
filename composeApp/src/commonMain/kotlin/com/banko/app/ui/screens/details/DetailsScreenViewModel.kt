@@ -2,28 +2,40 @@ package com.banko.app.ui.screens.details
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.banko.app.api.repositories.ExpenseTagRepository
-import com.banko.app.ui.models.ExpenseTag
+import com.banko.app.ApiExpenseTagRepository
+import com.banko.app.DatabaseExpenseTagRepository
+import com.banko.app.database.Entities.toModelItem
+import com.banko.app.domain.AssignExpenseTagToTransactionUseCase
+import com.banko.app.domain.GetAllExpenseTagUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class DetailsScreenViewModel : ViewModel() {
-    private val repository = ExpenseTagRepository()
+class DetailsScreenViewModel(
+    private val apiRepository: ApiExpenseTagRepository,
+    private val updateTransactionUseCase: AssignExpenseTagToTransactionUseCase,
+    private val getExpenseTags: GetAllExpenseTagUseCase,
+) : ViewModel() {
     private val _screenState = MutableStateFlow(DetailScreenState())
     val screenState: StateFlow<DetailScreenState> = _screenState
 
+    init {
+        getExpenseTags()
+    }
+
     fun getExpenseTags() {
         viewModelScope.launch {
-            val result = repository.getExpenseTags()
-            _screenState.update { it.copy(expenseTags = result) }
+            getExpenseTags.invoke().collect { result ->
+                _screenState.update { it.copy(expenseTags = result.mapNotNull { it?.toModelItem() }) }
+            }
         }
     }
 
     fun assignExpenseTag(id: String, expenseTagId: String?) {
         viewModelScope.launch {
-            repository.assignExpenseTag(id, expenseTagId)
+            apiRepository.assignExpenseTag(id, expenseTagId)
+            updateTransactionUseCase.invoke(transactionId = id, expenseTagId =  expenseTagId)
         }
     }
 }

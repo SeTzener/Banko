@@ -8,7 +8,6 @@ class DetailsComponent(
     componentContext: ComponentContext,
     private val onGoBack: () -> Unit
 ) : ComponentContext by componentContext {
-    val viewModel = DetailsScreenViewModel()
 
     fun goBack() {
         onGoBack()
