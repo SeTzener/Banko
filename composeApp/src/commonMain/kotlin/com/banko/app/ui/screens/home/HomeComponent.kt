@@ -7,8 +7,6 @@ class HomeComponent(
     componentContext: ComponentContext,
     private val onNavigateToDetails: (Transaction) -> Unit
 ): ComponentContext by componentContext {
-    val viewModel = HomeScreenViewModel()
-
     fun onEvent(event: HomeEvent, transaction: Transaction){
         when(event) {
             HomeEvent.ButtonClick -> onNavigateToDetails(transaction)

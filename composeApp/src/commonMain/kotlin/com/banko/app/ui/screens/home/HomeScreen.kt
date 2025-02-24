@@ -52,15 +52,17 @@ import com.banko.app.ui.components.TextWithIcon
 import com.banko.app.ui.models.Transaction
 import com.banko.app.ui.models.categories
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.annotation.KoinExperimentalAPI
 import kotlin.random.Random
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, KoinExperimentalAPI::class)
 @Composable
 fun HomeScreen(component: HomeComponent) {
-    val viewModel = component.viewModel
+    val viewModel = koinViewModel<HomeScreenViewModel>()
     val screenState by viewModel.screenState.collectAsState()
     LaunchedEffect(Unit) {
-        viewModel.loadData()
+        viewModel.loadTransactions()
     }
     Column(
         Modifier.fillMaxWidth(),

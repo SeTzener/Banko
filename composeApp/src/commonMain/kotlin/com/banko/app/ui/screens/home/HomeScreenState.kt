@@ -1,8 +1,8 @@
 package com.banko.app.ui.screens.home
 
-import com.banko.app.ui.models.Transaction
+import com.banko.app.ModelTransaction
 
 data class HomeScreenState(
-    val transactions: List<Transaction> = emptyList(),
+    val transactions: List<ModelTransaction> = emptyList(),
     val isLoading: Boolean = false
 )

@@ -1,46 +1,48 @@
 package com.banko.app.ui.screens.home
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.banko.app.ApiTransasctionRepository
+import com.banko.app.DatabaseTransactionRepository
 import com.banko.app.api.dto.bankoApi.toModelItem
-import com.banko.app.api.services.BankoApiService
+import com.banko.app.database.Entities.toModelItem
 import kotlinx.coroutines.launch
-import com.banko.app.api.utils.Result
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 
-class HomeScreenViewModel : ViewModel() {
-    private val apiService = BankoApiService()
+class HomeScreenViewModel(
+    private val dbRepository: DatabaseTransactionRepository,
+    private val apiRepository: ApiTransasctionRepository
+) : ViewModel() {
     private val _screenState = MutableStateFlow(HomeScreenState())
     val screenState: StateFlow<HomeScreenState> = _screenState
 
-    // TODO() Add a refresh logic
-    fun loadData() {
-        if (screenState.value.isLoading || screenState.value.transactions.isNotEmpty()) return
+    init {
+        loadData()
+    }
 
-        _screenState.update { it.copy(isLoading = true) }
+    fun loadData() {
         viewModelScope.launch {
             getTransactions()
         }
     }
 
     private suspend fun getTransactions() {
-        try {
-            val result = apiService.getTransactions()
-            if (result is Result.Success) {
-                val transactionList = result.data.transactions.map { it.toModelItem() }
-                _screenState.update { it.copy(transactions = transactionList) }
-            } else if (result is Result.Error) {
-                throw Exception(result.error.name)
+        dbRepository.getAllTransactions().collect { transactions ->
+            val observedTransactions = transactions.mapNotNull { it?.toModelItem() }
+            _screenState.update {
+                it.copy(transactions = observedTransactions)
             }
-        } catch (e: Exception) {
-            println("Error fetching data: ${e.message}")
-        } finally {
-            _screenState.update { it.copy(isLoading = false) }
+        }
+    }
+
+    fun loadTransactions() {
+        viewModelScope.launch {
+            val result = apiRepository.getTransactions()
+            result.transactions.forEach {
+                dbRepository.upsertTransaction(it.toModelItem())
+            }
         }
     }
 }
