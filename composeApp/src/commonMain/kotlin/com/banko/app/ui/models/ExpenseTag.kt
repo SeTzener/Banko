@@ -2,11 +2,10 @@ package com.banko.app.ui.models
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import com.banko.app.DaoExpenseTag
+import com.banko.app.DtoExpenseTag
 import com.banko.app.api.utils.jsonAdapters.ColorSerializer
 import kotlinx.serialization.Serializable
-
-typealias DtoExpenseTag = com.banko.app.api.dto.bankoApi.ExpenseTag
-typealias DaoExpenseTag = com.banko.app.database.Entities.ExpenseTag
 
 @Serializable
 data class ExpenseTag (

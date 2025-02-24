@@ -1,5 +1,9 @@
 package com.banko.app.ui.models
 
+import com.banko.app.DaoCreditorAccount
+import com.banko.app.DaoDebtorAccount
+import com.banko.app.DaoTransaction
+import com.banko.app.database.Entities.FullTransaction
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.Serializable
 
@@ -34,4 +38,34 @@ data class DebtorAccount(
     val id: String,
     val iban: String,
     val bban: String
+)
+
+fun Transaction.toDao() = DaoTransaction(
+    id = id,
+    bookingDate = bookingDate.toString(),
+    valueDate = valueDate.toString(),
+    amount = amount.toString(),
+    currency = currency,
+    debtorAccountId = debtorAccount?.id,
+    remittanceInformationUnstructured = remittanceInformationUnstructured,
+    remittanceInformationUnstructuredArray = remittanceInformationUnstructuredArray,
+    bankTransactionCode = bankTransactionCode,
+    internalTransactionId = internalTransactionId,
+    creditorName = creditorName,
+    creditorAccountId = creditorAccount?.id,
+    debtorName = debtorName,
+    remittanceInformationStructuredArray = remittanceInformationStructuredArray,
+    expenseTagId = expenseTag?.id
+)
+
+fun DebtorAccount.toDao() = DaoDebtorAccount(
+    id = id,
+    iban = iban,
+    bban = bban
+)
+
+fun CreditorAccount.toDao() = DaoCreditorAccount(
+    id = id,
+    iban = iban,
+    bban = bban
 )

@@ -1,14 +1,12 @@
 package com.banko.app.api.dto.bankoApi
 
 import androidx.compose.ui.graphics.Color
+import com.banko.app.ModelCreditorAccount
+import com.banko.app.ModelDebtorAccount
+import com.banko.app.ModelExpenseTag
+import com.banko.app.ModelTransaction
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.Serializable
-
-
-typealias ModelTransaction = com.banko.app.ui.models.Transaction
-typealias ModelDebtorAccount = com.banko.app.ui.models.DebtorAccount
-typealias ModelCreditorAccount = com.banko.app.ui.models.CreditorAccount
-typealias ModelExpenseTag = com.banko.app.ui.models.ExpenseTag
 
 @Serializable
 data class Transactions(
