@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
@@ -30,6 +31,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -51,6 +53,8 @@ import com.banko.app.ui.components.ExpenseTag
 import com.banko.app.ui.components.TextWithIcon
 import com.banko.app.ui.models.Transaction
 import com.banko.app.ui.models.categories
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.annotation.KoinExperimentalAPI
@@ -61,9 +65,29 @@ import kotlin.random.Random
 fun HomeScreen(component: HomeComponent) {
     val viewModel = koinViewModel<HomeScreenViewModel>()
     val screenState by viewModel.screenState.collectAsState()
+    val listState = rememberLazyListState()
     LaunchedEffect(Unit) {
-        viewModel.loadTransactions()
+        viewModel.loadNewTransactions()
     }
+
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
+            .distinctUntilChanged()
+            .collectLatest { lastVisibleIndex ->
+                if (lastVisibleIndex != null && // Check for null
+                    // Ensure it doesn't trigger before the list is loaded
+                    lastVisibleIndex >= (screenState.transactionsPageSize * screenState.transactionsPageNumber) &&
+                    // Ensure it doesn't trigger when there are no more transactions to load
+                    lastVisibleIndex < screenState.apiTransactionsCount
+                ) {
+                    viewModel.loadMoreTransactions(
+                        pageNumber = screenState.transactionsPageNumber + 1,
+                        pageSize = screenState.transactionsPageSize
+                    )
+                }
+            }
+    }
+
     Column(
         Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -157,7 +181,9 @@ fun HomeScreen(component: HomeComponent) {
                 )
             }
         }
-        LazyColumn {
+        LazyColumn(
+            state = listState
+        ) {
             groupedTransactions.forEach { (date, transactionsForDate) ->
                 stickyHeader {
                     Text(
@@ -177,8 +203,19 @@ fun HomeScreen(component: HomeComponent) {
                     )
                 }
             }
-        }
+            if (screenState.isLoading) {
+                item {
+                    CircularProgressIndicator(
+                        modifier = Modifier.fillMaxWidth()
+                            .align(Alignment.CenterHorizontally)
+                            .size(15.dp),
+                        strokeWidth = 5.dp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
 
+                }
+            }
+        }
     }
 }
 
@@ -199,7 +236,10 @@ fun SwipableTransactionRow(transaction: Transaction, onDetailsClick: () -> Unit)
                 .width(85.dp)
                 .height(32.dp)
         ) {
-            Text(text = stringResource(Res.string.details), color = MaterialTheme.colorScheme.onPrimary)
+            Text(
+                text = stringResource(Res.string.details),
+                color = MaterialTheme.colorScheme.onPrimary
+            )
         }
 
         // Main Transaction Row
@@ -255,7 +295,7 @@ fun SwipableTransactionRow(transaction: Transaction, onDetailsClick: () -> Unit)
                     .weight(1f)
                     .align(Alignment.CenterVertically)
             ) {
-               ExpenseTag(transaction.expenseTag)
+                ExpenseTag(transaction.expenseTag)
             }
         }
     }

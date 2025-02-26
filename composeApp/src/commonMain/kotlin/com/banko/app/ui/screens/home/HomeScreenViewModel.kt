@@ -22,24 +22,62 @@ class HomeScreenViewModel(
         loadData()
     }
 
-    fun loadData() {
-        viewModelScope.launch {
-            getTransactions()
-        }
+    private fun loadData() {
+        getDbTransactionsCount()
+        observeTransactions(screenState.value.transactionsPageNumber * screenState.value.transactionsPageSize)
     }
 
-    private suspend fun getTransactions() {
-        dbRepository.getAllTransactions().collect { transactions ->
-            val observedTransactions = transactions.mapNotNull { it?.toModelItem() }
-            _screenState.update {
-                it.copy(transactions = observedTransactions)
+    private fun observeTransactions(limit: Int) {
+        viewModelScope.launch {
+            dbRepository.getAllTransactions(limit).collect { transactions ->
+                val observedTransactions = transactions.mapNotNull { it?.toModelItem() }
+                _screenState.update {
+                    it.copy(transactions = observedTransactions)
+                }
             }
         }
     }
 
-    fun loadTransactions() {
+    private fun getDbTransactionsCount() {
         viewModelScope.launch {
-            val result = apiRepository.getTransactions()
+            val count = dbRepository.getTransactionCount()
+            _screenState.update { it.copy(dbTransactionsCount = count) }
+        }
+    }
+
+    fun loadMoreTransactions(pageNumber: Int, pageSize: Int) {
+        if (screenState.value.isLoading) return // Prevent multiple calls
+        if (screenState.value.apiTransactionsCount <= pageNumber * pageSize && screenState.value.apiTransactionsCount != 0L) return
+
+        _screenState.update { it.copy(isLoading = true) }
+
+        try {
+
+            if (screenState.value.dbTransactionsCount < pageNumber * pageSize) {
+                loadNewTransactions(pageNumber, pageSize)
+                getDbTransactionsCount()
+                observeTransactions(limit = pageNumber * pageSize)
+            } else {
+                observeTransactions(limit = pageNumber * pageSize)
+            }
+
+            _screenState.update { it.copy(transactionsPageNumber = pageNumber) }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        } finally {
+            _screenState.update { it.copy(isLoading = false) }
+        }
+    }
+
+
+    fun loadNewTransactions(
+        pageNumber: Int = screenState.value.transactionsPageNumber,
+        pageSize: Int = screenState.value.transactionsPageSize
+    ) {
+        viewModelScope.launch {
+            val result =
+                apiRepository.getTransactions(pageNumber = pageNumber, pageSize = pageSize)
+            _screenState.update { it.copy(apiTransactionsCount = result.totalCount) }
             result.transactions.forEach {
                 dbRepository.upsertTransaction(it.toModelItem())
             }
