@@ -47,8 +47,8 @@ class TransactionsRepository(
         dao.upsertTransaction(transaction)
     }
 
-    suspend fun getAllTransactions(): Flow<List<FullTransaction?>> = flow {
-        dao.getAllTransactions().collect { transactions ->
+    suspend fun getAllTransactions(limit: Int): Flow<List<FullTransaction?>> = flow {
+        dao.getAllTransactions(limit).collect { transactions ->
             val fullTransactions = transactions.map { transaction ->
                 transaction ?: return@map null
                 FullTransaction(
@@ -77,4 +77,6 @@ class TransactionsRepository(
     suspend fun findRawTransactionById(transactionId: String): DaoTransaction? {
         return dao.getRawTransactionById(transactionId)
     }
+
+    suspend fun getTransactionCount(): Long = dao.getTransactionCount()
 }

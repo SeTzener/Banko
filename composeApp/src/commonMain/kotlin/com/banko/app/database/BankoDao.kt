@@ -15,11 +15,14 @@ import kotlinx.coroutines.flow.Flow
 interface BankoDao {
 
     // Transactions
-    @Query("SELECT * FROM transactions")
-    fun getAllTransactions(): Flow<List<FullTransaction?>>
+    @Query("SELECT * FROM transactions LIMIT :limit")
+    fun getAllTransactions(limit: Int): Flow<List<FullTransaction?>>
 
     @Query("SELECT * FROM transactions WHERE id = :transactionId")
     suspend fun getRawTransactionById(transactionId: String): DaoTransaction?
+
+    @Query("SELECT COUNT(*) FROM transactions")
+    suspend fun getTransactionCount(): Long
 
     @Upsert
     suspend fun upsertTransaction(transaction: DaoTransaction)
