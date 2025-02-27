@@ -66,8 +66,13 @@ fun HomeScreen(component: HomeComponent) {
     val viewModel = koinViewModel<HomeScreenViewModel>()
     val screenState by viewModel.screenState.collectAsState()
     val listState = rememberLazyListState()
-    LaunchedEffect(Unit) {
-        viewModel.loadNewTransactions()
+
+    viewModel.observeTransactions(pageNumber = screenState.transactionsPageNumber, pageSize = screenState.transactionsPageSize)
+    LaunchedEffect(key1 = "loadNewTransactions") {
+        viewModel.loadNewTransactions(
+            pageNumber = screenState.transactionsPageNumber,
+            pageSize = screenState.transactionsPageSize
+        )
     }
 
     LaunchedEffect(listState) {
@@ -80,7 +85,7 @@ fun HomeScreen(component: HomeComponent) {
                     // Ensure it doesn't trigger when there are no more transactions to load
                     lastVisibleIndex < screenState.apiTransactionsCount
                 ) {
-                    viewModel.loadMoreTransactions(
+                    viewModel.loadNewTransactions(
                         pageNumber = screenState.transactionsPageNumber + 1,
                         pageSize = screenState.transactionsPageSize
                     )
@@ -196,7 +201,10 @@ fun HomeScreen(component: HomeComponent) {
                     )
                 }
 
-                items(transactionsForDate) { transaction ->
+                items(
+                    items = transactionsForDate,
+                    key = { transaction -> transaction.id }
+                ) { transaction ->
                     SwipableTransactionRow(
                         transaction = transaction,
                         onDetailsClick = { component.onEvent(HomeEvent.ButtonClick, transaction) }
@@ -205,14 +213,16 @@ fun HomeScreen(component: HomeComponent) {
             }
             if (screenState.isLoading) {
                 item {
-                    CircularProgressIndicator(
-                        modifier = Modifier.fillMaxWidth()
-                            .align(Alignment.CenterHorizontally)
-                            .size(15.dp),
-                        strokeWidth = 5.dp,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(15.dp),
+                            strokeWidth = 5.dp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
         }
