@@ -47,34 +47,32 @@ class TransactionsRepository(
         dao.upsertTransaction(transaction)
     }
 
-    suspend fun getAllTransactions(): Flow<List<FullTransaction?>> = flow {
-        dao.getAllTransactions().collect { transactions ->
+    suspend fun getAllTransactions(pageNumber: Int, pageSize: Int): Flow<List<FullTransaction>> = flow {
+        val offset = (pageNumber - 1) * pageSize
+        val limit = pageSize
+
+        dao.getAllTransactions(offset = offset, limit = limit).collect { transactions ->
             val fullTransactions = transactions.map { transaction ->
-                transaction ?: return@map null
                 FullTransaction(
                     transaction = transaction.transaction,
                     creditorAccount = transaction.transaction.creditorAccountId?.let {
-                        dao.getCreditorAccountById(
-                            it
-                        )
+                        dao.getCreditorAccountById(it)
                     },
                     debtorAccount = transaction.transaction.debtorAccountId?.let {
-                        dao.getDebtorAccountById(
-                            it
-                        )
+                        dao.getDebtorAccountById(it)
                     },
                     expenseTag = transaction.transaction.expenseTagId?.let {
-                        dao.getExpenseTagById(
-                            it
-                        )
+                        dao.getExpenseTagById(it)
                     }
                 )
             }
-            emit(fullTransactions) // Emit the result
+            emit(fullTransactions)
         }
     }
 
     suspend fun findRawTransactionById(transactionId: String): DaoTransaction? {
         return dao.getRawTransactionById(transactionId)
     }
+
+    suspend fun getTransactionCount(): Long = dao.getTransactionCount()
 }

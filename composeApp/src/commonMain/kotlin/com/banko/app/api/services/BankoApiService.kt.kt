@@ -14,10 +14,12 @@ import com.banko.app.api.utils.Result
 import com.banko.app.api.utils.deleteSafe
 import com.banko.app.api.utils.postSafe
 import com.banko.app.api.utils.putSafe
+import io.ktor.client.request.parameter
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.http.header.AcceptEncoding
+import kotlinx.datetime.LocalDate
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -29,9 +31,22 @@ class BankoApiService : KoinComponent {
         )
     }
 
-    suspend fun getTransactions(): Result<Transactions, NetworkError> {
+    suspend fun getTransactions(
+        pageNumber: Int,
+        pageSize: Int,
+        fromDate: LocalDate? = null,
+        toDate: LocalDate? = null
+    ): Result<Transactions, NetworkError> {
         return client.getSafe<Transactions>("$baseUrl/transactions/") {
             header("Content-Type", "application/json")
+            parameter("pageNumber", pageNumber)
+            parameter("pageSize", pageSize)
+            if (fromDate != null) {
+                parameter("fromDate", fromDate.toString())
+            }
+            if (toDate != null) {
+                parameter("toDate", toDate.toString())
+            }
         }
     }
 
@@ -57,7 +72,10 @@ class BankoApiService : KoinComponent {
     }
 
     @OptIn(ExperimentalUuidApi::class)
-    suspend fun createExpenseTag(name: String, color: Long): Result<UpsertExpenseTag, NetworkError> {
+    suspend fun createExpenseTag(
+        name: String,
+        color: Long
+    ): Result<UpsertExpenseTag, NetworkError> {
         val tagId = Uuid.random().toString()
         return client.postSafe("$baseUrl/settings/expense-tag") {
             contentType(ContentType.Application.Json)

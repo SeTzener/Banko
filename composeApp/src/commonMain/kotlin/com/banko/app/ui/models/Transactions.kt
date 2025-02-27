@@ -3,7 +3,6 @@ package com.banko.app.ui.models
 import com.banko.app.DaoCreditorAccount
 import com.banko.app.DaoDebtorAccount
 import com.banko.app.DaoTransaction
-import com.banko.app.database.Entities.FullTransaction
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.Serializable
 

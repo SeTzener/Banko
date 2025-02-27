@@ -7,8 +7,9 @@ import com.banko.app.api.utils.Result
 class TransactionsRepository(
     private val apiService: BankoApiService
 ) {
-    suspend fun getTransactions(): Transactions {
-        val result = apiService.getTransactions()
+    // TODO(): change this to return a model item
+    suspend fun getTransactions(pageNumber: Int, pageSize: Int): Transactions {
+        val result = apiService.getTransactions(pageNumber = pageNumber, pageSize = pageSize)
         if (result is Result.Error) {
             println("Error: ${result.error}")
             return Transactions(emptyList(), 0, 0, 0)

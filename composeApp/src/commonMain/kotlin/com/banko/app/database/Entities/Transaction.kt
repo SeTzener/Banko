@@ -11,19 +11,19 @@ import androidx.room.PrimaryKey
             entity = ExpenseTag::class,
             parentColumns = ["id"],
             childColumns = ["expenseTagId"],
-            onDelete = ForeignKey.CASCADE
+            onDelete = ForeignKey.SET_NULL
         ),
         ForeignKey(
             entity = CreditorAccount::class,
             parentColumns = ["id"],
             childColumns = ["creditorAccountId"],
-            onDelete = ForeignKey.CASCADE
+            onDelete = ForeignKey.SET_NULL
         ),
         ForeignKey(
             entity = DebtorAccount::class,
             parentColumns = ["id"],
             childColumns = ["debtorAccountId"],
-            onDelete = ForeignKey.CASCADE
+            onDelete = ForeignKey.SET_NULL
         )
     ]
 )
