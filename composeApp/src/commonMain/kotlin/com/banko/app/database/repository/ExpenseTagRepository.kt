@@ -3,6 +3,7 @@ package com.banko.app.database.repository
 import com.banko.app.database.BankoDatabase
 import com.banko.app.database.Entities.ExpenseTag
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
 class ExpenseTagRepository(
     private val bankoDatabase: BankoDatabase,
@@ -16,12 +17,14 @@ class ExpenseTagRepository(
     }
 
     suspend fun deleteExpenseTag(expenseTagId: String) {
-        val tag = dao.getExpenseTagById(expenseTagId) ?: return
-        dao.deleteExpenseTag(expenseTag = tag)
+        dao.getExpenseTagById(expenseTagId).collect { expenseTag ->
+            expenseTag ?: return@collect
+            dao.deleteExpenseTag(expenseTag = expenseTag)
+        }
     }
 
-    suspend fun findExpenseTagById(expenseTagId: String?): ExpenseTag? {
-        expenseTagId ?: return null
+    suspend fun findExpenseTagById(expenseTagId: String?): Flow<ExpenseTag?> {
+        expenseTagId ?: return flowOf(null)
         return dao.getExpenseTagById(expenseTagId)
     }
 }

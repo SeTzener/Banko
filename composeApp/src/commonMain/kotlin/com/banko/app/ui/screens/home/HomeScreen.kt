@@ -67,28 +67,17 @@ fun HomeScreen(component: HomeComponent) {
     val screenState by viewModel.screenState.collectAsState()
     val listState = rememberLazyListState()
 
-    viewModel.observeTransactions(pageNumber = screenState.transactionsPageNumber, pageSize = screenState.transactionsPageSize)
-    LaunchedEffect(key1 = "loadNewTransactions") {
-        viewModel.loadNewTransactions(
-            pageNumber = screenState.transactionsPageNumber,
-            pageSize = screenState.transactionsPageSize
-        )
-    }
-
     LaunchedEffect(listState) {
         snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
             .distinctUntilChanged()
             .collectLatest { lastVisibleIndex ->
                 if (lastVisibleIndex != null && // Check for null
                     // Ensure it doesn't trigger before the list is loaded
-                    lastVisibleIndex >= (screenState.transactionsPageSize * screenState.transactionsPageNumber) &&
+                    lastVisibleIndex >= viewModel.getTransactionsToLoadCount() &&
                     // Ensure it doesn't trigger when there are no more transactions to load
                     lastVisibleIndex < screenState.apiTransactionsCount
                 ) {
-                    viewModel.loadNewTransactions(
-                        pageNumber = screenState.transactionsPageNumber + 1,
-                        pageSize = screenState.transactionsPageSize
-                    )
+                    viewModel.loadNewTransactions()
                 }
             }
     }
