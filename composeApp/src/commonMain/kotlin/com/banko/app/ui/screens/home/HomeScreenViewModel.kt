@@ -6,7 +6,6 @@ import com.banko.app.ApiTransactionRepository
 import com.banko.app.DatabaseTransactionRepository
 import com.banko.app.api.dto.bankoApi.Transactions
 import com.banko.app.api.dto.bankoApi.toModelItem
-import com.banko.app.database.Entities.toModelItem
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,17 +26,20 @@ class HomeScreenViewModel(
     private val pageNumber = MutableStateFlow(0)
 
     init {
-        loadNewTransactions()
         viewModelScope.launch {
             pageNumber
                 .flatMapLatest { pageNumber ->
-                    observeTransactions(pageNumber)
+                    if (pageNumber != 0) {
+                        observeTransactions(pageNumber)
+                    } else {
+                        observeTransactions(1)
+                    }
                 }
                 .distinctUntilChanged()
                 .collect { transactions ->
                     _screenState.update { state ->
                         state.copy(
-                            transactions = transactions.map { it.toModelItem() },
+                            transactions = transactions,
                             isLoading = false,
                         )
                     }

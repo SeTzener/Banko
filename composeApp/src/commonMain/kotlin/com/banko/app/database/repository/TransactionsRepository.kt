@@ -6,18 +6,15 @@ import com.banko.app.DaoExpenseTag
 import com.banko.app.DaoTransaction
 import com.banko.app.ModelTransaction
 import com.banko.app.database.BankoDatabase
-import com.banko.app.database.Entities.FullTransaction
+import com.banko.app.database.Entities.toModelItem
 import com.banko.app.ui.models.toDao
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.mapLatest
-import kotlinx.coroutines.flow.onStart
+import kotlinx.datetime.LocalDateTime
 
 class TransactionsRepository(
     private val bankoDatabase: BankoDatabase,
@@ -53,7 +50,7 @@ class TransactionsRepository(
         dao.upsertTransaction(transaction)
     }
 
-    fun getAllTransactions(limit: Int): Flow<List<FullTransaction>> = flow {
+    fun getAllTransactions(limit: Int): Flow<List<ModelTransaction>> = flow {
         // Emit the transactions from the DAO
         val transactions = dao.getAllTransactions(limit = limit)
 
@@ -75,11 +72,22 @@ class TransactionsRepository(
 
                 // Combine them to create FullTransaction
                 combine(creditorFlow, debtorFlow, expenseTagFlow) { creditor, debtor, expenseTag ->
-                    FullTransaction(
-                        transaction = transaction.transaction,
-                        creditorAccount = creditor,
-                        debtorAccount = debtor,
-                        expenseTag = expenseTag
+                    ModelTransaction(
+                        id = transaction.transaction.id,
+                        bookingDate = LocalDateTime.parse(transaction.transaction.bookingDate),
+                        valueDate = LocalDateTime.parse(transaction.transaction.valueDate),
+                        amount = transaction.transaction.amount.toDouble(),
+                        currency = transaction.transaction.currency,
+                        creditorAccount = creditor?.toModelItem(),
+                        debtorAccount = debtor?.toModelItem(),
+                        expenseTag = expenseTag?.toModelItem(),
+                        remittanceInformationUnstructured = transaction.transaction.remittanceInformationUnstructured,
+                        bankTransactionCode = transaction.transaction.bankTransactionCode,
+                        internalTransactionId = transaction.transaction.internalTransactionId,
+                        creditorName = transaction.transaction.creditorName,
+                        debtorName = transaction.transaction.debtorName,
+                        remittanceInformationUnstructuredArray = transaction.transaction.remittanceInformationUnstructuredArray,
+                        remittanceInformationStructuredArray = transaction.transaction.remittanceInformationStructuredArray
                     )
                 }
             }

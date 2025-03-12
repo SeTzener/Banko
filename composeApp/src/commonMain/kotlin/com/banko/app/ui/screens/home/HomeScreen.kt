@@ -66,6 +66,12 @@ fun HomeScreen(component: HomeComponent) {
     val viewModel = koinViewModel<HomeScreenViewModel>()
     val screenState by viewModel.screenState.collectAsState()
     val listState = rememberLazyListState()
+    val firstLoad = remember { mutableStateOf(true) }
+
+    if (firstLoad.value) {
+        viewModel.loadNewTransactions()
+        firstLoad.value = false
+    }
 
     LaunchedEffect(listState) {
         snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
