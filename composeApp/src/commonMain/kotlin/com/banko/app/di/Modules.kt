@@ -1,7 +1,7 @@
 package com.banko.app.di
 
 import com.banko.app.ApiExpenseTagRepository
-import com.banko.app.ApiTransasctionRepository
+import com.banko.app.ApiTransactionRepository
 import com.banko.app.DatabaseTransactionRepository
 import com.banko.app.api.services.BankoApiService
 import com.banko.app.api.services.NordigenTokenProvider
@@ -31,7 +31,7 @@ val  sharedModule = module {
     singleOf(::ExpenseTagRepository)
     singleOf(::BankoApiService)
     singleOf(::DatabaseTransactionRepository)
-    singleOf(::ApiTransasctionRepository)
+    singleOf(::ApiTransactionRepository)
     singleOf(::ApiExpenseTagRepository)
 
     // Use Cases

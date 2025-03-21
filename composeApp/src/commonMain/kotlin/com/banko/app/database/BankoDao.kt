@@ -15,32 +15,45 @@ import kotlinx.coroutines.flow.Flow
 interface BankoDao {
 
     // Transactions
-    @Query("SELECT * FROM transactions")
-    fun getAllTransactions(): Flow<List<FullTransaction?>>
+    @Query(
+        """
+    SELECT transactions.*, creditor_account.*, debtor_account.*, expense_tag.*
+    FROM transactions
+    LEFT JOIN creditor_account ON transactions.creditorAccountId = creditor_account.id
+    LEFT JOIN debtor_account ON transactions.debtorAccountId = debtor_account.id
+    LEFT JOIN expense_tag ON transactions.expenseTagId = expense_tag.id
+    ORDER BY transactions.bookingDate DESC
+    LIMIT :limit
+"""
+    )
+    fun getAllTransactions(limit: Int): Flow<List<FullTransaction>>
 
     @Query("SELECT * FROM transactions WHERE id = :transactionId")
     suspend fun getRawTransactionById(transactionId: String): DaoTransaction?
+
+    @Query("SELECT COUNT(*) FROM transactions")
+    suspend fun getTransactionCount(): Long
 
     @Upsert
     suspend fun upsertTransaction(transaction: DaoTransaction)
 
     // Creditor Accounts
     @Query("SELECT * FROM creditor_account WHERE id = :creditorAccountId")
-    suspend fun getCreditorAccountById(creditorAccountId: String): DaoCreditorAccount?
+    fun getCreditorAccountById(creditorAccountId: String): Flow<DaoCreditorAccount?>
 
     @Upsert
     suspend fun upsertCreditorAccount(creditorAccount: DaoCreditorAccount)
 
     // Debtor Accounts
     @Query("SELECT * FROM debtor_account WHERE id = :debtorAccountId")
-    suspend fun getDebtorAccountById(debtorAccountId: String): DaoDebtorAccount?
+    fun getDebtorAccountById(debtorAccountId: String): Flow<DaoDebtorAccount?>
 
     @Upsert
     suspend fun upsertDebtorAccount(debtorAccount: DaoDebtorAccount)
 
     // Expense Tags
     @Query("SELECT * FROM expense_tag WHERE id = :expenseTagId")
-    suspend fun getExpenseTagById(expenseTagId: String): DaoExpenseTag?
+    fun getExpenseTagById(expenseTagId: String): Flow<DaoExpenseTag?>
 
     @Query("SELECT * FROM expense_tag")
     fun getAllExpenseTags(): Flow<List<DaoExpenseTag?>>

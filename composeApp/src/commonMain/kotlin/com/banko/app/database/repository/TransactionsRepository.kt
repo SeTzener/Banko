@@ -6,12 +6,15 @@ import com.banko.app.DaoExpenseTag
 import com.banko.app.DaoTransaction
 import com.banko.app.ModelTransaction
 import com.banko.app.database.BankoDatabase
-import com.banko.app.database.Entities.FullTransaction
+import com.banko.app.database.Entities.toModelItem
 import com.banko.app.ui.models.toDao
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.datetime.LocalDateTime
 
 class TransactionsRepository(
     private val bankoDatabase: BankoDatabase,
@@ -47,34 +50,59 @@ class TransactionsRepository(
         dao.upsertTransaction(transaction)
     }
 
-    suspend fun getAllTransactions(): Flow<List<FullTransaction?>> = flow {
-        dao.getAllTransactions().collect { transactions ->
-            val fullTransactions = transactions.map { transaction ->
-                transaction ?: return@map null
-                FullTransaction(
-                    transaction = transaction.transaction,
-                    creditorAccount = transaction.transaction.creditorAccountId?.let {
-                        dao.getCreditorAccountById(
-                            it
-                        )
-                    },
-                    debtorAccount = transaction.transaction.debtorAccountId?.let {
-                        dao.getDebtorAccountById(
-                            it
-                        )
-                    },
-                    expenseTag = transaction.transaction.expenseTagId?.let {
-                        dao.getExpenseTagById(
-                            it
-                        )
-                    }
-                )
+    fun getAllTransactions(limit: Int): Flow<List<ModelTransaction>> = flow {
+        // Emit the transactions from the DAO
+        val transactions = dao.getAllTransactions(limit = limit)
+
+        // Process the transactions and fetch related data for each one
+        transactions.collect { transactionList ->
+            val fullTransactionFlows = transactionList.map { transaction ->
+                // Create flows for each related entity (creditor, debtor, expense tag)
+                val creditorFlow = transaction.transaction.creditorAccountId?.let {
+                    dao.getCreditorAccountById(it)
+                } ?: flowOf(null)
+
+                val debtorFlow = transaction.transaction.debtorAccountId?.let {
+                    dao.getDebtorAccountById(it)
+                } ?: flowOf(null)
+
+                val expenseTagFlow = transaction.transaction.expenseTagId?.let {
+                    dao.getExpenseTagById(it)
+                } ?: flowOf(null)
+
+                // Combine them to create FullTransaction
+                combine(creditorFlow, debtorFlow, expenseTagFlow) { creditor, debtor, expenseTag ->
+                    ModelTransaction(
+                        id = transaction.transaction.id,
+                        bookingDate = LocalDateTime.parse(transaction.transaction.bookingDate),
+                        valueDate = LocalDateTime.parse(transaction.transaction.valueDate),
+                        amount = transaction.transaction.amount.toDouble(),
+                        currency = transaction.transaction.currency,
+                        creditorAccount = creditor?.toModelItem(),
+                        debtorAccount = debtor?.toModelItem(),
+                        expenseTag = expenseTag?.toModelItem(),
+                        remittanceInformationUnstructured = transaction.transaction.remittanceInformationUnstructured,
+                        bankTransactionCode = transaction.transaction.bankTransactionCode,
+                        internalTransactionId = transaction.transaction.internalTransactionId,
+                        creditorName = transaction.transaction.creditorName,
+                        debtorName = transaction.transaction.debtorName,
+                        remittanceInformationUnstructuredArray = transaction.transaction.remittanceInformationUnstructuredArray,
+                        remittanceInformationStructuredArray = transaction.transaction.remittanceInformationStructuredArray
+                    )
+                }
             }
-            emit(fullTransactions) // Emit the result
+
+            // Combine all the flows into a list and emit it
+            combine(fullTransactionFlows) { it.toList() }.collect { fullTransactions ->
+                emit(fullTransactions)
+            }
         }
     }
+
 
     suspend fun findRawTransactionById(transactionId: String): DaoTransaction? {
         return dao.getRawTransactionById(transactionId)
     }
+
+    suspend fun getTransactionCount(): Long = dao.getTransactionCount()
 }
