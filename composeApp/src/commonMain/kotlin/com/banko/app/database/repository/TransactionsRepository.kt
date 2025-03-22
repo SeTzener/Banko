@@ -1,11 +1,27 @@
 package com.banko.app.database.repository
 
+import androidx.paging.ExperimentalPagingApi
+import androidx.paging.LoadType
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.PagingState
+import androidx.paging.RemoteMediator
+import androidx.paging.TerminalSeparatorType
+import androidx.paging.cachedIn
+import androidx.paging.insertSeparators
+import androidx.paging.map
 import com.banko.app.DaoCreditorAccount
 import com.banko.app.DaoDebtorAccount
 import com.banko.app.DaoExpenseTag
 import com.banko.app.DaoTransaction
 import com.banko.app.ModelTransaction
+import com.banko.app.api.dto.bankoApi.toModelItem
+import com.banko.app.api.services.BankoApiService
+import com.banko.app.api.utils.NetworkError
+import com.banko.app.api.utils.Result
 import com.banko.app.database.BankoDatabase
+import com.banko.app.database.Entities.FullTransaction
 import com.banko.app.database.Entities.toModelItem
 import com.banko.app.ui.models.toDao
 import kotlinx.coroutines.Dispatchers
@@ -14,12 +30,14 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.datetime.LocalDateTime
 
 class TransactionsRepository(
     private val bankoDatabase: BankoDatabase,
+    private val apiService: BankoApiService
 
-    ) {
+) {
     private val dispatchers = Dispatchers.IO
     private val dao = bankoDatabase.bankoDao()
 
@@ -104,5 +122,72 @@ class TransactionsRepository(
         return dao.getRawTransactionById(transactionId)
     }
 
-    suspend fun getTransactionCount(): Long = dao.getTransactionCount()
+    private suspend fun getTransactionCount(): Long = dao.getTransactionCount()
+
+    suspend fun fetchAndStoreTransactions(
+        pageNumber: Int,
+        pageSize: Int
+    ): Result<Boolean, NetworkError> {
+
+        val result = apiService.getTransactions(pageNumber = pageNumber, pageSize = pageSize)
+        if (result is Result.Error) {
+            println("Error: ${result.error}")
+            return Result.Error(result.error)
+        }
+        val transactions = (result as Result.Success).data
+        if (transactions.totalCount == 0L) return Result.Error(NetworkError.NO_NEW_TRANSACTIONS)
+
+        transactions.let {
+            it.transactions.forEach { transaction ->
+                upsertTransaction(transaction.toModelItem())
+            }
+        }
+        return Result.Success(
+            // There's also the possibility to change this to
+            // transactions.totalCount > (pageNumber * pageSize)
+            transactions.totalCount > getTransactionCount()
+        )
+    }
+
+    @OptIn(ExperimentalPagingApi::class)
+    fun getTransactionsPagingSource(
+        pageSize: Int,
+        pageNumber: Int?,
+        updatePageNumber: (Int) -> Unit
+    ): Flow<PagingData<ModelTransaction>> {
+        return Pager(
+            config = PagingConfig(pageSize = pageSize),
+            pagingSourceFactory = { dao.getTransactionsPagingSource() },
+            remoteMediator = object : RemoteMediator<Int, FullTransaction>() {
+                override suspend fun load(
+                    loadType: LoadType,
+                    state: PagingState<Int, FullTransaction>
+                ): MediatorResult {
+                    return when (loadType) {
+                        LoadType.PREPEND -> {
+                            MediatorResult.Success(true)
+                        }
+
+                        LoadType.REFRESH,
+                        LoadType.APPEND -> {
+                            val localPageNumber =
+                                if (pageNumber == null || loadType == LoadType.REFRESH) 1 else pageNumber
+
+                            val result =
+                                fetchAndStoreTransactions(
+                                    pageNumber = localPageNumber,
+                                    pageSize = pageSize
+                                )
+                            if (result is Result.Success) {
+                                updatePageNumber(localPageNumber)
+                                return MediatorResult.Success(result.data)
+                            } else {
+                                return MediatorResult.Error(Exception("Failed to fetch transactions"))
+                            }
+                        }
+                    }
+                }
+            }
+        ).flow.map { pagingData -> pagingData.map { it.toModelItem() } }
+    }
 }

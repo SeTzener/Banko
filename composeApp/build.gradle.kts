@@ -39,6 +39,8 @@ kotlin {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
             implementation(libs.decompose)
+            implementation(libs.paging.compose.android)
+            implementation(libs.paging.runtime.android)
             implementation(libs.koin.android)
             implementation(libs.koin.android.compose)
             implementation(libs.ktor.client.android)
@@ -46,6 +48,7 @@ kotlin {
         iosMain.dependencies {
             implementation(libs.ktor.client.ios)
             implementation(libs.koin.core)
+            implementation(libs.paging.runtime.uikit)
         }
         commonMain.dependencies {
             implementation(libs.compose.material)
@@ -56,6 +59,8 @@ kotlin {
             implementation(compose.ui)
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
+            implementation(libs.paging.compose.common)
+            implementation(libs.paging.common)
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtime.compose)
             implementation(libs.decompose)
@@ -72,6 +77,7 @@ kotlin {
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.serialization.core)
             implementation(libs.room.runtime)
+            implementation(libs.room.paging)
             implementation(libs.sqlite.bundle)
 
             api(libs.datastore)

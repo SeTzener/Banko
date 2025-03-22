@@ -28,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -38,6 +39,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.paging.PagingData
+import androidx.paging.filter
+import androidx.paging.flatMap
+import app.cash.paging.compose.collectAsLazyPagingItems
+import app.cash.paging.compose.itemContentType
+import app.cash.paging.compose.itemKey
 import banko.composeapp.generated.resources.Res
 import banko.composeapp.generated.resources.account_balance
 import banko.composeapp.generated.resources.app_name
@@ -47,6 +54,7 @@ import banko.composeapp.generated.resources.details
 import banko.composeapp.generated.resources.monthly_budget
 import banko.composeapp.generated.resources.monthly_income
 import banko.composeapp.generated.resources.payments
+import com.banko.app.ModelTransaction
 import com.banko.app.ui.components.CircularIndicator
 import com.banko.app.ui.components.ExpandableCard
 import com.banko.app.ui.components.ExpenseTag
@@ -66,27 +74,7 @@ fun HomeScreen(component: HomeComponent) {
     val viewModel = koinViewModel<HomeScreenViewModel>()
     val screenState by viewModel.screenState.collectAsState()
     val listState = rememberLazyListState()
-    val firstLoad = remember { mutableStateOf(true) }
-
-    if (firstLoad.value) {
-        viewModel.loadNewTransactions()
-        firstLoad.value = false
-    }
-
-    LaunchedEffect(listState) {
-        snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
-            .distinctUntilChanged()
-            .collectLatest { lastVisibleIndex ->
-                if (lastVisibleIndex != null && // Check for null
-                    // Ensure it doesn't trigger before the list is loaded
-                    lastVisibleIndex >= viewModel.getTransactionsToLoadCount() &&
-                    // Ensure it doesn't trigger when there are no more transactions to load
-                    lastVisibleIndex < screenState.apiTransactionsCount
-                ) {
-                    viewModel.loadNewTransactions()
-                }
-            }
-    }
+    val transactions = viewModel.pagingDataFlow.collectAsLazyPagingItems()
 
     Column(
         Modifier.fillMaxWidth(),
@@ -166,10 +154,8 @@ fun HomeScreen(component: HomeComponent) {
                 }
             }
         }
-        val transactions = screenState.transactions
-        val groupedTransactions = transactions.groupBy { it.bookingDate.date }
 
-        if (transactions.isEmpty()) {
+        if (transactions.itemCount == 0) {
             Box(
                 modifier = Modifier.fillMaxSize().padding(start = 5.dp, end = 5.dp),
                 contentAlignment = Alignment.Center
@@ -184,26 +170,44 @@ fun HomeScreen(component: HomeComponent) {
         LazyColumn(
             state = listState
         ) {
-            groupedTransactions.forEach { (date, transactionsForDate) ->
-                stickyHeader {
-                    Text(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.onSurface)
-                            .padding(12.dp),
-                        text = date.toString(),
-                        color = MaterialTheme.colorScheme.secondary
-                    )
-                }
+            items(
+                key = transactions.itemKey { item ->
+                    when (item) {
+                        is TransactionPagingData.Item -> "Item_${item.modelTransaction.id}"
+                        is TransactionPagingData.Separator -> "Separator_${item.date}"
+                    }
+                },
+                contentType = transactions.itemContentType { item ->
+                    when (item) {
+                        is TransactionPagingData.Item -> 0
+                        is TransactionPagingData.Separator -> 1
+                    }
+                },
+                count = transactions.itemCount
+            ) { index ->
+                when (val item = transactions[index]) {
+                    is TransactionPagingData.Separator ->
+                        Text(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.onSurface)
+                                .padding(12.dp),
+                            text = item.date.toString(),
+                            color = MaterialTheme.colorScheme.secondary
+                        )
 
-                items(
-                    items = transactionsForDate,
-                    key = { transaction -> transaction.id }
-                ) { transaction ->
-                    SwipableTransactionRow(
-                        transaction = transaction,
-                        onDetailsClick = { component.onEvent(HomeEvent.ButtonClick, transaction) }
-                    )
+                    is TransactionPagingData.Item ->
+                        SwipableTransactionRow(
+                            transaction = item.modelTransaction,
+                            onDetailsClick = {
+                                component.onEvent(
+                                    HomeEvent.ButtonClick,
+                                    item.modelTransaction
+                                )
+                            }
+                        )
+
+                    null -> Unit
                 }
             }
             if (screenState.isLoading) {
