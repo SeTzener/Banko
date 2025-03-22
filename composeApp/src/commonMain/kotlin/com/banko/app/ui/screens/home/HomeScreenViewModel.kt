@@ -35,28 +35,28 @@ class HomeScreenViewModel(
 ) : ViewModel() {
     private val _screenState = MutableStateFlow(HomeScreenState())
     val screenState: StateFlow<HomeScreenState> = _screenState
-    private var pageNumber: Int? = null
 
     val pagingDataFlow: Flow<PagingData<TransactionPagingData>> =
-        dbRepository.getTransactionsPagingSource(pageSize = pageSize, pageNumber = pageNumber) {
-            pageNumber = it
-        }.map { pagingData ->
-            var counter = 0
-            pagingData.insertSeparators(TerminalSeparatorType.SOURCE_COMPLETE) { before, after ->
-                val dateBefore = before?.bookingDate?.date
-                val dateAfter = after?.bookingDate?.date
+        dbRepository.getTransactionsPagingSource(
+            pageSize = pageSize,
+        )
+            .map { pagingData ->
+                pagingData.insertSeparators(TerminalSeparatorType.SOURCE_COMPLETE) { before, after ->
+                    val dateBefore = before?.bookingDate?.date
+                    val dateAfter = after?.bookingDate?.date
 
-                if (dateAfter != null && dateBefore != dateAfter) dateAfter else null
-            }.map { item ->
-                when (item) {
-                    is ModelTransaction -> TransactionPagingData.Item(item)
-                    is LocalDate -> {
-                        TransactionPagingData.Separator(item)
+                    if (dateAfter != null && dateBefore != dateAfter) dateAfter else null
+                }.map { item ->
+                    when (item) {
+                        is ModelTransaction -> TransactionPagingData.Item(item)
+                        is LocalDate -> {
+                            TransactionPagingData.Separator(item)
+                        }
+
+                        else -> error("Unknown item type: $item")
                     }
-                    else -> error("Unknown item type: $item")
                 }
-            }
-        }.cachedIn(viewModelScope)
+            }.cachedIn(viewModelScope)
 }
 
 sealed interface TransactionPagingData {

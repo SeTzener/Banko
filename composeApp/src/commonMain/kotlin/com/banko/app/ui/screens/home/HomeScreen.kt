@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.paging.PagingData
 import androidx.paging.filter
 import androidx.paging.flatMap
+import app.cash.paging.LoadStateLoading
 import app.cash.paging.compose.collectAsLazyPagingItems
 import app.cash.paging.compose.itemContentType
 import app.cash.paging.compose.itemKey
@@ -210,7 +211,7 @@ fun HomeScreen(component: HomeComponent) {
                     null -> Unit
                 }
             }
-            if (screenState.isLoading) {
+            if (transactions.loadState.append is LoadStateLoading) {
                 item {
                     Box(
                         modifier = Modifier.fillMaxWidth(),

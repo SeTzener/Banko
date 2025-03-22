@@ -36,10 +36,10 @@ import kotlinx.datetime.LocalDateTime
 class TransactionsRepository(
     private val bankoDatabase: BankoDatabase,
     private val apiService: BankoApiService
-
 ) {
     private val dispatchers = Dispatchers.IO
     private val dao = bankoDatabase.bankoDao()
+    var pageNumber: Int? = null
 
     suspend fun upsertTransaction(transaction: ModelTransaction) {
         transaction.creditorAccount?.let { dao.upsertCreditorAccount(it.toDao()) }
@@ -145,15 +145,13 @@ class TransactionsRepository(
         return Result.Success(
             // There's also the possibility to change this to
             // transactions.totalCount > (pageNumber * pageSize)
-            transactions.totalCount > getTransactionCount()
+            transactions.totalCount <= (pageNumber * pageSize)
         )
     }
 
     @OptIn(ExperimentalPagingApi::class)
     fun getTransactionsPagingSource(
         pageSize: Int,
-        pageNumber: Int?,
-        updatePageNumber: (Int) -> Unit
     ): Flow<PagingData<ModelTransaction>> {
         return Pager(
             config = PagingConfig(pageSize = pageSize),
@@ -172,14 +170,17 @@ class TransactionsRepository(
                         LoadType.APPEND -> {
                             val localPageNumber =
                                 if (pageNumber == null || loadType == LoadType.REFRESH) 1 else pageNumber
+                            println("CULO: $localPageNumber")
 
                             val result =
-                                fetchAndStoreTransactions(
-                                    pageNumber = localPageNumber,
-                                    pageSize = pageSize
-                                )
+                                localPageNumber?.let {
+                                    fetchAndStoreTransactions(
+                                        pageNumber = it,
+                                        pageSize = pageSize
+                                    )
+                                }
                             if (result is Result.Success) {
-                                updatePageNumber(localPageNumber)
+                                pageNumber = localPageNumber + 1
                                 return MediatorResult.Success(result.data)
                             } else {
                                 return MediatorResult.Error(Exception("Failed to fetch transactions"))
