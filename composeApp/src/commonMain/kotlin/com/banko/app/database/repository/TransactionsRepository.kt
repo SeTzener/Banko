@@ -143,8 +143,6 @@ class TransactionsRepository(
             }
         }
         return Result.Success(
-            // There's also the possibility to change this to
-            // transactions.totalCount > (pageNumber * pageSize)
             transactions.totalCount <= (pageNumber * pageSize)
         )
     }
@@ -189,6 +187,10 @@ class TransactionsRepository(
                     }
                 }
             }
-        ).flow.map { pagingData -> pagingData.map { it.toModelItem() } }
+        ).flow.map { pagingData ->
+            pagingData.map {
+                it.toModelItem()
+            }
+        }
     }
 }

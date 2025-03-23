@@ -7,22 +7,13 @@ import kotlinx.datetime.LocalDateTime
 
 data class FullTransaction(
     @Embedded val transaction: Transaction,
-    @Relation(
-        parentColumn = "expenseTagId",
-        entityColumn = "id"
-    )
-    val debtorAccount: DebtorAccount?,
-    @Relation(
-        parentColumn = "debtorAccountId",
-        entityColumn = "id"
-    )
-    val creditorAccount: CreditorAccount?,
-    @Relation(
-        parentColumn = "creditorAccountId",
-        entityColumn = "id"
-    )
-    val expenseTag: ExpenseTag?
+
+    @Embedded(prefix = "creditor_") val creditorAccount: CreditorAccount? = null,
+    @Embedded(prefix = "debtor_") val debtorAccount: DebtorAccount? = null,
+    @Embedded(prefix = "expense_") val expenseTag: ExpenseTag? = null
 )
+
+fun List<FullTransaction>.toModelItem() = map { it.toModelItem() }
 
 fun FullTransaction.toModelItem() = ModelTransaction(
     id = transaction.id,
