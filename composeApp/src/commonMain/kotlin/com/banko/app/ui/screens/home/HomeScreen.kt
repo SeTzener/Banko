@@ -15,7 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -25,24 +25,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.paging.PagingData
-import androidx.paging.filter
-import androidx.paging.flatMap
 import app.cash.paging.LoadStateLoading
+import app.cash.paging.compose.LazyPagingItems
 import app.cash.paging.compose.collectAsLazyPagingItems
 import app.cash.paging.compose.itemContentType
 import app.cash.paging.compose.itemKey
@@ -62,8 +57,6 @@ import com.banko.app.ui.components.ExpenseTag
 import com.banko.app.ui.components.TextWithIcon
 import com.banko.app.ui.models.Transaction
 import com.banko.app.ui.models.categories
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.distinctUntilChanged
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.annotation.KoinExperimentalAPI
@@ -72,8 +65,8 @@ import kotlin.random.Random
 @OptIn(ExperimentalFoundationApi::class, KoinExperimentalAPI::class)
 @Composable
 fun HomeScreen(component: HomeComponent) {
+    val navigateToDetails = component::navigateToDetails
     val viewModel = koinViewModel<HomeScreenViewModel>()
-    val screenState by viewModel.screenState.collectAsState()
     val listState = rememberLazyListState()
     val transactions = viewModel.pagingDataFlow.collectAsLazyPagingItems()
 
@@ -155,83 +148,13 @@ fun HomeScreen(component: HomeComponent) {
                 }
             }
         }
-
-        if (transactions.itemCount == 0) {
-            Box(
-                modifier = Modifier.fillMaxSize().padding(start = 5.dp, end = 5.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(35.dp),
-                    strokeWidth = 5.dp,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-        }
-        LazyColumn(
-            state = listState
-        ) {
-            items(
-                key = transactions.itemKey { item ->
-                    when (item) {
-                        is TransactionPagingData.Item -> "Item_${item.modelTransaction.id}"
-                        is TransactionPagingData.Separator -> "Separator_${item.date}"
-                    }
-                },
-                contentType = transactions.itemContentType { item ->
-                    when (item) {
-                        is TransactionPagingData.Item -> 0
-                        is TransactionPagingData.Separator -> 1
-                    }
-                },
-                count = transactions.itemCount
-            ) { index ->
-                when (val item = transactions[index]) {
-                    is TransactionPagingData.Separator ->
-                        Text(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(MaterialTheme.colorScheme.onSurface)
-                                .padding(12.dp),
-                            text = item.date.toString(),
-                            color = MaterialTheme.colorScheme.secondary
-                        )
-
-                    is TransactionPagingData.Item ->
-                        SwipableTransactionRow(
-                            transaction = item.modelTransaction,
-                            onDetailsClick = {
-                                component.onEvent(
-                                    HomeEvent.ButtonClick,
-                                    item.modelTransaction
-                                )
-                            }
-                        )
-
-                    null -> Unit
-                }
-            }
-            if (transactions.loadState.append is LoadStateLoading) {
-                item {
-                    Box(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(15.dp),
-                            strokeWidth = 5.dp,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-            }
-        }
+        LazyTransactionList(transactions, listState, navigateToDetails)
     }
 }
 
 
 @Composable
-fun SwipableTransactionRow(transaction: Transaction, onDetailsClick: () -> Unit) {
+private fun SwipableTransactionRow(transaction: Transaction, onDetailsClick: () -> Unit) {
     var offsetX by remember { mutableStateOf(0f) }
     val buttonWidth = 85.dp
 
@@ -323,5 +246,81 @@ private fun TopContent() {
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.primary
         )
+    }
+}
+
+@Composable
+private fun LazyTransactionList(
+    transactions: LazyPagingItems<TransactionPagingData>,
+    listState: LazyListState,
+    navigateToDetails: (ModelTransaction) -> Unit,
+) {
+    val lazyListState = rememberLazyListState()
+
+    Box(
+        modifier = Modifier.fillMaxSize().padding(start = 5.dp, end = 5.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        if (transactions.itemCount == 0) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(35.dp),
+                strokeWidth = 5.dp,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+
+        LazyColumn(
+            state = listState,
+        ) {
+            items(
+                key = transactions.itemKey { item ->
+                    when (item) {
+                        is TransactionPagingData.Item -> "Item_${item.modelTransaction.id}"
+                        is TransactionPagingData.Separator -> "Separator_${item.date}"
+                    }
+                },
+                contentType = transactions.itemContentType { item ->
+                    when (item) {
+                        is TransactionPagingData.Item -> 0
+                        is TransactionPagingData.Separator -> 1
+                    }
+                },
+                count = transactions.itemCount
+            ) { index ->
+                when (val item = transactions[index]) {
+                    is TransactionPagingData.Separator ->
+                        Text(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.onSurface)
+                                .padding(12.dp),
+                            text = item.date.toString(),
+                            color = MaterialTheme.colorScheme.secondary
+                        )
+
+                    is TransactionPagingData.Item ->
+                        SwipableTransactionRow(
+                            transaction = item.modelTransaction,
+                            onDetailsClick = { navigateToDetails(item.modelTransaction) }
+                        )
+
+                    null -> Unit
+                }
+            }
+            if (transactions.loadState.append is LoadStateLoading) {
+                item {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(15.dp),
+                            strokeWidth = 5.dp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+        }
     }
 }

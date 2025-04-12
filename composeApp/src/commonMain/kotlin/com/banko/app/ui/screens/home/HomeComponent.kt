@@ -7,9 +7,13 @@ class HomeComponent(
     componentContext: ComponentContext,
     private val onNavigateToDetails: (Transaction) -> Unit
 ): ComponentContext by componentContext {
-    fun onEvent(event: HomeEvent, transaction: Transaction){
+    private fun onEvent(event: HomeEvent, transaction: Transaction){
         when(event) {
-            HomeEvent.ButtonClick -> onNavigateToDetails(transaction)
+            HomeEvent.DetailsButtonClick -> onNavigateToDetails(transaction)
         }
+    }
+
+    fun navigateToDetails(transaction: Transaction) {
+        onEvent(HomeEvent.DetailsButtonClick, transaction)
     }
 }
