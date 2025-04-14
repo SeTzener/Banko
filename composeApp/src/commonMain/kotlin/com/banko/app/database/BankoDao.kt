@@ -43,6 +43,17 @@ interface BankoDao {
     """)
         fun getTransactionsPagingSource(): PagingSource<Int, FullTransaction>
 
+        @Query(
+                """
+    SELECT count(*)
+    FROM transactions
+    LEFT JOIN creditor_account ON transactions.creditorAccountId = creditor_account.id
+    LEFT JOIN debtor_account ON transactions.debtorAccountId = debtor_account.id
+    LEFT JOIN expense_tag ON transactions.expenseTagId = expense_tag.id
+    ORDER BY transactions.bookingDate DESC
+    """)
+        suspend fun transactionsCount(): Int
+
         @Query("SELECT * FROM transactions WHERE id = :transactionId")
         suspend fun getRawTransactionById(transactionId: String): DaoTransaction?
 

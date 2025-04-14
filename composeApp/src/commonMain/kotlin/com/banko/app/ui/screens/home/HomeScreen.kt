@@ -1,7 +1,6 @@
 package com.banko.app.ui.screens.home
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
@@ -21,9 +20,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -62,13 +63,24 @@ import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.annotation.KoinExperimentalAPI
 import kotlin.random.Random
 
-@OptIn(ExperimentalFoundationApi::class, KoinExperimentalAPI::class)
+@OptIn(KoinExperimentalAPI::class)
 @Composable
 fun HomeScreen(component: HomeComponent) {
     val navigateToDetails = component::navigateToDetails
     val viewModel = koinViewModel<HomeScreenViewModel>()
-    val listState = rememberLazyListState()
     val transactions = viewModel.pagingDataFlow.collectAsLazyPagingItems()
+    HomeScreen(
+        transactions = transactions,
+        navigateToDetails = component::navigateToDetails
+    )
+}
+
+@Composable
+fun HomeScreen(
+    transactions: LazyPagingItems<TransactionPagingData>,
+    navigateToDetails: (ModelTransaction) -> Unit,
+) {
+    val listState = rememberLazyListState()
 
     Column(
         Modifier.fillMaxWidth(),

@@ -26,8 +26,10 @@ class HomeScreenViewModel(
     val pagingDataFlow: Flow<PagingData<TransactionPagingData>> =
         dbRepository.getTransactionsPagingSource(
             pageSize = pageSize,
-        )
+            coroutineScope = viewModelScope,
+        ).cachedIn(viewModelScope)
             .map { pagingData ->
+                println("culo")
                 pagingData.insertSeparators(TerminalSeparatorType.SOURCE_COMPLETE) { before, after ->
                     val dateBefore = before?.bookingDate?.date
                     val dateAfter = after?.bookingDate?.date
@@ -43,7 +45,7 @@ class HomeScreenViewModel(
                         else -> error("Unknown item type: $item")
                     }
                 }
-            }.cachedIn(viewModelScope)
+            }
 }
 
 sealed interface TransactionPagingData {

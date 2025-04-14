@@ -1,5 +1,6 @@
 package com.banko.app.database.repository
 
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.paging.ExperimentalPagingApi
 import androidx.paging.LoadType
 import androidx.paging.Pager
@@ -7,10 +8,8 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.PagingState
 import androidx.paging.RemoteMediator
-import androidx.paging.TerminalSeparatorType
-import androidx.paging.cachedIn
-import androidx.paging.insertSeparators
 import androidx.paging.map
+import app.cash.paging.MAX_SIZE_UNBOUNDED
 import com.banko.app.DaoCreditorAccount
 import com.banko.app.DaoDebtorAccount
 import com.banko.app.DaoExpenseTag
@@ -24,6 +23,7 @@ import com.banko.app.database.BankoDatabase
 import com.banko.app.database.Entities.FullTransaction
 import com.banko.app.database.Entities.toModelItem
 import com.banko.app.ui.models.toDao
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
@@ -31,6 +31,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDateTime
 
 class TransactionsRepository(
@@ -68,67 +69,14 @@ class TransactionsRepository(
         dao.upsertTransaction(transaction)
     }
 
-    fun getAllTransactions(limit: Int): Flow<List<ModelTransaction>> = flow {
-        // Emit the transactions from the DAO
-        val transactions = dao.getAllTransactions(limit = limit)
-
-        // Process the transactions and fetch related data for each one
-        transactions.collect { transactionList ->
-            val fullTransactionFlows = transactionList.map { transaction ->
-                // Create flows for each related entity (creditor, debtor, expense tag)
-                val creditorFlow = transaction.transaction.creditorAccountId?.let {
-                    dao.getCreditorAccountById(it)
-                } ?: flowOf(null)
-
-                val debtorFlow = transaction.transaction.debtorAccountId?.let {
-                    dao.getDebtorAccountById(it)
-                } ?: flowOf(null)
-
-                val expenseTagFlow = transaction.transaction.expenseTagId?.let {
-                    dao.getExpenseTagById(it)
-                } ?: flowOf(null)
-
-                // Combine them to create FullTransaction
-                combine(creditorFlow, debtorFlow, expenseTagFlow) { creditor, debtor, expenseTag ->
-                    ModelTransaction(
-                        id = transaction.transaction.id,
-                        bookingDate = LocalDateTime.parse(transaction.transaction.bookingDate),
-                        valueDate = LocalDateTime.parse(transaction.transaction.valueDate),
-                        amount = transaction.transaction.amount.toDouble(),
-                        currency = transaction.transaction.currency,
-                        creditorAccount = creditor?.toModelItem(),
-                        debtorAccount = debtor?.toModelItem(),
-                        expenseTag = expenseTag?.toModelItem(),
-                        remittanceInformationUnstructured = transaction.transaction.remittanceInformationUnstructured,
-                        bankTransactionCode = transaction.transaction.bankTransactionCode,
-                        internalTransactionId = transaction.transaction.internalTransactionId,
-                        creditorName = transaction.transaction.creditorName,
-                        debtorName = transaction.transaction.debtorName,
-                        remittanceInformationUnstructuredArray = transaction.transaction.remittanceInformationUnstructuredArray,
-                        remittanceInformationStructuredArray = transaction.transaction.remittanceInformationStructuredArray
-                    )
-                }
-            }
-
-            // Combine all the flows into a list and emit it
-            combine(fullTransactionFlows) { it.toList() }.collect { fullTransactions ->
-                emit(fullTransactions)
-            }
-        }
-    }
-
-
     suspend fun findRawTransactionById(transactionId: String): DaoTransaction? {
         return dao.getRawTransactionById(transactionId)
     }
-
-    private suspend fun getTransactionCount(): Long = dao.getTransactionCount()
 
     suspend fun fetchAndStoreTransactions(
         pageNumber: Int,
         pageSize: Int
     ): Result<Boolean, NetworkError> {
-
         val result = apiService.getTransactions(pageNumber = pageNumber, pageSize = pageSize)
         if (result is Result.Error) {
             println("Error: ${result.error}")
@@ -150,10 +98,17 @@ class TransactionsRepository(
     @OptIn(ExperimentalPagingApi::class)
     fun getTransactionsPagingSource(
         pageSize: Int,
+        coroutineScope: CoroutineScope,
     ): Flow<PagingData<ModelTransaction>> {
         return Pager(
             config = PagingConfig(pageSize = pageSize),
-            pagingSourceFactory = { dao.getTransactionsPagingSource() },
+            pagingSourceFactory = {
+                coroutineScope.launch {
+                    val count = dao.transactionsCount()
+                    println("count $count")
+                }
+                dao.getTransactionsPagingSource()
+            },
             remoteMediator = object : RemoteMediator<Int, FullTransaction>() {
                 override suspend fun load(
                     loadType: LoadType,
@@ -161,14 +116,27 @@ class TransactionsRepository(
                 ): MediatorResult {
                     return when (loadType) {
                         LoadType.PREPEND -> {
+                            println("PREPEND")
                             MediatorResult.Success(true)
                         }
 
-                        LoadType.REFRESH,
+                        LoadType.REFRESH -> {
+                            println("REFRESH")
+                            val result = fetchAndStoreTransactions(
+                                pageNumber = 1,
+                                pageSize = pageSize
+                            )
+                            if (result is Result.Success) {
+                                return MediatorResult.Success(result.data)
+                            } else {
+                                return MediatorResult.Error(Exception("Failed to fetch transactions"))
+                            }
+                        }
+
                         LoadType.APPEND -> {
+                            println("APPEND")
                             val localPageNumber =
-                                if (pageNumber == null || loadType == LoadType.REFRESH) 1 else pageNumber
-                            println("CULO: $localPageNumber")
+                                if (pageNumber == null) 1 else pageNumber
 
                             val result =
                                 localPageNumber?.let {
@@ -181,6 +149,7 @@ class TransactionsRepository(
                                 pageNumber = localPageNumber + 1
                                 return MediatorResult.Success(result.data)
                             } else {
+                                println("error")
                                 return MediatorResult.Error(Exception("Failed to fetch transactions"))
                             }
                         }
