@@ -39,21 +39,41 @@ class HomeScreenViewModel(
         if (_state.value.isLoading) return
 
         viewModelScope.launch {
-                _state.update { it.copy(isLoading = true) }
-                try {
-                    val job = repository.getLocalTransactions(limit = pageSize, offset = 0)
-                        .onEach { transactions ->
+            _state.update { it.copy(isLoading = true) }
+            try {
+                val job = repository.getLocalTransactions(limit = pageSize, offset = 0)
+                    .onEach { transactions ->
+                        _state.update {
+                            it.copy(
+                                transactions = transactions,
+                                endReached = transactions.size < pageSize
+                            )
+                        }
+                    }
+                    .launchIn(this)
+
+                activeFlowJobs.add(job)
+                if (_state.value.totalTransactionCount == 0L) {
+                    val result =
+                        repository.fetchAndStoreTransactions(pageNumber = 1, pageSize = pageSize)
+                    when (result) {
+                        is Result.Success -> {
+                            _state.update {
+                                it.copy(totalTransactionCount = result.data, isLoading = false)
+                            }
+                        }
+
+                        is Result.Error -> {
                             _state.update {
                                 it.copy(
-                                    transactions = transactions,
                                     isLoading = false,
-                                    endReached = transactions.size < pageSize
+                                    error = result.error.name
                                 )
                             }
                         }
-                        .launchIn(this)
+                    }
 
-                    activeFlowJobs.add(job)
+                }
             } catch (e: Exception) {
                 _state.update {
                     it.copy(
@@ -61,6 +81,8 @@ class HomeScreenViewModel(
                         error = e.message ?: "Failed to load transactions"
                     )
                 }
+            } finally {
+                currentPage = 1
             }
         }
     }
@@ -78,12 +100,20 @@ class HomeScreenViewModel(
 
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
+
             try {
                 val nextPage = currentPage + 1
                 val offset = nextPage * pageSize
+                val storedTransactionCount = repository.getStoredTransactionCount()
 
                 activeFlowJobs.forEach { it.cancel() }
                 activeFlowJobs.clear()
+
+                if (offset >= storedTransactionCount) {
+                    if (_state.value.totalTransactionCount > storedTransactionCount) {
+                        repository.fetchAndStoreTransactions(pageNumber = nextPage, pageSize = pageSize)
+                    }
+                }
 
                 val job = repository.getLocalTransactions(limit = pageSize, offset = offset)
                     .onEach { newTransactions ->
@@ -119,9 +149,10 @@ class HomeScreenViewModel(
 
                 currentPage = 0
 
-                val result = repository.fetchAndStoreTransactions(pageNumber = 1, pageSize = pageSize)
+                val result =
+                    repository.fetchAndStoreTransactions(pageNumber = 1, pageSize = pageSize)
 
-                when(result){
+                when (result) {
                     is Result.Success -> {
                         val job = repository.getLocalTransactions(limit = pageSize, offset = 0)
                             .onEach { transactions ->
@@ -129,7 +160,7 @@ class HomeScreenViewModel(
                                     it.copy(
                                         transactions = transactions,
                                         isRefreshing = false,
-                                        endReached = result.data || transactions.size < pageSize
+                                        totalTransactionCount = result.data
                                     )
                                 }
                             }
@@ -137,6 +168,7 @@ class HomeScreenViewModel(
 
                         activeFlowJobs.add(job)
                     }
+
                     is Result.Error -> {
                         _state.update {
                             it.copy(

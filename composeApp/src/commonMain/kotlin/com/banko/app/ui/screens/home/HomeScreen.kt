@@ -1,10 +1,18 @@
 package com.banko.app.ui.screens.home
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -41,10 +49,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.times
 import banko.composeapp.generated.resources.Res
 import banko.composeapp.generated.resources.account_balance
 import banko.composeapp.generated.resources.app_name
@@ -205,7 +216,7 @@ fun HomeScreen(
                 LazyTransactionList(
                     isLoading = state.value.isLoading,
                     isRefreshing = state.value.isRefreshing,
-                    liststate = liststate,
+                    listState = liststate,
                     transactions = state.value.transactions,
                     navigateToDetails = navigateToDetails,
                     onRefresh = onRefresh,
@@ -318,17 +329,18 @@ private fun LazyTransactionList(
     isLoading: Boolean,
     isRefreshing: Boolean,
     transactions: List<ModelTransaction>,
-    liststate: LazyListState,
+    listState: LazyListState,
     navigateToDetails: (ModelTransaction) -> Unit,
     onRefresh: () -> Unit,
 ) {
     val groupedTransactions = transactions.groupBy { it.bookingDate.date }
 
+    LoadingProgressIndicator(isLoading = isLoading)
     PullToRefreshBox(
         isRefreshing = isRefreshing,
         onRefresh = onRefresh,
     ) {
-        LazyColumn(state = liststate) {
+        LazyColumn(state = listState) {
             groupedTransactions.forEach { (date, transactionsByDate) ->
                 stickyHeader {
                     Text(
@@ -351,16 +363,53 @@ private fun LazyTransactionList(
                     )
                 }
             }
+        }
+    }
+}
 
-            if (isLoading && transactions.isNotEmpty()) {
-                item {
-                    Box(
-                        modifier = Modifier.fillParentMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                }
+@Composable
+fun LoadingProgressIndicator(
+    isLoading: Boolean,
+) {
+    if (!isLoading) return
+
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth().height(4.dp)) {
+        val infiniteTransition = rememberInfiniteTransition()
+        val progress by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(1000, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart
+            )
+        )
+
+        // Background track
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(4.dp)
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
+        ) {
+            val primaryColor = MaterialTheme.colorScheme.primary
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val width = size.width
+                val gradientWidth = width * 0.3f
+
+                drawRect(
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            Color.Transparent,
+                            primaryColor.copy(alpha = 0.8f),
+                            primaryColor,
+                            primaryColor.copy(alpha = 0.8f),
+                            Color.Transparent
+                        ),
+                        start = Offset(progress * width * 1.5f - gradientWidth, 0f),
+                        end = Offset(progress * width * 1.5f + gradientWidth, 0f)
+                    ),
+                    size = size
+                )
             }
         }
     }

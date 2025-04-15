@@ -80,7 +80,7 @@ class TransactionsRepository(
     suspend fun fetchAndStoreTransactions(
         pageNumber: Int,
         pageSize: Int
-    ): Result<Boolean, NetworkError> {
+    ): Result<Long, NetworkError> {
         val result = apiService.getTransactions(pageNumber = pageNumber, pageSize = pageSize)
         when (result) {
             is Result.Error -> {
@@ -97,10 +97,12 @@ class TransactionsRepository(
                 }
                 Result.Success(result.data.totalCount <= (pageNumber * pageSize))
 
-                return Result.Success(
-                    transactions.totalCount <= (pageNumber * pageSize)
-                )
+                return Result.Success(transactions.totalCount)
             }
         }
+    }
+
+    suspend fun getStoredTransactionCount(): Long {
+        return dao.getTransactionCount()
     }
 }

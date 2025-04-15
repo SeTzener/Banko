@@ -4,6 +4,7 @@ import com.banko.app.ModelTransaction
 
 data class HomeScreenState(
     val transactions: List<ModelTransaction> = emptyList(),
+    val totalTransactionCount: Long = 0,
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
     val endReached: Boolean = false,
