@@ -28,10 +28,10 @@ interface BankoDao {
         LEFT JOIN debtor_account ON transactions.debtorAccountId = debtor_account.id
         LEFT JOIN expense_tag ON transactions.expenseTagId = expense_tag.id
         ORDER BY transactions.bookingDate DESC
-        LIMIT :limit OFFSET :offset
+        LIMIT :limit
         """
     )
-    fun getTransactionsPagingSource(limit: Int, offset: Int): Flow<List<FullTransaction>>
+    fun getTransactionsPagingSource(limit: Int): Flow<List<FullTransaction>>
 
     @Query("SELECT * FROM transactions WHERE id = :transactionId")
     suspend fun getRawTransactionById(transactionId: String): DaoTransaction?

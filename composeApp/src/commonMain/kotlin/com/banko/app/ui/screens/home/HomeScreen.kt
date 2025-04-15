@@ -55,7 +55,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.times
 import banko.composeapp.generated.resources.Res
 import banko.composeapp.generated.resources.account_balance
 import banko.composeapp.generated.resources.app_name

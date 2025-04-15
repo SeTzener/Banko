@@ -3,13 +3,13 @@ package com.banko.app.ui.screens.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.banko.app.DatabaseTransactionRepository
-import com.banko.app.ModelTransaction
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.banko.app.api.utils.Result
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -23,7 +23,6 @@ class HomeScreenViewModel(
     val state: StateFlow<HomeScreenState> = _state.asStateFlow()
 
     private var currentPage = 0
-    private var currentItems: List<ModelTransaction> = emptyList()
     private var activeFlowJobs = mutableListOf<Job>()
 
     init {
@@ -41,7 +40,7 @@ class HomeScreenViewModel(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
             try {
-                val job = repository.getLocalTransactions(limit = pageSize, offset = 0)
+                val job = repository.getLocalTransactions(limit = pageSize)
                     .onEach { transactions ->
                         _state.update {
                             it.copy(
@@ -107,28 +106,41 @@ class HomeScreenViewModel(
                 val storedTransactionCount = repository.getStoredTransactionCount()
 
                 activeFlowJobs.forEach { it.cancel() }
-                activeFlowJobs.clear()
 
-                if (offset >= storedTransactionCount) {
-                    if (_state.value.totalTransactionCount > storedTransactionCount) {
-                        repository.fetchAndStoreTransactions(pageNumber = nextPage, pageSize = pageSize)
+                if (storedTransactionCount < _state.value.totalTransactionCount) {
+                    if (offset >= storedTransactionCount) {
+                        val result = repository.fetchAndStoreTransactions(
+                            pageNumber = nextPage,
+                            pageSize = pageSize
+                        )
+                        when (result) {
+                            is Result.Success -> {
+                                loadLocalTransactions(nextPage, offset, this)
+                            }
+
+                            is Result.Error -> _state.update {
+                                println(result.error.name)
+                                it.copy(
+                                    isLoading = false,
+                                    error = result.error.name
+                                )
+                            }
+                        }
+                    } else {
+                        loadLocalTransactions(nextPage, offset, this)
                     }
-                }
-
-                val job = repository.getLocalTransactions(limit = pageSize, offset = offset)
-                    .onEach { newTransactions ->
-                        currentItems = currentItems + newTransactions
+                } else {
+                    if (_state.value.transactions.count() < storedTransactionCount) {
+                        loadLocalTransactions(nextPage, offset, this)
+                    } else {
                         _state.update {
                             it.copy(
-                                transactions = currentItems,
                                 isLoading = false,
-                                endReached = newTransactions.isEmpty()
+                                endReached = true
                             )
                         }
-                        currentPage = nextPage
-                    }.launchIn(this)
-
-                activeFlowJobs.add(job)
+                    }
+                }
             } catch (e: Exception) {
                 _state.update {
                     it.copy(
@@ -140,6 +152,23 @@ class HomeScreenViewModel(
         }
     }
 
+    private fun loadLocalTransactions(nextPage: Int, offset: Int, scope: CoroutineScope) {
+        val job = repository.getLocalTransactions(limit = offset)
+            .onEach { newTransactions ->
+                _state.update {
+                    it.copy(
+                        transactions = newTransactions,
+                        isRefreshing = false,
+                        isLoading = false,
+                        endReached = newTransactions.isEmpty()
+                    )
+                }
+                currentPage = nextPage
+            }.launchIn(scope)
+
+        activeFlowJobs.add(job)
+    }
+
     private fun refreshData() {
         viewModelScope.launch {
             _state.update { it.copy(isRefreshing = true) }
@@ -147,26 +176,12 @@ class HomeScreenViewModel(
                 activeFlowJobs.forEach { it.cancel() }
                 activeFlowJobs.clear()
 
-                currentPage = 0
-
                 val result =
                     repository.fetchAndStoreTransactions(pageNumber = 1, pageSize = pageSize)
 
                 when (result) {
                     is Result.Success -> {
-                        val job = repository.getLocalTransactions(limit = pageSize, offset = 0)
-                            .onEach { transactions ->
-                                _state.update {
-                                    it.copy(
-                                        transactions = transactions,
-                                        isRefreshing = false,
-                                        totalTransactionCount = result.data
-                                    )
-                                }
-                            }
-                            .launchIn(this)
-
-                        activeFlowJobs.add(job)
+                        loadLocalTransactions(currentPage, pageSize, this)
                     }
 
                     is Result.Error -> {
