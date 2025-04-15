@@ -74,7 +74,6 @@ fun App(root: RootComponent) {
                 ) { child ->
                     when (val instance = child.instance) {
                         is RootComponent.Child.Home -> HomeScreen(instance.component)
-                        // TODO() add koin to the project and change -> DetailScreenViewModel()
                         is RootComponent.Child.Details -> DetailsScreen(
                             component = instance.component,
                         )
