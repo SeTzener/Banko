@@ -40,9 +40,8 @@ class TransactionsRepository(
 ) {
     private val dispatchers = Dispatchers.IO
     private val dao = bankoDatabase.bankoDao()
-    var pageNumber: Int? = null
 
-    suspend fun upsertTransaction(transaction: ModelTransaction) {
+    private suspend fun upsertTransaction(transaction: ModelTransaction) {
         transaction.creditorAccount?.let { dao.upsertCreditorAccount(it.toDao()) }
         transaction.debtorAccount?.let { dao.upsertDebtorAccount(it.toDao()) }
         transaction.expenseTag?.let { dao.upsertExpenseTag(it.toDao()) }
@@ -73,92 +72,34 @@ class TransactionsRepository(
         return dao.getRawTransactionById(transactionId)
     }
 
+    fun getLocalTransactions(limit: Int, offset: Int): Flow<List<ModelTransaction>> {
+        return dao.getTransactionsPagingSource(limit, offset)
+            .map { list -> list.map { it.toModelItem() } }
+    }
+
     suspend fun fetchAndStoreTransactions(
         pageNumber: Int,
         pageSize: Int
     ): Result<Boolean, NetworkError> {
         val result = apiService.getTransactions(pageNumber = pageNumber, pageSize = pageSize)
-        if (result is Result.Error) {
-            println("Error: ${result.error}")
-            return Result.Error(result.error)
-        }
-        val transactions = (result as Result.Success).data
-        if (transactions.totalCount == 0L) return Result.Error(NetworkError.NO_NEW_TRANSACTIONS)
-
-        transactions.let {
-            it.transactions.forEach { transaction ->
-                upsertTransaction(transaction.toModelItem())
+        when (result) {
+            is Result.Error -> {
+                println("Error: ${result.error}")
+                return result
             }
-        }
-        return Result.Success(
-            transactions.totalCount <= (pageNumber * pageSize)
-        )
-    }
 
-    @OptIn(ExperimentalPagingApi::class)
-    fun getTransactionsPagingSource(
-        pageSize: Int,
-        coroutineScope: CoroutineScope,
-    ): Flow<PagingData<ModelTransaction>> {
-        return Pager(
-            config = PagingConfig(pageSize = pageSize),
-            pagingSourceFactory = {
-                coroutineScope.launch {
-                    val count = dao.transactionsCount()
-                    println("count $count")
+            is Result.Success -> {
+                val transactions = result.data
+                if (transactions.totalCount == 0L) return Result.Error(NetworkError.NO_NEW_TRANSACTIONS)
+
+                result.data.transactions.forEach { transaction ->
+                    upsertTransaction(transaction.toModelItem())
                 }
-                dao.getTransactionsPagingSource()
-            },
-            remoteMediator = object : RemoteMediator<Int, FullTransaction>() {
-                override suspend fun load(
-                    loadType: LoadType,
-                    state: PagingState<Int, FullTransaction>
-                ): MediatorResult {
-                    return when (loadType) {
-                        LoadType.PREPEND -> {
-                            println("PREPEND")
-                            MediatorResult.Success(true)
-                        }
+                Result.Success(result.data.totalCount <= (pageNumber * pageSize))
 
-                        LoadType.REFRESH -> {
-                            println("REFRESH")
-                            val result = fetchAndStoreTransactions(
-                                pageNumber = 1,
-                                pageSize = pageSize
-                            )
-                            if (result is Result.Success) {
-                                return MediatorResult.Success(result.data)
-                            } else {
-                                return MediatorResult.Error(Exception("Failed to fetch transactions"))
-                            }
-                        }
-
-                        LoadType.APPEND -> {
-                            println("APPEND")
-                            val localPageNumber =
-                                if (pageNumber == null) 1 else pageNumber
-
-                            val result =
-                                localPageNumber?.let {
-                                    fetchAndStoreTransactions(
-                                        pageNumber = it,
-                                        pageSize = pageSize
-                                    )
-                                }
-                            if (result is Result.Success) {
-                                pageNumber = localPageNumber + 1
-                                return MediatorResult.Success(result.data)
-                            } else {
-                                println("error")
-                                return MediatorResult.Error(Exception("Failed to fetch transactions"))
-                            }
-                        }
-                    }
-                }
-            }
-        ).flow.map { pagingData ->
-            pagingData.map {
-                it.toModelItem()
+                return Result.Success(
+                    transactions.totalCount <= (pageNumber * pageSize)
+                )
             }
         }
     }

@@ -2,58 +2,164 @@ package com.banko.app.ui.screens.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.paging.PagingData
-import androidx.paging.TerminalSeparatorType
-import androidx.paging.cachedIn
-import androidx.paging.insertSeparators
-import androidx.paging.map
 import com.banko.app.DatabaseTransactionRepository
 import com.banko.app.ModelTransaction
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.datetime.LocalDate
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import com.banko.app.api.utils.Result
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 
 private const val pageSize = 30
 
 class HomeScreenViewModel(
-    private val dbRepository: DatabaseTransactionRepository,
+    private val repository: DatabaseTransactionRepository,
 ) : ViewModel() {
-    private val _screenState = MutableStateFlow(HomeScreenState())
-    val screenState: StateFlow<HomeScreenState> = _screenState
+    private val _state = MutableStateFlow(HomeScreenState())
+    val state: StateFlow<HomeScreenState> = _state.asStateFlow()
 
-    val pagingDataFlow: Flow<PagingData<TransactionPagingData>> =
-        dbRepository.getTransactionsPagingSource(
-            pageSize = pageSize,
-            coroutineScope = viewModelScope,
-        ).cachedIn(viewModelScope)
-            .map { pagingData ->
-                println("culo")
-                pagingData.insertSeparators(TerminalSeparatorType.SOURCE_COMPLETE) { before, after ->
-                    val dateBefore = before?.bookingDate?.date
-                    val dateAfter = after?.bookingDate?.date
+    private var currentPage = 0
+    private var currentItems: List<ModelTransaction> = emptyList()
+    private var activeFlowJobs = mutableListOf<Job>()
 
-                    if (dateAfter != null && dateBefore != dateAfter) dateAfter else null
-                }.map { item ->
-                    when (item) {
-                        is ModelTransaction -> TransactionPagingData.Item(item)
-                        is LocalDate -> {
-                            TransactionPagingData.Separator(item)
+    init {
+        loadInitialData()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        activeFlowJobs.forEach { it.cancel() }
+    }
+
+    private fun loadInitialData() {
+        if (_state.value.isLoading) return
+
+        viewModelScope.launch {
+                _state.update { it.copy(isLoading = true) }
+                try {
+                    val job = repository.getLocalTransactions(limit = pageSize, offset = 0)
+                        .onEach { transactions ->
+                            _state.update {
+                                it.copy(
+                                    transactions = transactions,
+                                    isLoading = false,
+                                    endReached = transactions.size < pageSize
+                                )
+                            }
                         }
+                        .launchIn(this)
 
-                        else -> error("Unknown item type: $item")
-                    }
+                    activeFlowJobs.add(job)
+            } catch (e: Exception) {
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        error = e.message ?: "Failed to load transactions"
+                    )
                 }
             }
-}
+        }
+    }
 
-sealed interface TransactionPagingData {
-    data class Item(
-        val modelTransaction: ModelTransaction
-    ) : TransactionPagingData
+    fun handleEvent(event: TransactionsEvent) {
+        when (event) {
+            is TransactionsEvent.LoadMore -> loadMoreData()
+            is TransactionsEvent.Refresh -> refreshData()
+            is TransactionsEvent.ErrorShown -> clearError(event.error)
+        }
+    }
 
-    data class Separator(
-        val date: LocalDate
-    ) : TransactionPagingData
+    private fun loadMoreData() {
+        if (_state.value.isLoading || _state.value.endReached) return
+
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true) }
+            try {
+                val nextPage = currentPage + 1
+                val offset = nextPage * pageSize
+
+                activeFlowJobs.forEach { it.cancel() }
+                activeFlowJobs.clear()
+
+                val job = repository.getLocalTransactions(limit = pageSize, offset = offset)
+                    .onEach { newTransactions ->
+                        currentItems = currentItems + newTransactions
+                        _state.update {
+                            it.copy(
+                                transactions = currentItems,
+                                isLoading = false,
+                                endReached = newTransactions.isEmpty()
+                            )
+                        }
+                        currentPage = nextPage
+                    }.launchIn(this)
+
+                activeFlowJobs.add(job)
+            } catch (e: Exception) {
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        error = e.message ?: "Failed to load more transactions"
+                    )
+                }
+            }
+        }
+    }
+
+    private fun refreshData() {
+        viewModelScope.launch {
+            _state.update { it.copy(isRefreshing = true) }
+            try {
+                activeFlowJobs.forEach { it.cancel() }
+                activeFlowJobs.clear()
+
+                currentPage = 0
+
+                val result = repository.fetchAndStoreTransactions(pageNumber = 1, pageSize = pageSize)
+
+                when(result){
+                    is Result.Success -> {
+                        val job = repository.getLocalTransactions(limit = pageSize, offset = 0)
+                            .onEach { transactions ->
+                                _state.update {
+                                    it.copy(
+                                        transactions = transactions,
+                                        isRefreshing = false,
+                                        endReached = result.data || transactions.size < pageSize
+                                    )
+                                }
+                            }
+                            .launchIn(this)
+
+                        activeFlowJobs.add(job)
+                    }
+                    is Result.Error -> {
+                        _state.update {
+                            it.copy(
+                                isRefreshing = false,
+                                error = result.error.name
+                            )
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                _state.update {
+                    it.copy(
+                        isRefreshing = false,
+                        error = e.message ?: "Failed to refresh transactions"
+                    )
+                }
+            }
+        }
+    }
+
+    private fun clearError(error: String) {
+        if (_state.value.error == error) {
+            _state.update { it.copy(error = null) }
+        }
+    }
 }
