@@ -38,8 +38,8 @@ class DetailsScreenViewModel(
         pendingUpdates[id] = expenseTagId
         viewModelScope.launch {
             try {
-                updateTransactionUseCase.invoke(transactionId = id, expenseTagId = expenseTagId)
                 apiRepository.assignExpenseTag(id, expenseTagId)
+                updateTransactionUseCase.invoke(transactionId = id, expenseTagId = expenseTagId)
                 pendingUpdates.remove(id)
 
             } catch(e: Exception) {
