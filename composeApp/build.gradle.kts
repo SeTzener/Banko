@@ -16,7 +16,6 @@ plugins {
 
 kotlin {
     androidTarget {
-        @OptIn(ExperimentalKotlinGradlePluginApi::class)
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_11)
         }
@@ -72,6 +71,7 @@ kotlin {
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.serialization.core)
             implementation(libs.room.runtime)
+            implementation(libs.room.paging)
             implementation(libs.sqlite.bundle)
 
             api(libs.datastore)

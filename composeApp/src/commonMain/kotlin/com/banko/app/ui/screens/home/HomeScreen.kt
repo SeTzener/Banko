@@ -1,10 +1,18 @@
 package com.banko.app.ui.screens.home
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,28 +20,37 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextOverflow
@@ -47,43 +64,61 @@ import banko.composeapp.generated.resources.details
 import banko.composeapp.generated.resources.monthly_budget
 import banko.composeapp.generated.resources.monthly_income
 import banko.composeapp.generated.resources.payments
+import com.banko.app.ModelTransaction
 import com.banko.app.ui.components.CircularIndicator
 import com.banko.app.ui.components.ExpandableCard
 import com.banko.app.ui.components.ExpenseTag
 import com.banko.app.ui.components.TextWithIcon
 import com.banko.app.ui.models.Transaction
 import com.banko.app.ui.models.categories
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.distinctUntilChanged
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.annotation.KoinExperimentalAPI
 import kotlin.random.Random
 
-@OptIn(ExperimentalFoundationApi::class, KoinExperimentalAPI::class)
+@OptIn(KoinExperimentalAPI::class)
 @Composable
 fun HomeScreen(component: HomeComponent) {
     val viewModel = koinViewModel<HomeScreenViewModel>()
-    val screenState by viewModel.screenState.collectAsState()
-    val listState = rememberLazyListState()
-    val firstLoad = remember { mutableStateOf(true) }
+    val state = viewModel.state.collectAsState()
 
-    if (firstLoad.value) {
-        viewModel.loadNewTransactions()
-        firstLoad.value = false
+    HomeScreen(
+        state = state,
+        navigateToDetails = component::navigateToDetails,
+        loadMore = { viewModel.handleEvent(event = TransactionsEvent.LoadMore) },
+        onRefresh = { viewModel.handleEvent(event = TransactionsEvent.Refresh) },
+        clearError = { viewModel.handleEvent(TransactionsEvent.ErrorShown(it)) }
+    )
+}
+
+@Composable
+fun HomeScreen(
+    state: State<HomeScreenState>,
+    navigateToDetails: (ModelTransaction) -> Unit,
+    loadMore: () -> Unit,
+    onRefresh: () -> Unit,
+    clearError: (String) -> Unit
+) {
+    val liststate = rememberLazyListState()
+    val snackbarHoststate = remember { SnackbarHostState() }
+
+    LaunchedEffect(state.value.error) {
+        state.value.error?.let { error ->
+            snackbarHoststate.showSnackbar(error)
+            clearError(error)
+        }
     }
 
-    LaunchedEffect(listState) {
-        snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
-            .distinctUntilChanged()
-            .collectLatest { lastVisibleIndex ->
-                if (lastVisibleIndex != null && // Check for null
-                    // Ensure it doesn't trigger before the list is loaded
-                    lastVisibleIndex >= viewModel.getTransactionsToLoadCount() &&
-                    // Ensure it doesn't trigger when there are no more transactions to load
-                    lastVisibleIndex < screenState.apiTransactionsCount
+    LaunchedEffect(liststate) {
+        snapshotFlow { liststate.layoutInfo.visibleItemsInfo }
+            .collect { visibleItems ->
+                if (state.value.isLoading || state.value.endReached) return@collect
+
+                val lastVisibleItem = visibleItems.lastOrNull()
+                if (lastVisibleItem != null &&
+                    lastVisibleItem.index >= liststate.layoutInfo.totalItemsCount - 5
                 ) {
-                    viewModel.loadNewTransactions()
+                    loadMore()
                 }
             }
     }
@@ -166,59 +201,25 @@ fun HomeScreen(component: HomeComponent) {
                 }
             }
         }
-        val transactions = screenState.transactions
-        val groupedTransactions = transactions.groupBy { it.bookingDate.date }
-
-        if (transactions.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize().padding(start = 5.dp, end = 5.dp),
-                contentAlignment = Alignment.Center
+        Scaffold(
+            snackbarHost = { SnackbarHost(snackbarHoststate) }
+        ) { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(35.dp),
-                    strokeWidth = 5.dp,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-        }
-        LazyColumn(
-            state = listState
-        ) {
-            groupedTransactions.forEach { (date, transactionsForDate) ->
-                stickyHeader {
-                    Text(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.onSurface)
-                            .padding(12.dp),
-                        text = date.toString(),
-                        color = MaterialTheme.colorScheme.secondary
-                    )
-                }
+                // Your existing content here
 
-                items(
-                    items = transactionsForDate,
-                    key = { transaction -> transaction.id }
-                ) { transaction ->
-                    SwipableTransactionRow(
-                        transaction = transaction,
-                        onDetailsClick = { component.onEvent(HomeEvent.ButtonClick, transaction) }
-                    )
-                }
-            }
-            if (screenState.isLoading) {
-                item {
-                    Box(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(15.dp),
-                            strokeWidth = 5.dp,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
+                LazyTransactionList(
+                    isLoading = state.value.isLoading,
+                    isRefreshing = state.value.isRefreshing,
+                    listState = liststate,
+                    transactions = state.value.transactions,
+                    navigateToDetails = navigateToDetails,
+                    onRefresh = onRefresh,
+                )
             }
         }
     }
@@ -226,7 +227,7 @@ fun HomeScreen(component: HomeComponent) {
 
 
 @Composable
-fun SwipableTransactionRow(transaction: Transaction, onDetailsClick: () -> Unit) {
+private fun SwipableTransactionRow(transaction: Transaction, onDetailsClick: () -> Unit) {
     var offsetX by remember { mutableStateOf(0f) }
     val buttonWidth = 85.dp
 
@@ -318,5 +319,97 @@ private fun TopContent() {
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.primary
         )
+    }
+}
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+private fun LazyTransactionList(
+    isLoading: Boolean,
+    isRefreshing: Boolean,
+    transactions: List<ModelTransaction>,
+    listState: LazyListState,
+    navigateToDetails: (ModelTransaction) -> Unit,
+    onRefresh: () -> Unit,
+) {
+    val groupedTransactions = transactions.groupBy { it.bookingDate.date }
+
+    LoadingProgressIndicator(isLoading = isLoading)
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = onRefresh,
+    ) {
+        LazyColumn(state = listState) {
+            groupedTransactions.forEach { (date, transactionsByDate) ->
+                stickyHeader {
+                    Text(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.onSurface)
+                            .padding(12.dp),
+                        text = date.toString(),
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                }
+
+                items(
+                    items = transactionsByDate,
+                    key = { transaction -> transaction.id }
+                ) { transaction ->
+                    SwipableTransactionRow(
+                        transaction = transaction,
+                        onDetailsClick = { navigateToDetails(transaction) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun LoadingProgressIndicator(
+    isLoading: Boolean,
+) {
+    if (!isLoading) return
+
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth().height(4.dp)) {
+        val infiniteTransition = rememberInfiniteTransition()
+        val progress by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(1000, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart
+            )
+        )
+
+        // Background track
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(4.dp)
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
+        ) {
+            val primaryColor = MaterialTheme.colorScheme.primary
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val width = size.width
+                val gradientWidth = width * 0.3f
+
+                drawRect(
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            Color.Transparent,
+                            primaryColor.copy(alpha = 0.8f),
+                            primaryColor,
+                            primaryColor.copy(alpha = 0.8f),
+                            Color.Transparent
+                        ),
+                        start = Offset(progress * width * 1.5f - gradientWidth, 0f),
+                        end = Offset(progress * width * 1.5f + gradientWidth, 0f)
+                    ),
+                    size = size
+                )
+            }
+        }
     }
 }

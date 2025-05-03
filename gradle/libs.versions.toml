@@ -75,6 +75,7 @@ decompose-extensions = { group = "com.arkivanov.decompose", name = "extensions-c
 # Room
 room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+room-paging = { group = "androidx.room", name = "room-paging", version.ref = "room" }
 sqlite-bundle = { group = "androidx.sqlite", name = "sqlite-bundled", version.ref = "sqllite" }
 
 # Serialization
