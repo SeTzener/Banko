@@ -34,37 +34,52 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import banko.composeapp.generated.resources.Res
+import banko.composeapp.generated.resources.monthly_earnings
+import banko.composeapp.generated.resources.monthly_spendings
+import com.banko.app.ModelTransaction
 import com.banko.app.ui.models.Category
 import com.banko.app.ui.theme.Grey_Nevada
+import kotlinx.datetime.Clock
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.Month
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import org.jetbrains.compose.resources.stringResource
+import kotlin.math.roundToLong
 
 @Composable
 fun CircularIndicator(
     currency: String,
-    monthlyBudget: Int = 0,
-    dailyBudgetText: String,
-    monthlyBudgetText: String,
-    categories: List<Category>,
+    transactions: List<ModelTransaction>,
     bigTextFontSize: TextUnit = MaterialTheme.typography.bodyLarge.fontSize,
     bigTextColor: Color = MaterialTheme.colorScheme.primary,
     canvasSize: Dp = 256.dp,
     indicatorStroke: Float = 60f,
-    dailyBudget: Int = 0,
     smallTextColor: Color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
     smallTextFontSize: TextUnit = MaterialTheme.typography.bodyMedium.fontSize,
 ) {
+    val localDate = beginningOfMonth()
+    val monthlySpending = transactions.filter {
+        it.bookingDate.month == localDate.month && it.expenseTag?.name != "Salary"
+    }.sumOf { it.amount }.toInt()
+    val monthlyEarnings = transactions.filter {
+        it.bookingDate.month == localDate.month && it.expenseTag?.name == "Salary"
+    }.sumOf { it.amount }.toInt()
+    val categories = sortCategories(transactions, month = localDate.month)
     val totalAmount = categories.sumOf { it.amount.toInt() }.toFloat()
     var animatedMonthlyBudgetValue by remember { mutableIntStateOf(0) }
-    var animatedDailyBudgetValue by remember { mutableIntStateOf(0) }
+    var animatedMonthlySpendingsValue by remember { mutableIntStateOf(0) }
 
-    LaunchedEffect(dailyBudget) {
-        animatedMonthlyBudgetValue = monthlyBudget
+    LaunchedEffect(monthlyEarnings) {
+        animatedMonthlyBudgetValue = monthlyEarnings
     }
-    LaunchedEffect(dailyBudget) {
-        animatedDailyBudgetValue = dailyBudget
+    LaunchedEffect(monthlySpending) {
+        animatedMonthlySpendingsValue = monthlySpending
     }
 
-    val animatedDailyBudget by animateIntAsState(
-        targetValue = animatedDailyBudgetValue,
+    val animatedMonthlySpendings by animateIntAsState(
+        targetValue = animatedMonthlySpendingsValue,
         animationSpec = tween(1000),
         label = ""
     )
@@ -82,6 +97,11 @@ fun CircularIndicator(
             label = ""
         ).value
     }
+    Text(
+        modifier = Modifier.padding(start = 40.dp),
+        text = localDate.month.name,
+        color = MaterialTheme.colorScheme.primary
+    )
     Column(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
@@ -108,13 +128,13 @@ fun CircularIndicator(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             EmbeddedElements(
-                dailyBudget = animatedDailyBudget,
+                dailyBudget = animatedMonthlySpendings,
                 monthlyBudget = animatedMonthlyBudget,
                 bigTextFontSize = bigTextFontSize,
                 bigTextColor = bigTextColor,
                 currency = currency,
-                dailyBudgetText = dailyBudgetText,
-                monthlyBudgetText = monthlyBudgetText,
+                monthlySpendings = stringResource(Res.string.monthly_spendings),
+                monthlyEarnings = stringResource(Res.string.monthly_earnings),
                 smallTextColor = smallTextColor,
                 smallTextFontSize = smallTextFontSize,
             )
@@ -172,6 +192,7 @@ fun DrawScope.backgroundIndicator(
         )
     )
 }
+
 @Composable
 private fun EmbeddedElements(
     dailyBudget: Int,
@@ -179,13 +200,13 @@ private fun EmbeddedElements(
     bigTextFontSize: TextUnit,
     bigTextColor: Color,
     currency: String,
-    monthlyBudgetText: String,
-    dailyBudgetText: String,
+    monthlyEarnings: String,
+    monthlySpendings: String,
     smallTextColor: Color,
     smallTextFontSize: TextUnit
 ) {
     Text(
-        text = monthlyBudgetText,
+        text = monthlyEarnings,
         color = smallTextColor,
         fontSize = smallTextFontSize,
         textAlign = TextAlign.Center,
@@ -200,7 +221,7 @@ private fun EmbeddedElements(
         fontWeight = FontWeight.Bold
     )
     Text(
-        text = dailyBudgetText,
+        text = monthlySpendings,
         color = smallTextColor,
         fontSize = smallTextFontSize,
         textAlign = TextAlign.Center,
@@ -260,4 +281,26 @@ private fun CategoryGrid(categories: List<Category>, itemsPerRow: Int = 5) {
             }
         }
     }
+}
+
+private fun sortCategories(transactions: List<ModelTransaction>, month: Month): List<Category> {
+    val result =
+        transactions.filter { it.expenseTag != null && it.bookingDate.month == month && it.expenseTag.name != "Salary" }
+    return result.groupBy { it.expenseTag }.map {
+        val sum = it.value.sumOf { it.amount }
+        val roundedAmount = (sum * 100).roundToLong() / 100.0
+        Category(
+            name = it.key!!.name,
+            amount = roundedAmount,
+            color = it.key!!.color
+        )
+    }
+}
+
+private fun beginningOfMonth(): LocalDateTime {
+    val currentInstant = Clock.System.now()
+    val currentTZ = TimeZone.currentSystemDefault()
+    val currentDate = currentInstant.toLocalDateTime(currentTZ).date
+
+    return LocalDateTime(currentDate.year, currentDate.month, 1, 0, 0)
 }

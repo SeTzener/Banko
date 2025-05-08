@@ -28,7 +28,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -44,7 +43,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -59,7 +57,6 @@ import banko.composeapp.generated.resources.Res
 import banko.composeapp.generated.resources.account_balance
 import banko.composeapp.generated.resources.app_name
 import banko.composeapp.generated.resources.currency_nok
-import banko.composeapp.generated.resources.daily_budget
 import banko.composeapp.generated.resources.details
 import banko.composeapp.generated.resources.monthly_budget
 import banko.composeapp.generated.resources.monthly_income
@@ -70,11 +67,9 @@ import com.banko.app.ui.components.ExpandableCard
 import com.banko.app.ui.components.ExpenseTag
 import com.banko.app.ui.components.TextWithIcon
 import com.banko.app.ui.models.Transaction
-import com.banko.app.ui.models.categories
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.annotation.KoinExperimentalAPI
-import kotlin.random.Random
 
 @OptIn(KoinExperimentalAPI::class)
 @Composable
@@ -99,24 +94,24 @@ fun HomeScreen(
     onRefresh: () -> Unit,
     clearError: (String) -> Unit
 ) {
-    val liststate = rememberLazyListState()
-    val snackbarHoststate = remember { SnackbarHostState() }
+    val listState = rememberLazyListState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(state.value.error) {
         state.value.error?.let { error ->
-            snackbarHoststate.showSnackbar(error)
+            snackbarHostState.showSnackbar(error)
             clearError(error)
         }
     }
 
-    LaunchedEffect(liststate) {
-        snapshotFlow { liststate.layoutInfo.visibleItemsInfo }
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.layoutInfo.visibleItemsInfo }
             .collect { visibleItems ->
                 if (state.value.isLoading || state.value.endReached) return@collect
 
                 val lastVisibleItem = visibleItems.lastOrNull()
                 if (lastVisibleItem != null &&
-                    lastVisibleItem.index >= liststate.layoutInfo.totalItemsCount - 5
+                    lastVisibleItem.index >= listState.layoutInfo.totalItemsCount - 5
                 ) {
                     loadMore()
                 }
@@ -132,77 +127,73 @@ fun HomeScreen(
             topContent = { TopContent() },
             expandedContent = {
                 CircularIndicator(
-                    dailyBudget = Random.nextInt(100),
+                    transactions = state.value.transactions,
                     currency = stringResource(Res.string.currency_nok),
-                    dailyBudgetText = stringResource(Res.string.daily_budget),
-                    monthlyBudgetText = stringResource(Res.string.monthly_budget),
-                    monthlyBudget = 123456789,
-                    categories = categories.take(Random.nextInt(categories.size - 1))
                 )
             }
         )
-        Card(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardColors(
-                contentColor = MaterialTheme.colorScheme.primary,
-                containerColor = MaterialTheme.colorScheme.onSurface,
-                disabledContentColor = MaterialTheme.colorScheme.primary,
-                disabledContainerColor = MaterialTheme.colorScheme.onSurface
-            ),
-            border = BorderStroke(0.dp, Color.LightGray),
-        ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Row(
-                    modifier = Modifier.padding(
-                        top = 12.dp,
-                        start = 12.dp,
-                        end = 12.dp,
-                        bottom = 8.dp
-                    ).fillMaxWidth()
-                ) {
-                    Column {
-                        TextWithIcon(
-                            text = stringResource(resource = Res.string.monthly_income),
-                            iconResId = Res.drawable.payments,
-                            textColor = MaterialTheme.colorScheme.primary,
-                            iconPadding = 8.dp
-                        )
-                    }
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            modifier = Modifier.align(Alignment.End),
-                            text = "800 Nok"
-                        )
-                    }
-                }
-                Row(
-                    modifier = Modifier.padding(
-                        top = 8.dp,
-                        start = 12.dp,
-                        end = 12.dp,
-                        bottom = 12.dp
-                    ).fillMaxWidth()
-                ) {
-                    Column {
-                        TextWithIcon(
-                            text = stringResource(Res.string.monthly_budget),
-                            iconResId = Res.drawable.account_balance,
-                            textColor = MaterialTheme.colorScheme.primary,
-                            iconPadding = 8.dp
-                        )
-                    }
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            modifier = Modifier.align(Alignment.End),
-                            text = "40.000 Nok"
-                        )
-                    }
-                }
-            }
-        }
+//        Card(
+//            modifier = Modifier.fillMaxWidth().padding(16.dp),
+//            shape = RoundedCornerShape(16.dp),
+//            colors = CardColors(
+//                contentColor = MaterialTheme.colorScheme.primary,
+//                containerColor = MaterialTheme.colorScheme.onSurface,
+//                disabledContentColor = MaterialTheme.colorScheme.primary,
+//                disabledContainerColor = MaterialTheme.colorScheme.onSurface
+//            ),
+//            border = BorderStroke(0.dp, Color.LightGray),
+//        ) {
+//            Column(modifier = Modifier.fillMaxWidth()) {
+//                Row(
+//                    modifier = Modifier.padding(
+//                        top = 12.dp,
+//                        start = 12.dp,
+//                        end = 12.dp,
+//                        bottom = 8.dp
+//                    ).fillMaxWidth()
+//                ) {
+//                    Column {
+//                        TextWithIcon(
+//                            text = stringResource(resource = Res.string.monthly_income),
+//                            iconResId = Res.drawable.payments,
+//                            textColor = MaterialTheme.colorScheme.primary,
+//                            iconPadding = 8.dp
+//                        )
+//                    }
+//                    Column(modifier = Modifier.fillMaxWidth()) {
+//                        Text(
+//                            modifier = Modifier.align(Alignment.End),
+//                            text = "800 Nok"
+//                        )
+//                    }
+//                }
+//                Row(
+//                    modifier = Modifier.padding(
+//                        top = 8.dp,
+//                        start = 12.dp,
+//                        end = 12.dp,
+//                        bottom = 12.dp
+//                    ).fillMaxWidth()
+//                ) {
+//                    Column {
+//                        TextWithIcon(
+//                            text = stringResource(Res.string.monthly_budget),
+//                            iconResId = Res.drawable.account_balance,
+//                            textColor = MaterialTheme.colorScheme.primary,
+//                            iconPadding = 8.dp
+//                        )
+//                    }
+//                    Column(modifier = Modifier.fillMaxWidth()) {
+//                        Text(
+//                            modifier = Modifier.align(Alignment.End),
+//                            text = "40.000 Nok"
+//                        )
+//                    }
+//                }
+//            }
+//        }
         Scaffold(
-            snackbarHost = { SnackbarHost(snackbarHoststate) }
+            snackbarHost = { SnackbarHost(snackbarHostState) }
         ) { padding ->
             Column(
                 modifier = Modifier
@@ -215,7 +206,7 @@ fun HomeScreen(
                 LazyTransactionList(
                     isLoading = state.value.isLoading,
                     isRefreshing = state.value.isRefreshing,
-                    listState = liststate,
+                    listState = listState,
                     transactions = state.value.transactions,
                     navigateToDetails = navigateToDetails,
                     onRefresh = onRefresh,
