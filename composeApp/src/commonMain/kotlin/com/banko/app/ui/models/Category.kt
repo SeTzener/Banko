@@ -14,20 +14,6 @@ import com.banko.app.ui.theme.Teal
 
 data class Category(
     val name: String,
-    val amount: Float,
+    val amount: Double,
     val color: Color
-)
-
-// TODO(): Temporary
-val categories = listOf(
-    Category(name = "E.Shop", amount = 2000f, color = DarkMidnightBlue),
-    Category(name = "Share Market", amount = 1500f, color = Orange),
-    Category(name = "Sports", amount = 500f, color = PatriarchPurple),
-    Category(name = "Export", amount = 1352f, color = SteelBlue),
-    Category(name = "Culo", amount = 1752f, color = Teal),
-    Category(name = "Cacca", amount = 1352f, color = Firebrick),
-    Category(name = "Export", amount = 1352f, color = Coral),
-    Category(name = "E.Shop", amount = 2000f, color = MediumPurple),
-    Category(name = "Share Market", amount = 1500f, color = DarkTurquoise),
-    Category(name = "Sports", amount = 500f, color = Olive),
 )

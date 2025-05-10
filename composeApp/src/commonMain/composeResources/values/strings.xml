@@ -2,7 +2,8 @@
     <string name="app_name">Banko</string>
     <string name="currency_euro">€</string>
     <string name="currency_nok">NOK</string>
-    <string name="daily_budget">Daily Budget</string>
+    <string name="monthly_spendings">Monthly Spendings</string>
+    <string name="monthly_earnings">Monthly Earnings</string>
     <string name="details">Details</string>
     <string name="details_booking_date">Booking Date</string>
     <string name="details_button_back">Go Back</string>
