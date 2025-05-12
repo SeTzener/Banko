@@ -11,6 +11,7 @@ import com.banko.app.DaoExpenseTag
 import com.banko.app.DaoTransaction
 import com.banko.app.database.Entities.FullTransaction
 import kotlinx.coroutines.flow.Flow
+import kotlinx.datetime.LocalDateTime
 
 @Dao
 interface BankoDao {
@@ -32,6 +33,14 @@ interface BankoDao {
         """
     )
     fun getTransactionsPagingSource(limit: Int): Flow<List<FullTransaction>>
+
+    @Query(
+        """
+            SELECT BookingDate FROM transactions
+            ORDER BY BookingDate ASC LIMIT 1
+        """
+    )
+    suspend fun getOldestTransactions(): String
 
     @Query("SELECT * FROM transactions WHERE id = :transactionId")
     suspend fun getRawTransactionById(transactionId: String): DaoTransaction?

@@ -16,6 +16,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.datetime.LocalDateTime
 
 class TransactionsRepository(
     private val bankoDatabase: BankoDatabase,
@@ -58,6 +59,10 @@ class TransactionsRepository(
     fun getLocalTransactions(limit: Int): Flow<List<ModelTransaction>> {
         return dao.getTransactionsPagingSource(limit)
             .map { list -> list.map { it.toModelItem() } }
+    }
+
+    suspend fun getOldestTransactions(): LocalDateTime {
+        return LocalDateTime.parse(dao.getOldestTransactions())
     }
 
     suspend fun fetchAndStoreTransactions(

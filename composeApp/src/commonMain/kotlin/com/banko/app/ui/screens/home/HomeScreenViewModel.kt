@@ -13,6 +13,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.datetime.LocalDateTime
 
 private const val pageSize = 30
 
@@ -27,6 +28,7 @@ class HomeScreenViewModel(
 
     init {
         loadInitialData()
+        getOldestTransactionDate()
     }
 
     override fun onCleared() {
@@ -149,6 +151,13 @@ class HomeScreenViewModel(
                     )
                 }
             }
+        }
+    }
+
+    private fun getOldestTransactionDate() {
+        viewModelScope.launch {
+            val date = repository.getOldestTransactions()
+            _state.update { it.copy(oldestTransactionDate = date) }
         }
     }
 
