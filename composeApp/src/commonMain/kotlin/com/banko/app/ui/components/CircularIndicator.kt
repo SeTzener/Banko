@@ -12,12 +12,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -35,16 +41,16 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import banko.composeapp.generated.resources.Res
+import banko.composeapp.generated.resources.ic_arrow_drop_down
 import banko.composeapp.generated.resources.monthly_earnings
 import banko.composeapp.generated.resources.monthly_spendings
 import com.banko.app.ModelTransaction
 import com.banko.app.ui.models.Category
 import com.banko.app.ui.theme.Grey_Nevada
-import kotlinx.datetime.Clock
+import com.banko.app.utils.beginningOfCurrentMonth
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.Month
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToLong
 
@@ -58,8 +64,9 @@ fun CircularIndicator(
     indicatorStroke: Float = 60f,
     smallTextColor: Color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
     smallTextFontSize: TextUnit = MaterialTheme.typography.bodyMedium.fontSize,
+    oldestTransactionDate: LocalDateTime
 ) {
-    val localDate = beginningOfMonth()
+    var localDate = beginningOfCurrentMonth()
     val monthlySpending = transactions.filter {
         it.bookingDate.month == localDate.month && it.expenseTag?.name != "Salary"
     }.sumOf { it.amount }.toInt()
@@ -68,6 +75,7 @@ fun CircularIndicator(
     }.sumOf { it.amount }.toInt()
     val categories = sortCategories(transactions, month = localDate.month)
     val totalAmount = categories.sumOf { it.amount.toInt() }.toFloat()
+    var isDatePickerVisible by remember { mutableStateOf(false) }
     var animatedMonthlyBudgetValue by remember { mutableIntStateOf(0) }
     var animatedMonthlySpendingsValue by remember { mutableIntStateOf(0) }
 
@@ -89,6 +97,7 @@ fun CircularIndicator(
         animationSpec = tween(1000),
         label = ""
     )
+
     // Remember and animate the sweep angles for each category
     val animatedSweepAngles = categories.mapIndexed { index, category ->
         animateFloatAsState(
@@ -97,11 +106,32 @@ fun CircularIndicator(
             label = ""
         ).value
     }
-    Text(
-        modifier = Modifier.padding(start = 40.dp),
-        text = localDate.month.name,
-        color = MaterialTheme.colorScheme.primary
+    MonthYearPickerDialog(
+        visible = isDatePickerVisible,
+        startYear = oldestTransactionDate.year,
+        startMonth = oldestTransactionDate.month.ordinal,
+        onConfirm = { date ->
+            isDatePickerVisible = false
+            localDate = date
+        },
+        onCancel = { isDatePickerVisible = false }
     )
+    TextButton(
+        modifier = Modifier.padding(start = 16.dp),
+        onClick = { isDatePickerVisible = true },
+    ) {
+        Text(
+            text = "${localDate.month.name} - ${localDate.year}",
+            color = MaterialTheme.colorScheme.primary
+        )
+        Icon(
+            modifier = Modifier.align(Alignment.Top),
+            painter = painterResource(Res.drawable.ic_arrow_drop_down),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary
+        )
+    }
+
     Column(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
@@ -203,7 +233,7 @@ private fun EmbeddedElements(
     monthlyEarnings: String,
     monthlySpendings: String,
     smallTextColor: Color,
-    smallTextFontSize: TextUnit
+    smallTextFontSize: TextUnit,
 ) {
     Text(
         text = monthlyEarnings,
@@ -295,12 +325,4 @@ private fun sortCategories(transactions: List<ModelTransaction>, month: Month): 
             color = it.key!!.color
         )
     }
-}
-
-private fun beginningOfMonth(): LocalDateTime {
-    val currentInstant = Clock.System.now()
-    val currentTZ = TimeZone.currentSystemDefault()
-    val currentDate = currentInstant.toLocalDateTime(currentTZ).date
-
-    return LocalDateTime(currentDate.year, currentDate.month, 1, 0, 0)
 }
