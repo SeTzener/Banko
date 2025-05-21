@@ -3,6 +3,7 @@ package com.banko.app.ui.screens.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.banko.app.DatabaseTransactionRepository
+import com.banko.app.ModelTransaction
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -47,13 +48,29 @@ class HomeScreenViewModel(
                         _state.update {
                             it.copy(
                                 transactions = transactions,
-                                endReached = transactions.size < pageSize
+                                endReached = transactions.size < pageSize,
                             )
                         }
                     }
                     .launchIn(this)
 
-                activeFlowJobs.add(job)
+                val monthlyTransactions = repository.getTransactionsForMonth(
+//                    month = _state.value.indicatorDateState,
+//                    year = _state.value.indicatorDateState.year
+                ).onEach { transactions ->
+                    _state.update {
+                        it.copy(
+                            monthlyTransactions = transactions
+                        )
+                    }
+                }.launchIn(this)
+
+                activeFlowJobs.addAll(
+                    listOf(
+                        job,
+                        monthlyTransactions,
+                    )
+                )
                 if (_state.value.totalTransactionCount == 0L) {
                     val result =
                         repository.fetchAndStoreTransactions(pageNumber = 1, pageSize = pageSize)
@@ -87,6 +104,16 @@ class HomeScreenViewModel(
             }
         }
     }
+
+//    suspend fun getTransactionsForMonth() {
+//        val result = repository.getTransactionsForMonth()
+//        _state.update {
+//            it.copy(
+//                monthlyTransactions = result
+//            )
+//        }
+//    }
+
 
     fun handleEvent(event: TransactionsEvent) {
         when (event) {
@@ -217,5 +244,10 @@ class HomeScreenViewModel(
         if (_state.value.error == error) {
             _state.update { it.copy(error = null) }
         }
+    }
+
+    fun indicatorDatePicker(date: LocalDateTime) {
+        _state.update { it.copy(indicatorDateState = date) }
+        // TODO() Add the logic to load the transactions for the selected month
     }
 }

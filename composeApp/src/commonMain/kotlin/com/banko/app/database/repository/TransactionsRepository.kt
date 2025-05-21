@@ -93,4 +93,12 @@ class TransactionsRepository(
     suspend fun getStoredTransactionCount(): Long {
         return dao.getTransactionCount()
     }
+
+    suspend fun getTransactionsForMonth(): Flow<List<ModelTransaction>> {
+//        val monthStart = LocalDateTime(year, month.monthNumber, 1, 0, 0, 0, 0).toString()
+//        val monthEnd = LocalDateTime(year, month.monthNumber, month.dayOfMonth, 23, 59, 0, 0).toString()
+//        print("monthStart: $monthStart, monthEnd: $monthEnd")
+        val culo = dao.getTransactionsForMonth().map { list -> list.map { it.toModelItem() } }
+        return culo
+    }
 }

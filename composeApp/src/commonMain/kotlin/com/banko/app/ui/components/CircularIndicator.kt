@@ -12,18 +12,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -41,41 +35,38 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import banko.composeapp.generated.resources.Res
-import banko.composeapp.generated.resources.ic_arrow_drop_down
 import banko.composeapp.generated.resources.monthly_earnings
 import banko.composeapp.generated.resources.monthly_spendings
 import com.banko.app.ModelTransaction
 import com.banko.app.ui.models.Category
+import com.banko.app.ui.models.Transaction
+import com.banko.app.ui.screens.home.HomeScreenState
 import com.banko.app.ui.theme.Grey_Nevada
-import com.banko.app.utils.beginningOfCurrentMonth
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.Month
-import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToLong
 
 @Composable
 fun CircularIndicator(
     currency: String,
-    transactions: List<ModelTransaction>,
+    monthlyTransactions: List<ModelTransaction>,
     bigTextFontSize: TextUnit = MaterialTheme.typography.bodyLarge.fontSize,
     bigTextColor: Color = MaterialTheme.colorScheme.primary,
     canvasSize: Dp = 256.dp,
     indicatorStroke: Float = 60f,
     smallTextColor: Color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
     smallTextFontSize: TextUnit = MaterialTheme.typography.bodyMedium.fontSize,
-    oldestTransactionDate: LocalDateTime
+    indicatorDateState: LocalDateTime
 ) {
-    var localDate = beginningOfCurrentMonth()
-    val monthlySpending = transactions.filter {
-        it.bookingDate.month == localDate.month && it.expenseTag?.name != "Salary"
+    val monthlySpending = monthlyTransactions.filter {
+        it.bookingDate.month == indicatorDateState.month && it.expenseTag?.name != "Salary"
     }.sumOf { it.amount }.toInt()
-    val monthlyEarnings = transactions.filter {
-        it.bookingDate.month == localDate.month && it.expenseTag?.name == "Salary"
+    val monthlyEarnings = monthlyTransactions.filter {
+        it.bookingDate.month == indicatorDateState.month && it.expenseTag?.name == "Salary"
     }.sumOf { it.amount }.toInt()
-    val categories = sortCategories(transactions, month = localDate.month)
+    val categories = sortCategories(monthlyTransactions, month = indicatorDateState.month)
     val totalAmount = categories.sumOf { it.amount.toInt() }.toFloat()
-    var isDatePickerVisible by remember { mutableStateOf(false) }
     var animatedMonthlyBudgetValue by remember { mutableIntStateOf(0) }
     var animatedMonthlySpendingsValue by remember { mutableIntStateOf(0) }
 
@@ -105,31 +96,6 @@ fun CircularIndicator(
             animationSpec = tween(1000),
             label = ""
         ).value
-    }
-    MonthYearPickerDialog(
-        visible = isDatePickerVisible,
-        startYear = oldestTransactionDate.year,
-        startMonth = oldestTransactionDate.month.ordinal,
-        onConfirm = { date ->
-            isDatePickerVisible = false
-            localDate = date
-        },
-        onCancel = { isDatePickerVisible = false }
-    )
-    TextButton(
-        modifier = Modifier.padding(start = 16.dp),
-        onClick = { isDatePickerVisible = true },
-    ) {
-        Text(
-            text = "${localDate.month.name} - ${localDate.year}",
-            color = MaterialTheme.colorScheme.primary
-        )
-        Icon(
-            modifier = Modifier.align(Alignment.Top),
-            painter = painterResource(Res.drawable.ic_arrow_drop_down),
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary
-        )
     }
 
     Column(
