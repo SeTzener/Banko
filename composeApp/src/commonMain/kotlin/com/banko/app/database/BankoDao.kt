@@ -4,6 +4,7 @@ import androidx.paging.PagingSource
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Upsert
 import com.banko.app.DaoCreditorAccount
 import com.banko.app.DaoDebtorAccount
@@ -40,8 +41,9 @@ interface BankoDao {
             ORDER BY BookingDate ASC LIMIT 1
         """
     )
-    suspend fun getOldestTransactions(): String
+    suspend fun getOldestTransactions(): String?
 
+    @Transaction
     @Query(
         """
             SELECT 
@@ -53,10 +55,9 @@ interface BankoDao {
         LEFT JOIN creditor_account ON transactions.creditorAccountId = creditor_account.id
         LEFT JOIN debtor_account ON transactions.debtorAccountId = debtor_account.id
         LEFT JOIN expense_tag ON transactions.expenseTagId = expense_tag.id 
-        WHERE BookingDate BETWEEN '2025-05-01T00:00' AND '2025-05-30T23:59'
+        WHERE transactions.BookingDate BETWEEN :startDate AND :endDate
             """)
-
-    fun getTransactionsForMonth(): Flow<List<FullTransaction>>
+    fun getTransactionsForMonth(startDate: String, endDate: String): Flow<List<FullTransaction>>
 
     @Query("SELECT * FROM transactions WHERE id = :transactionId")
     suspend fun getRawTransactionById(transactionId: String): DaoTransaction?

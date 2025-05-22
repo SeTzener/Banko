@@ -12,7 +12,9 @@ import kotlinx.coroutines.launch
 import com.banko.app.api.utils.Result
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.datetime.LocalDateTime
 
@@ -29,6 +31,7 @@ class HomeScreenViewModel(
 
     init {
         loadInitialData()
+        observeIndicatorDateChanges()
         getOldestTransactionDate()
     }
 
@@ -55,8 +58,8 @@ class HomeScreenViewModel(
                     .launchIn(this)
 
                 val monthlyTransactions = repository.getTransactionsForMonth(
-//                    month = _state.value.indicatorDateState,
-//                    year = _state.value.indicatorDateState.year
+                    month = _state.value.indicatorDateState,
+                    year = _state.value.indicatorDateState.year
                 ).onEach { transactions ->
                     _state.update {
                         it.copy(
@@ -105,15 +108,31 @@ class HomeScreenViewModel(
         }
     }
 
-//    suspend fun getTransactionsForMonth() {
-//        val result = repository.getTransactionsForMonth()
-//        _state.update {
-//            it.copy(
-//                monthlyTransactions = result
-//            )
-//        }
-//    }
+    private fun observeIndicatorDateChanges() {
+        viewModelScope.launch {
+            state
+                .map { it.indicatorDateState }
+                .distinctUntilChanged()
+                .collect { date ->
+                    loadMonthlyTransactions(date)
+                }
+        }
+    }
 
+    private fun loadMonthlyTransactions(date: LocalDateTime) {
+        activeFlowJobs.removeAll { it.isCompleted }
+
+        val job = repository.getTransactionsForMonth(
+            month = date,
+            year = date.year
+        ).onEach { transactions ->
+            _state.update {
+                it.copy(monthlyTransactions = transactions)
+            }
+        }.launchIn(viewModelScope)
+
+        activeFlowJobs.add(job)
+    }
 
     fun handleEvent(event: TransactionsEvent) {
         when (event) {
@@ -248,6 +267,5 @@ class HomeScreenViewModel(
 
     fun indicatorDatePicker(date: LocalDateTime) {
         _state.update { it.copy(indicatorDateState = date) }
-        // TODO() Add the logic to load the transactions for the selected month
     }
 }
