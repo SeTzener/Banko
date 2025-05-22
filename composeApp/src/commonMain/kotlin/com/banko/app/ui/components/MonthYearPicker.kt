@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.banko.app.utils.beginningOfCurrentMonth
 import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.number
 
 @Composable
 fun MonthYearPickerDialog(
@@ -44,7 +45,7 @@ fun MonthYearPickerDialog(
 
     val today = beginningOfCurrentMonth()
     val currentYear = today.year
-    val currentMonth = today.month.ordinal
+    val currentMonth = today.month.number
     val months = listOf(
         "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
         "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
@@ -65,7 +66,6 @@ fun MonthYearPickerDialog(
             Column(
                 modifier = Modifier
                     .padding(16.dp)
-                    .background(MaterialTheme.colorScheme.surface)
             ) {
                 Row(Modifier.height(150.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                     LazyColumn(
@@ -82,7 +82,7 @@ fun MonthYearPickerDialog(
                             Text(
                                 text = month,
                                 color = if (valid) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-                                fontWeight = if (index + 1 == selectedMonth) FontWeight.Bold else FontWeight.Normal,
+                                fontWeight = if (index + 1 == selectedMonth) FontWeight.ExtraBold else FontWeight.Normal,
                                 modifier = Modifier
                                     .padding(vertical = 8.dp)
                                     .clickable(enabled = valid) {
