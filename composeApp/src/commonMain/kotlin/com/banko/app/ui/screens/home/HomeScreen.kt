@@ -6,7 +6,6 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -25,10 +24,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardColors
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -54,19 +51,18 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import banko.composeapp.generated.resources.Res
-import banko.composeapp.generated.resources.account_balance
 import banko.composeapp.generated.resources.app_name
 import banko.composeapp.generated.resources.currency_nok
 import banko.composeapp.generated.resources.details
-import banko.composeapp.generated.resources.monthly_budget
-import banko.composeapp.generated.resources.monthly_income
-import banko.composeapp.generated.resources.payments
+import banko.composeapp.generated.resources.ic_arrow_drop_down
 import com.banko.app.ModelTransaction
 import com.banko.app.ui.components.CircularIndicator
 import com.banko.app.ui.components.ExpandableCard
 import com.banko.app.ui.components.ExpenseTag
-import com.banko.app.ui.components.TextWithIcon
+import com.banko.app.ui.components.MonthYearPickerDialog
 import com.banko.app.ui.models.Transaction
+import kotlinx.datetime.LocalDateTime
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.annotation.KoinExperimentalAPI
@@ -82,7 +78,8 @@ fun HomeScreen(component: HomeComponent) {
         navigateToDetails = component::navigateToDetails,
         loadMore = { viewModel.handleEvent(event = TransactionsEvent.LoadMore) },
         onRefresh = { viewModel.handleEvent(event = TransactionsEvent.Refresh) },
-        clearError = { viewModel.handleEvent(TransactionsEvent.ErrorShown(it)) }
+        clearError = { viewModel.handleEvent(TransactionsEvent.ErrorShown(it)) },
+        datePickerDate = { viewModel.indicatorDatePicker(it) }
     )
 }
 
@@ -92,10 +89,12 @@ fun HomeScreen(
     navigateToDetails: (ModelTransaction) -> Unit,
     loadMore: () -> Unit,
     onRefresh: () -> Unit,
-    clearError: (String) -> Unit
+    clearError: (String) -> Unit,
+    datePickerDate: (LocalDateTime) -> Unit
 ) {
     val listState = rememberLazyListState()
     val snackbarHostState = remember { SnackbarHostState() }
+    var isDatePickerVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.value.error) {
         state.value.error?.let { error ->
@@ -118,6 +117,17 @@ fun HomeScreen(
             }
     }
 
+    MonthYearPickerDialog(
+        visible = isDatePickerVisible,
+        startYear = state.value.oldestTransactionDate.year,
+        startMonth = state.value.oldestTransactionDate.month.ordinal,
+        onConfirm = { date ->
+            isDatePickerVisible = false
+            datePickerDate(date)
+        },
+        onCancel = { isDatePickerVisible = false }
+    )
+
     Column(
         Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -126,9 +136,25 @@ fun HomeScreen(
             isExpanded = true,
             topContent = { TopContent() },
             expandedContent = {
+                TextButton(
+                    modifier = Modifier.padding(start = 16.dp),
+                    onClick = { isDatePickerVisible = true },
+                ) {
+                    Text(
+                        text = "${state.value.indicatorDateState.month.name} - ${state.value.indicatorDateState.year}",
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Icon(
+                        modifier = Modifier.align(Alignment.Top),
+                        painter = painterResource(Res.drawable.ic_arrow_drop_down),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
                 CircularIndicator(
-                    transactions = state.value.transactions,
                     currency = stringResource(Res.string.currency_nok),
+                    monthlyTransactions = state.value.monthlyTransactions,
+                    indicatorDateState = state.value.indicatorDateState
                 )
             }
         )

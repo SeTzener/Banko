@@ -11,8 +11,11 @@ import kotlinx.coroutines.launch
 import com.banko.app.api.utils.Result
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.datetime.LocalDateTime
 
 private const val pageSize = 30
 
@@ -27,6 +30,8 @@ class HomeScreenViewModel(
 
     init {
         loadInitialData()
+        observeIndicatorDateChanges()
+        getOldestTransactionDate()
     }
 
     override fun onCleared() {
@@ -45,13 +50,29 @@ class HomeScreenViewModel(
                         _state.update {
                             it.copy(
                                 transactions = transactions,
-                                endReached = transactions.size < pageSize
+                                endReached = transactions.size < pageSize,
                             )
                         }
                     }
                     .launchIn(this)
 
-                activeFlowJobs.add(job)
+                val monthlyTransactions = repository.getTransactionsForMonth(
+                    month = _state.value.indicatorDateState,
+                    year = _state.value.indicatorDateState.year
+                ).onEach { transactions ->
+                    _state.update {
+                        it.copy(
+                            monthlyTransactions = transactions
+                        )
+                    }
+                }.launchIn(this)
+
+                activeFlowJobs.addAll(
+                    listOf(
+                        job,
+                        monthlyTransactions,
+                    )
+                )
                 if (_state.value.totalTransactionCount == 0L) {
                     val result =
                         repository.fetchAndStoreTransactions(pageNumber = 1, pageSize = pageSize)
@@ -84,6 +105,32 @@ class HomeScreenViewModel(
                 currentPage = 1
             }
         }
+    }
+
+    private fun observeIndicatorDateChanges() {
+        viewModelScope.launch {
+            state
+                .map { it.indicatorDateState }
+                .distinctUntilChanged()
+                .collect { date ->
+                    loadMonthlyTransactions(date)
+                }
+        }
+    }
+
+    private fun loadMonthlyTransactions(date: LocalDateTime) {
+        activeFlowJobs.removeAll { it.isCompleted }
+
+        val job = repository.getTransactionsForMonth(
+            month = date,
+            year = date.year
+        ).onEach { transactions ->
+            _state.update {
+                it.copy(monthlyTransactions = transactions)
+            }
+        }.launchIn(viewModelScope)
+
+        activeFlowJobs.add(job)
     }
 
     fun handleEvent(event: TransactionsEvent) {
@@ -152,6 +199,13 @@ class HomeScreenViewModel(
         }
     }
 
+    private fun getOldestTransactionDate() {
+        viewModelScope.launch {
+            val date = repository.getOldestTransactions()
+            _state.update { it.copy(oldestTransactionDate = date) }
+        }
+    }
+
     private fun loadLocalTransactions(nextPage: Int, offset: Int, scope: CoroutineScope) {
         val job = repository.getLocalTransactions(limit = offset)
             .onEach { newTransactions ->
@@ -208,5 +262,9 @@ class HomeScreenViewModel(
         if (_state.value.error == error) {
             _state.update { it.copy(error = null) }
         }
+    }
+
+    fun indicatorDatePicker(date: LocalDateTime) {
+        _state.update { it.copy(indicatorDateState = date) }
     }
 }

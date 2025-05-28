@@ -12,10 +12,17 @@ import com.banko.app.api.utils.Result
 import com.banko.app.database.BankoDatabase
 import com.banko.app.database.Entities.toModelItem
 import com.banko.app.ui.models.toDao
+import com.banko.app.utils.getLastDayOfMonth
+import com.banko.app.utils.now
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.datetime.Clock
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
 
 class TransactionsRepository(
     private val bankoDatabase: BankoDatabase,
@@ -60,6 +67,11 @@ class TransactionsRepository(
             .map { list -> list.map { it.toModelItem() } }
     }
 
+    suspend fun getOldestTransactions(): LocalDateTime {
+        val result = dao.getOldestTransactions() ?: return LocalDateTime.now
+        return LocalDateTime.parse(result)
+    }
+
     suspend fun fetchAndStoreTransactions(
         pageNumber: Int,
         pageSize: Int
@@ -87,5 +99,11 @@ class TransactionsRepository(
 
     suspend fun getStoredTransactionCount(): Long {
         return dao.getTransactionCount()
+    }
+
+    fun getTransactionsForMonth(month: LocalDateTime, year: Int): Flow<List<ModelTransaction>> {
+        val monthStart = LocalDateTime(year, month.monthNumber, 1, 0, 0).toString()
+        val monthEnd = LocalDateTime(year, month.monthNumber, getLastDayOfMonth(year, month.monthNumber), 23, 59).toString()
+        return dao.getTransactionsForMonth(monthStart, monthEnd).map { list -> list.map { it.toModelItem() } ?: emptyList() }
     }
 }
