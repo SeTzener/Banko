@@ -217,7 +217,8 @@ fun TagItem(
                                 id = tag.id,
                                 name = editedName.value,
                                 color = editedColor.value,
-                                aka = tag.aka
+                                isEarning = tag.isEarning,
+                                aka = tag.aka,
                             )
                         )
                     isEditing.value = false

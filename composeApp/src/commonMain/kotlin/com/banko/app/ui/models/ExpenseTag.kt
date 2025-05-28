@@ -13,6 +13,7 @@ data class ExpenseTag (
     val name: String,
     @Serializable(with = ColorSerializer::class)
     val color: Color,
+    val isEarning: Boolean?,
     val aka: List<String>
 )
 
@@ -20,6 +21,7 @@ fun ExpenseTag.toDto() = DtoExpenseTag(
     id = id,
     name = name,
     color = color.toArgb().toLong(),
+    isEarning = isEarning,
     aka = if (aka.isEmpty()) null else aka
 )
 
@@ -27,5 +29,6 @@ fun ExpenseTag.toDao() = DaoExpenseTag(
     id = id,
     name = name,
     color = color.toArgb().toLong(),
+    isEarning = isEarning,
     aka = if (aka.isEmpty()) null else aka
 )

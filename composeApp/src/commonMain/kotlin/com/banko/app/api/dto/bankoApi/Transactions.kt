@@ -83,5 +83,6 @@ fun ExpenseTag.toModelItem() = ModelExpenseTag(
     id = id,
     name = name,
     color = Color(color),
+    isEarning = isEarning,
     aka = aka ?: emptyList()
 )
