@@ -31,8 +31,8 @@ class ExpenseTagRepository(
     }
 
     @OptIn(ExperimentalUuidApi::class)
-    suspend fun createExpenseTag(name: String, color: Long): ExpenseTag? {
-        val result = apiService.createExpenseTag(name, color)
+    suspend fun createExpenseTag(name: String, color: Long, isEarning: Boolean): ExpenseTag? {
+        val result = apiService.createExpenseTag(name, color, isEarning)
         if (result is Result.Error) {
             println("Error: $result")
             return null

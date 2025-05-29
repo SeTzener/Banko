@@ -44,7 +44,7 @@ fun ExpenseTagsBottomSheetContent(
     screenState: SettingsScreenState,
     loadNewTags: () -> Unit,
     onTagUpdate: (ExpenseTag) -> Unit,
-    onTagCreate: (name: String, color: Color) -> Unit,
+    onTagCreate: (name: String, color: Color, isEarning: Boolean) -> Unit,
     onTagDelete: (expanseTagId: String) -> Unit,
     onClose: () -> Unit
 ) {

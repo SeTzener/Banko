@@ -64,6 +64,7 @@ class BankoApiService : KoinComponent {
                     "id" to expenseTag.id,
                     "name" to expenseTag.name,
                     "color" to expenseTag.color.toString(),
+                    "isEarning" to expenseTag.isEarning,
                     "aka" to expenseTag.aka
                 )
             )
@@ -73,7 +74,8 @@ class BankoApiService : KoinComponent {
     @OptIn(ExperimentalUuidApi::class)
     suspend fun createExpenseTag(
         name: String,
-        color: Long
+        color: Long,
+        isEarning: Boolean
     ): Result<UpsertExpenseTag> {
         val tagId = Uuid.random().toString()
         return client.postSafe("$baseUrl/settings/expense-tag") {
@@ -84,6 +86,7 @@ class BankoApiService : KoinComponent {
                     "id" to tagId,
                     "name" to name,
                     "color" to color.toString(),
+                    "isEarning" to isEarning,
                     "aka" to null
                 )
             )
