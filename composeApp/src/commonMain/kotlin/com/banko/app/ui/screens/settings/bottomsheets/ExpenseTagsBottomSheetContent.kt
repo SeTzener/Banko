@@ -13,6 +13,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonColors
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedIconButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -121,6 +122,7 @@ fun TagItem(
     val isEditing = remember { mutableStateOf(false) }
     val editedName = remember { mutableStateOf(tag.name) }
     val editedColor = remember { mutableStateOf(tag.color) }
+    val editedIsEarning = remember { mutableStateOf(tag.isEarning) }
     val uneditedColor = remember { mutableStateOf(tag.color) }
     val uneditedName = remember { mutableStateOf(tag.name) }
     val showColorPicker = remember { mutableStateOf(false) }
@@ -206,18 +208,34 @@ fun TagItem(
         }
 
         if (isEditing.value) {
+            Text(
+                modifier = Modifier.padding(end = 8.dp),
+                text = if (editedIsEarning.value == true) "Earning" else "Expense",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Switch(
+                checked = editedIsEarning.value ?: false,
+                onCheckedChange = {
+                    editedIsEarning.value = it
+                }
+            )
+        }
+
+        if (isEditing.value) {
             IconButton(
                 onClick = {
                     if (
                         editedColor.value != uneditedColor.value ||
-                        editedName.value != uneditedName.value
+                        editedName.value != uneditedName.value ||
+                        editedIsEarning.value != tag.isEarning
                     )
                         onTagUpdate(
                             ExpenseTag(
                                 id = tag.id,
                                 name = editedName.value,
                                 color = editedColor.value,
-                                isEarning = tag.isEarning,
+                                isEarning = editedIsEarning.value,
                                 aka = tag.aka,
                             )
                         )

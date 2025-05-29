@@ -60,12 +60,12 @@ class BankoApiService : KoinComponent {
             contentType(ContentType.Application.Json)
             AcceptEncoding("application/json")
             setBody(
-                mapOf(
-                    "id" to expenseTag.id,
-                    "name" to expenseTag.name,
-                    "color" to expenseTag.color.toString(),
-                    "isEarning" to expenseTag.isEarning,
-                    "aka" to expenseTag.aka
+                ExpenseTag(
+                    id = expenseTag.id,
+                    name = expenseTag.name,
+                    color = expenseTag.color,
+                    isEarning = expenseTag.isEarning,
+                    aka = expenseTag.aka
                 )
             )
         }
