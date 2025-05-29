@@ -23,6 +23,7 @@
     <string name="expense_tag_add_new_button_cancel">Cancel</string>
     <string name="expense_tag_add_new_button_save">Save</string>
     <string name="expense_tag_add_new_title">Add New Expense Tag</string>
+    <string name="expense_tag_add_new_is_earning">Set tag as income</string>
     <string name="expense_tag_add_new_text">Add a new tag name and color</string>
     <string name="expense_tag_colorpicker_button_cancel">Cancel</string>
     <string name="expense_tag_colorpicker_button_ok">OK</string>
