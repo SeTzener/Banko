@@ -26,6 +26,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import banko.composeapp.generated.resources.Res
 import banko.composeapp.generated.resources.expense_tag_add_new
+import banko.composeapp.generated.resources.expense_tag_update_earning
+import banko.composeapp.generated.resources.expense_tag_update_expense
 import banko.composeapp.generated.resources.expense_tags_bottom_sheet_button_close
 import banko.composeapp.generated.resources.expense_tags_title
 import banko.composeapp.generated.resources.ic_delete
@@ -149,7 +151,6 @@ fun TagItem(
             .padding(5.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Tag Icon
         if (!isEditing.value) {
             Icon(
                 modifier = Modifier.padding(start = 8.dp, top = 8.dp, end = 12.dp, bottom = 8.dp),
@@ -157,6 +158,28 @@ fun TagItem(
                 contentDescription = null,
                 tint = editedColor.value,
             )
+
+            Text(
+                modifier = Modifier.weight(1f),
+                text = editedName.value,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            IconButton(
+                onClick = {
+                    uneditedColor.value = editedColor.value
+                    uneditedName.value = editedName.value
+                    isEditing.value = true
+                },
+                modifier = Modifier.padding(end = 8.dp),
+            ) {
+                Icon(
+                    painter = painterResource(resource = Res.drawable.ic_edit),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
         } else {
             OutlinedIconButton(
                 onClick = { showColorPicker.value = true },
@@ -180,18 +203,9 @@ fun TagItem(
                     tint = MaterialTheme.colorScheme.surface,
                 )
             }
-        }
-        // Tag Name
-        if (!isEditing.value) {
-            Text(
-                modifier = Modifier.weight(1f),
-                text = editedName.value,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
-        } else {
+
             TextField(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1.6f),
                 value = editedName.value,
                 onValueChange = { editedName.value = it },
                 textStyle = MaterialTheme.typography.bodyMedium,
@@ -205,12 +219,14 @@ fun TagItem(
                     focusedTextColor = MaterialTheme.colorScheme.primary,
                 ),
             )
-        }
 
-        if (isEditing.value) {
             Text(
-                modifier = Modifier.padding(end = 8.dp),
-                text = if (editedIsEarning.value == true) "Earning" else "Expense",
+                modifier = Modifier.weight(1f).padding(end = 4.dp),
+                text = if (editedIsEarning.value == true) {
+                    stringResource(Res.string.expense_tag_update_earning)
+                } else {
+                    stringResource(Res.string.expense_tag_update_expense)
+                },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.primary
             )
@@ -220,9 +236,7 @@ fun TagItem(
                     editedIsEarning.value = it
                 }
             )
-        }
 
-        if (isEditing.value) {
             IconButton(
                 onClick = {
                     if (
@@ -241,25 +255,10 @@ fun TagItem(
                         )
                     isEditing.value = false
                 },
-                modifier = Modifier.padding(end = 8.dp),
+//                modifier = Modifier.padding(end = 4.dp),
             ) {
                 Icon(
                     painter = painterResource(resource = Res.drawable.ic_save),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-            }
-        } else {
-            IconButton(
-                onClick = {
-                    uneditedColor.value = editedColor.value
-                    uneditedName.value = editedName.value
-                    isEditing.value = true
-                },
-                modifier = Modifier.padding(end = 8.dp),
-            ) {
-                Icon(
-                    painter = painterResource(resource = Res.drawable.ic_edit),
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
                 )

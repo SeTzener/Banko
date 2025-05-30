@@ -33,6 +33,8 @@
     <string name="expense_tag_delete_title">Delete Tag</string>
     <string name="expense_tag_delete_yes">Yes</string>
     <string name="expense_tag_no_tag">- No tag added</string>
+    <string name="expense_tag_update_earning">Earning</string>
+    <string name="expense_tag_update_expense">Expense</string>
     <string name="expense_tags">Expense Tags</string>
     <string name="expense_tags_bottom_sheet_button_close">Close</string>
     <string name="expense_tags_title">EXPENSE TAGS</string>
