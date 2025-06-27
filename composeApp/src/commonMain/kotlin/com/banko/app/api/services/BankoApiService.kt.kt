@@ -36,7 +36,7 @@ class BankoApiService : KoinComponent {
         pageSize: Int,
         fromDate: LocalDate? = null,
         toDate: LocalDate? = null
-    ): Result<Transactions, NetworkError> {
+    ): Result<Transactions> {
         return client.getSafe<Transactions>("$baseUrl/transactions/") {
             header("Content-Type", "application/json")
             parameter("pageNumber", pageNumber)
@@ -50,13 +50,13 @@ class BankoApiService : KoinComponent {
         }
     }
 
-    suspend fun getExpenseTags(): Result<ExpenseTags, NetworkError> {
+    suspend fun getExpenseTags(): Result<ExpenseTags> {
         return client.getSafe<ExpenseTags>("$baseUrl/settings/expense-tags") {
             header("Content-Type", "application/json")
         }
     }
 
-    suspend fun updateExpenseTag(expenseTag: ExpenseTag): Result<UpsertExpenseTag, NetworkError> {
+    suspend fun updateExpenseTag(expenseTag: ExpenseTag): Result<UpsertExpenseTag> {
         return client.putSafe("$baseUrl/settings/expense-tag/${expenseTag.id}") {
             contentType(ContentType.Application.Json)
             AcceptEncoding("application/json")
@@ -75,7 +75,7 @@ class BankoApiService : KoinComponent {
     suspend fun createExpenseTag(
         name: String,
         color: Long
-    ): Result<UpsertExpenseTag, NetworkError> {
+    ): Result<UpsertExpenseTag> {
         val tagId = Uuid.random().toString()
         return client.postSafe("$baseUrl/settings/expense-tag") {
             contentType(ContentType.Application.Json)
@@ -91,14 +91,14 @@ class BankoApiService : KoinComponent {
         }
     }
 
-    suspend fun deleteExpenseTag(expenseTagId: String): Result<Unit, NetworkError> {
+    suspend fun deleteExpenseTag(expenseTagId: String): Result<Unit> {
         return client.deleteSafe("$baseUrl/settings/expense-tag/${expenseTagId}") {
             contentType(ContentType.Application.Json)
             AcceptEncoding("application/json")
         }
     }
 
-    suspend fun assignExpenseTag(id: String, expenseTagId: String?): Result<Unit, NetworkError> {
+    suspend fun assignExpenseTag(id: String, expenseTagId: String?): Result<Unit> {
         return client.putSafe("$baseUrl/transactions/expense-tag") {
             contentType(ContentType.Application.Json)
             AcceptEncoding("application/json")

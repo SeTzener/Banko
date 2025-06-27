@@ -77,17 +77,46 @@ class HomeScreenViewModel(
                     val result =
                         repository.fetchAndStoreTransactions(pageNumber = 1, pageSize = pageSize)
                     when (result) {
-                        is Result.Success -> {
+                        is Result.Success<Long> -> {
                             _state.update {
-                                it.copy(totalTransactionCount = result.data, isLoading = false)
+                                it.copy(totalTransactionCount = result.value, isLoading = false)
                             }
                         }
 
-                        is Result.Error -> {
+                        is Result.Error.HttpError -> {
+                            println(result.fullErrorMessage())
                             _state.update {
                                 it.copy(
                                     isLoading = false,
-                                    error = result.error.name
+                                    error = result.errorMessageToDisplay()
+                                )
+                            }
+                        }
+
+                        is Result.Error.NetworkError -> {
+                            println(result.exception.message)
+                            _state.update {
+                                it.copy(
+                                    isRefreshing = false,
+                                    error = result.exception.message
+                                )
+                            }
+                        }
+                        is Result.Error.SerializationError -> {
+                            println(result.exception.message)
+                            _state.update {
+                                it.copy(
+                                    isRefreshing = false,
+                                    error = result.exception.message
+                                )
+                            }
+                        }
+                        is Result.Error.UnexpectedError -> {
+                            println(result.exception.message)
+                            _state.update {
+                                it.copy(
+                                    isRefreshing = false,
+                                    error = result.exception.message
                                 )
                             }
                         }
@@ -165,12 +194,40 @@ class HomeScreenViewModel(
                                 loadLocalTransactions(nextPage, offset, this)
                             }
 
-                            is Result.Error -> _state.update {
-                                println(result.error.name)
+                            is Result.Error.HttpError -> _state.update {
+                                println(result.fullErrorMessage())
                                 it.copy(
                                     isLoading = false,
-                                    error = result.error.name
+                                    error = result.errorMessageToDisplay()
                                 )
+                            }
+
+                            is Result.Error.NetworkError -> {
+                                println(result.exception.message)
+                                _state.update {
+                                    it.copy(
+                                        isRefreshing = false,
+                                        error = result.exception.message
+                                    )
+                                }
+                            }
+                            is Result.Error.SerializationError -> {
+                                println(result.exception.message)
+                                _state.update {
+                                    it.copy(
+                                        isRefreshing = false,
+                                        error = result.exception.message
+                                    )
+                                }
+                            }
+                            is Result.Error.UnexpectedError -> {
+                                println(result.exception.message)
+                                _state.update {
+                                    it.copy(
+                                        isRefreshing = false,
+                                        error = result.exception.message
+                                    )
+                                }
                             }
                         }
                     } else {
@@ -238,11 +295,39 @@ class HomeScreenViewModel(
                         loadLocalTransactions(currentPage, pageSize, this)
                     }
 
-                    is Result.Error -> {
+                    is Result.Error.HttpError -> {
                         _state.update {
                             it.copy(
                                 isRefreshing = false,
-                                error = result.error.name
+                                error = result.errorMessageToDisplay()
+                            )
+                        }
+                    }
+
+                    is Result.Error.NetworkError -> {
+                        println(result.exception.message)
+                        _state.update {
+                            it.copy(
+                                isRefreshing = false,
+                                error = result.exception.message
+                            )
+                        }
+                    }
+                    is Result.Error.SerializationError -> {
+                        println(result.exception.message)
+                        _state.update {
+                            it.copy(
+                                isRefreshing = false,
+                                error = result.exception.message
+                            )
+                        }
+                    }
+                    is Result.Error.UnexpectedError -> {
+                        println(result.exception.message)
+                        _state.update {
+                            it.copy(
+                                isRefreshing = false,
+                                error = result.exception.message
                             )
                         }
                     }

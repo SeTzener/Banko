@@ -19,7 +19,7 @@ class OauthNordigenApi: KoinComponent {
     private val baseUrl = "https://ob.nordigen.com/api"
     private val version = "/v2"
 
-    suspend fun getToken(): Result<Token, NetworkError> {
+    suspend fun getToken(): Result<Token> {
         return client.postSafe<Token>("$baseUrl$version/token/new/") {
             contentType(ContentType.Application.Json)
             AcceptEncoding("application/json")
@@ -32,7 +32,7 @@ class OauthNordigenApi: KoinComponent {
         }
     }
 
-    suspend fun refreshToken(refreshToken: String): Result<Token, NetworkError> {
+    suspend fun refreshToken(refreshToken: String): Result<Token> {
         return client.postSafe<Token>("$baseUrl$version/token/refresh/") {
             contentType(ContentType.Application.Json)
             AcceptEncoding("application/json")
