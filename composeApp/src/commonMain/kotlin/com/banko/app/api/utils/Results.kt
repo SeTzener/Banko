@@ -2,140 +2,100 @@ package com.banko.app.api.utils
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
-import io.ktor.client.request.HttpRequestBuilder
-import io.ktor.client.request.delete
-import io.ktor.client.request.get
-import io.ktor.client.request.post
-import io.ktor.client.request.put
+import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.RedirectResponseException
+import io.ktor.client.plugins.ServerResponseException
+import io.ktor.client.request.*
+import io.ktor.http.HttpMethod
 import io.ktor.util.network.UnresolvedAddressException
+import kotlinx.serialization.SerializationException
 
-sealed interface Result<out D, out E : HttpError> {
-    data class Success<out D>(val data: D) : Result<D, Nothing>
-    data class Error<out E : HttpError>(val error: E) : Result<Nothing, E>
+sealed interface Result<out T> {
+    data class Success<out T>(val value: T) : Result<T>
+    sealed interface Error : Result<Nothing> {
+        data class HttpError(
+            val code: Int,
+            val message: String,
+            val description: String? = null,
+            val body: String? = null
+        ) : Error {
+            fun errorMessageToDisplay(): String {
+                return "HttpError: $code $description"
+            }
+
+            fun fullErrorMessage(): String {
+                return "HttpError(code=$code, message='$message', body='$body')"
+            }
+        }
+
+        data class NetworkError(val exception: Throwable) : Error
+        data class SerializationError(val exception: Throwable) : Error
+        data class UnexpectedError(val exception: Throwable) : Error
+    }
 }
 
+suspend inline fun <reified T> HttpClient.safeRequest(
+    method: HttpMethod,
+    url: String,
+    block: HttpRequestBuilder.() -> Unit = {}
+): Result<T> {
+    return try {
+        val response = request(url) {
+            this.method = method
+            block()
+        }
+
+        Result.Success(response.body<T>())
+    } catch (e: RedirectResponseException) {
+        // 3xx responses
+        Result.Error.HttpError(
+            code = e.response.status.value,
+            description = e.response.status.description,
+            message = "Redirect error: ${e.message}",
+            body = try { e.response.body() } catch (e: Exception) { null }
+        )
+    } catch (e: ClientRequestException) {
+        // 4xx responses
+        Result.Error.HttpError(
+            code = e.response.status.value,
+            description = e.response.status.description,
+            message = "Client error: ${e.message}",
+            body = try { e.response.body() } catch (e: Exception) { null }
+        )
+    } catch (e: ServerResponseException) {
+        // 5xx responses
+        Result.Error.HttpError(
+            code = e.response.status.value,
+            description = e.response.status.description,
+            message = "Server error: ${e.message}",
+            body = try { e.response.body() } catch (e: Exception) { null }
+        )
+    } catch (e: UnresolvedAddressException) {
+        Result.Error.NetworkError(e)
+    } catch (e: SerializationException) {
+        Result.Error.SerializationError(e)
+    } catch (e: Exception) {
+        Result.Error.UnexpectedError(e)
+    }
+}
+
+// Convenience extensions for specific HTTP methods
 suspend inline fun <reified T> HttpClient.getSafe(
     url: String,
     block: HttpRequestBuilder.() -> Unit = {}
-): Result<T, NetworkError> {
-    return try {
-        val response = get(url, block)
-        when (response.status.value) {
-            in 200..299 -> Result.Success(response.body<T>())
-            301 -> Result.Error(NetworkError.MOVED_PERMANENTLY)
-            400 -> Result.Error(NetworkError.BAD_REQUEST)
-            401 -> Result.Error(NetworkError.UNAUTHORIZED)
-            402 -> Result.Error(NetworkError.PAYMENT_REQUIRED)
-            403 -> Result.Error(NetworkError.FORBIDDEN)
-            404 -> Result.Error(NetworkError.NOT_FOUND)
-            408 -> Result.Error(NetworkError.REQUEST_TIMEOUT)
-            409 -> Result.Error(NetworkError.CONFLICT)
-            413 -> Result.Error(NetworkError.PAYLOAD_TOO_LARGE)
-            429 -> Result.Error(NetworkError.TOO_MANY_REQUESTS)
-            451 -> Result.Error(NetworkError.UNAVAILABLE_FOR_LEGAL_REASONS)
-            in 500..599 -> Result.Error(NetworkError.SERVER_ERROR)
-            else -> Result.Error(NetworkError.UNKNOWN)
-        }
-    } catch (e: Exception) {
-        println("Something went wrong in the GET: ${e.message}")
-        when (e) {
-            is UnresolvedAddressException -> Result.Error(NetworkError.NO_INTERNET)
-            else -> Result.Error(NetworkError.UNKNOWN)
-        }
-    }
-}
+) = safeRequest<T>(HttpMethod.Get, url, block)
 
 suspend inline fun <reified T> HttpClient.postSafe(
     url: String,
     block: HttpRequestBuilder.() -> Unit = {}
-): Result<T, NetworkError> {
-    return try {
-        val response = post(url, block)
-        when (response.status.value) {
-            in 200..299 -> Result.Success(response.body<T>())
-            301 -> Result.Error(NetworkError.MOVED_PERMANENTLY)
-            400 -> Result.Error(NetworkError.BAD_REQUEST)
-            401 -> Result.Error(NetworkError.UNAUTHORIZED)
-            402 -> Result.Error(NetworkError.PAYMENT_REQUIRED)
-            403 -> Result.Error(NetworkError.FORBIDDEN)
-            404 -> Result.Error(NetworkError.NOT_FOUND)
-            408 -> Result.Error(NetworkError.REQUEST_TIMEOUT)
-            409 -> Result.Error(NetworkError.CONFLICT)
-            413 -> Result.Error(NetworkError.PAYLOAD_TOO_LARGE)
-            429 -> Result.Error(NetworkError.TOO_MANY_REQUESTS)
-            451 -> Result.Error(NetworkError.UNAVAILABLE_FOR_LEGAL_REASONS)
-            in 500..599 -> Result.Error(NetworkError.SERVER_ERROR)
-            else -> Result.Error(NetworkError.UNKNOWN)
-        }
-    } catch (e: Exception) {
-        e.printStackTrace()
-        println("Something went wrong in the POST: ${e.message}")
-        when (e) {
-            is UnresolvedAddressException -> Result.Error(NetworkError.NO_INTERNET)
-            else -> Result.Error(NetworkError.UNKNOWN)
-        }
-    }
-}
+) = safeRequest<T>(HttpMethod.Post, url, block)
 
 suspend inline fun <reified T> HttpClient.putSafe(
     url: String,
     block: HttpRequestBuilder.() -> Unit = {}
-): Result<T, NetworkError> {
-    return try {
-        val response = put(url, block)
-        when (response.status.value) {
-            in 200..299 -> Result.Success(response.body<T>())
-            301 -> Result.Error(NetworkError.MOVED_PERMANENTLY)
-            400 -> Result.Error(NetworkError.BAD_REQUEST)
-            401 -> Result.Error(NetworkError.UNAUTHORIZED)
-            402 -> Result.Error(NetworkError.PAYMENT_REQUIRED)
-            403 -> Result.Error(NetworkError.FORBIDDEN)
-            404 -> Result.Error(NetworkError.NOT_FOUND)
-            408 -> Result.Error(NetworkError.REQUEST_TIMEOUT)
-            409 -> Result.Error(NetworkError.CONFLICT)
-            413 -> Result.Error(NetworkError.PAYLOAD_TOO_LARGE)
-            429 -> Result.Error(NetworkError.TOO_MANY_REQUESTS)
-            451 -> Result.Error(NetworkError.UNAVAILABLE_FOR_LEGAL_REASONS)
-            in 500..599 -> Result.Error(NetworkError.SERVER_ERROR)
-            else -> Result.Error(NetworkError.UNKNOWN)
-        }
-    } catch (e: Exception) {
-        e.printStackTrace()
-        println("Something went wrong in the POST: ${e.message}")
-        when (e) {
-            is UnresolvedAddressException -> Result.Error(NetworkError.NO_INTERNET)
-            else -> Result.Error(NetworkError.UNKNOWN)
-        }
-    }
-}
+) = safeRequest<T>(HttpMethod.Put, url, block)
 
 suspend inline fun <reified T> HttpClient.deleteSafe(
     url: String,
     block: HttpRequestBuilder.() -> Unit = {}
-): Result<T, NetworkError> {
-    return try {
-        val response = delete(url, block)
-        when (response.status.value) {
-            in 200..299 -> Result.Success(response.body<T>())
-            301 -> Result.Error(NetworkError.MOVED_PERMANENTLY)
-            400 -> Result.Error(NetworkError.BAD_REQUEST)
-            401 -> Result.Error(NetworkError.UNAUTHORIZED)
-            402 -> Result.Error(NetworkError.PAYMENT_REQUIRED)
-            403 -> Result.Error(NetworkError.FORBIDDEN)
-            404 -> Result.Error(NetworkError.NOT_FOUND)
-            408 -> Result.Error(NetworkError.REQUEST_TIMEOUT)
-            409 -> Result.Error(NetworkError.CONFLICT)
-            413 -> Result.Error(NetworkError.PAYLOAD_TOO_LARGE)
-            429 -> Result.Error(NetworkError.TOO_MANY_REQUESTS)
-            451 -> Result.Error(NetworkError.UNAVAILABLE_FOR_LEGAL_REASONS)
-            in 500..599 -> Result.Error(NetworkError.SERVER_ERROR)
-            else -> Result.Error(NetworkError.UNKNOWN)
-        }
-    } catch (e: Exception) {
-        println("Something went wrong in the GET: ${e.message}")
-        when (e) {
-            is UnresolvedAddressException -> Result.Error(NetworkError.NO_INTERNET)
-            else -> Result.Error(NetworkError.UNKNOWN)
-        }
-    }
-}
+) = safeRequest<T>(HttpMethod.Delete, url, block)

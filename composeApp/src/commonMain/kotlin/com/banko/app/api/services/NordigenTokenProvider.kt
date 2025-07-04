@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.banko.app.api.AccessTokenProvider
+import com.banko.app.api.dto.nordigen.Token
 import com.banko.app.api.utils.Result
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpClientPlugin
@@ -78,7 +79,7 @@ class NordigenTokenProvider(
             val result = nordigenApi.getToken()
             if (result is Result.Error) throw Exception("Failed to fetch new tokens")
 
-            val tokens = (result as Result.Success).data
+            val tokens = (result as Result.Success<Token>).value
             currentTokens = BearerTokens(
                 accessToken = tokens.access,
                 refreshToken = tokens.refresh
@@ -93,7 +94,7 @@ class NordigenTokenProvider(
             val result = oldTokens!!.refreshToken?.let { nordigenApi.refreshToken(it) }
             if (result is Result.Error) throw Exception("Failed to refresh tokens")
 
-            val tokens = (result as Result.Success).data
+            val tokens = (result as Result.Success<Token>).value
             currentTokens = BearerTokens(
                 accessToken = tokens.access,
                 refreshToken = currentTokens?.refreshToken

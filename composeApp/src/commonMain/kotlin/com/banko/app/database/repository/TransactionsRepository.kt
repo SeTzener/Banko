@@ -75,22 +75,22 @@ class TransactionsRepository(
     suspend fun fetchAndStoreTransactions(
         pageNumber: Int,
         pageSize: Int
-    ): Result<Long, NetworkError> {
+    ): Result<Long> {
         val result = apiService.getTransactions(pageNumber = pageNumber, pageSize = pageSize)
         when (result) {
             is Result.Error -> {
-                println("Error: ${result.error}")
+                println("Error: $result")
                 return result
             }
 
             is Result.Success -> {
-                val transactions = result.data
-                if (transactions.totalCount == 0L) return Result.Error(NetworkError.NO_NEW_TRANSACTIONS)
+                val transactions = result.value
+                if (transactions.totalCount == 0L) return Result.Error.NetworkError(Exception(NetworkError.NO_NEW_TRANSACTIONS.toString()))
 
-                result.data.transactions.forEach { transaction ->
+                result.value.transactions.forEach { transaction ->
                     upsertTransaction(transaction.toModelItem())
                 }
-                Result.Success(result.data.totalCount <= (pageNumber * pageSize))
+                Result.Success(result.value.totalCount <= (pageNumber * pageSize))
 
                 return Result.Success(transactions.totalCount)
             }

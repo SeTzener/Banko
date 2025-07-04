@@ -26,7 +26,7 @@ class NordigenApiService
     }
 
     // TODO(): Change country to an enum
-    suspend fun getInstitution(country: String): Result<List<Institutions>, NetworkError> {
+    suspend fun getInstitution(country: String): Result<List<Institutions>> {
         return client.getSafe<List<Institutions>>("$baseUrl$version/institutions/?country=$country") {
             header("Content-Type", "application/json")
         }
@@ -36,7 +36,7 @@ class NordigenApiService
     suspend fun getRequisitions(
         institutionId: String,
         userLanguage: String
-    ): Result<Requisitions, NetworkError> {
+    ): Result<Requisitions> {
         return client.postSafe<Requisitions>("$baseUrl$version/requisitions/") {
             header("Content-Type", "application/json")
             setBody(
@@ -49,7 +49,7 @@ class NordigenApiService
         }
     }
 
-    suspend fun getBalances(accountId: String = BuildKonfig.NORDIGEN_ACCOUNT_ID): Result<Balances, NetworkError> {
+    suspend fun getBalances(accountId: String = BuildKonfig.NORDIGEN_ACCOUNT_ID): Result<Balances> {
         return client.getSafe<Balances>("$baseUrl$version/accounts/$accountId/balances/") {
             header("Content-Type", "application/json")
         }

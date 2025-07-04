@@ -11,9 +11,9 @@ class TransactionsRepository(
     suspend fun getTransactions(pageNumber: Int, pageSize: Int): Transactions {
         val result = apiService.getTransactions(pageNumber = pageNumber, pageSize = pageSize)
         if (result is Result.Error) {
-            println("Error: ${result.error}")
+            println("Error: $result")
             return Transactions(emptyList(), 0, 0, 0)
         }
-        return (result as Result.Success).data
+        return (result as Result.Success).value
     }
 }
