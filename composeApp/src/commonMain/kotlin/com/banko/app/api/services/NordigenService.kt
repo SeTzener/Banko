@@ -4,7 +4,6 @@ import com.banko.app.api.HttpClientProvider
 import com.banko.app.api.dto.nordigen.Institutions
 import com.banko.app.api.dto.nordigen.Balances
 import com.banko.app.api.dto.nordigen.Requisitions
-import com.banko.app.api.utils.NetworkError
 import io.ktor.client.request.header
 import com.banko.app.api.utils.Result
 import com.banko.app.api.utils.getSafe
