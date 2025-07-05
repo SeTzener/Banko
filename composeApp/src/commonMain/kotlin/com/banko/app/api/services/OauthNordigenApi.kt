@@ -2,7 +2,6 @@ package com.banko.app.api.services
 
 import com.banko.app.api.HttpClientProvider
 import com.banko.app.api.dto.nordigen.Token
-import com.banko.app.api.utils.NetworkError
 import com.banko.app.api.utils.Result
 import com.banko.app.api.utils.postSafe
 import com.banko.config.BuildKonfig

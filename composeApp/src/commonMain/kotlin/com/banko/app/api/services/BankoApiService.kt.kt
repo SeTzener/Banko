@@ -5,7 +5,6 @@ import com.banko.app.api.dto.bankoApi.ExpenseTag
 import com.banko.app.api.dto.bankoApi.ExpenseTags
 import com.banko.app.api.dto.bankoApi.Transactions
 import com.banko.app.api.dto.bankoApi.UpsertExpenseTag
-import com.banko.app.api.utils.NetworkError
 import com.banko.app.api.utils.getSafe
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
