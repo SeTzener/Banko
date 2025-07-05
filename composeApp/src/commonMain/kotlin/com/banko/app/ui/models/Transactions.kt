@@ -22,6 +22,7 @@ data class Transaction (
     val creditorAccount: CreditorAccount? = null,
     val debtorName: String? = null,
     val remittanceInformationStructuredArray: List<String>? = null,
+    val note: String? = null,
     val expenseTag: ExpenseTag? = null
 )
 
@@ -54,6 +55,7 @@ fun Transaction.toDao() = DaoTransaction(
     creditorAccountId = creditorAccount?.id,
     debtorName = debtorName,
     remittanceInformationStructuredArray = remittanceInformationStructuredArray,
+    note = note,
     expenseTagId = expenseTag?.id
 )
 
