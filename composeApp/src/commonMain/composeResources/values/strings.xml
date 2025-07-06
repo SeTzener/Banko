@@ -17,6 +17,7 @@
     <string name="details_debtor_name_missing">Unknown</string>
     <string name="details_expense_tag">Expense Tag</string>
     <string name="details_expense_tag_empty">Empty</string>
+    <string name="details_note">Note</string>
     <string name="details_remittance_information">Remittance Information</string>
     <string name="details_value_date">Value Date</string>
     <string name="expense_tag_add_new">+</string>
