@@ -7,6 +7,7 @@
     <string name="details">Details</string>
     <string name="details_booking_date">Booking Date</string>
     <string name="details_button_back">Go Back</string>
+    <string name="details_button_add_note">Add Note</string>
     <string name="details_creditor_name_missing">Unknown</string>
     <string name="details_creditor_name">Creditor Name</string>
     <string name="details_creditor_bban">BBAN</string>
@@ -36,6 +37,8 @@
     <string name="expense_tags">Expense Tags</string>
     <string name="expense_tags_bottom_sheet_button_close">Close</string>
     <string name="expense_tags_title">EXPENSE TAGS</string>
+    <string name="generic_button_edit">Edit</string>
+    <string name="generic_button_delete">Delete</string>
     <string name="monthly_budget">Monthly Budget</string>>
     <string name="monthly_income">Money Saved This Month:</string>
     <string name="saved_money_yesterday">Money Saved Yesterday:</string>
