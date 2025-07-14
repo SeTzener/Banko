@@ -17,7 +17,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -37,6 +36,7 @@ import banko.composeapp.generated.resources.Res
 import banko.composeapp.generated.resources.account_balance
 import banko.composeapp.generated.resources.details
 import banko.composeapp.generated.resources.details_booking_date
+import banko.composeapp.generated.resources.details_button_add_note
 import banko.composeapp.generated.resources.details_button_back
 import banko.composeapp.generated.resources.details_creditor_bban
 import banko.composeapp.generated.resources.details_creditor_iban
@@ -52,8 +52,11 @@ import banko.composeapp.generated.resources.details_note
 import banko.composeapp.generated.resources.details_remittance_information
 import banko.composeapp.generated.resources.details_value_date
 import banko.composeapp.generated.resources.expense_tag_no_tag
+import banko.composeapp.generated.resources.generic_button_delete
+import banko.composeapp.generated.resources.generic_button_edit
 import banko.composeapp.generated.resources.ic_arrow_drop_down
 import banko.composeapp.generated.resources.ic_calendar_month
+import banko.composeapp.generated.resources.ic_delete
 import banko.composeapp.generated.resources.ic_edit
 import banko.composeapp.generated.resources.ic_more
 import banko.composeapp.generated.resources.ic_quill
@@ -75,7 +78,8 @@ fun DetailsScreen(component: DetailsComponent) {
     val screenState by viewModel.screenState.collectAsState()
 
     val isEditing by remember { mutableStateOf(false) }
-    val expanded = remember { mutableStateOf(false) }
+    val tagMenuExpanded = remember { mutableStateOf(false) }
+    val noteMenuExpanded = remember { mutableStateOf(false) }
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -417,7 +421,7 @@ fun DetailsScreen(component: DetailsComponent) {
                         trailingIcon = {
                             IconButton(onClick = {
                                 viewModel.getExpenseTags()
-                                expanded.value = true
+                                tagMenuExpanded.value = true
                             }, content = {
                                 Icon(
                                     painter = painterResource(Res.drawable.ic_arrow_drop_down),
@@ -425,7 +429,7 @@ fun DetailsScreen(component: DetailsComponent) {
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                                 ExpenseTagDropdown(
-                                    expanded = expanded,
+                                    expanded = tagMenuExpanded,
                                     expenseTags = screenState.expenseTags,
                                     onTagSelected = { tag ->
                                         transaction = transaction.copy(expenseTag = tag)
@@ -457,64 +461,134 @@ fun DetailsScreen(component: DetailsComponent) {
                 }
             }
 
+            // Note
             item {
-                Card(
-                    modifier = Modifier.fillParentMaxWidth().padding(top = 16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ),
-                    border = BorderStroke(1.dp, Color.LightGray),
-                ) {
-                    Box(
-                        modifier = Modifier.fillMaxWidth()
+                if (!transaction.note.isNullOrEmpty()) {
+                    Card(
+                        modifier = Modifier.fillParentMaxWidth().padding(top = 20.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        ),
+                        border = BorderStroke(1.dp, Color.LightGray),
                     ) {
-                        TextField(
-                            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 36.dp, bottom = 16.dp),
-                            onValueChange = {},
-                            value = transaction.note
-                                ?: "Lorem Ipsum Dolor...",
-                            supportingText = {
-                                Text(
-                                    text = stringResource(Res.string.details_note)
+                        Box(
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            TextField(
+                                modifier = Modifier.fillMaxWidth()
+                                    .padding(start = 16.dp, end = 36.dp, bottom = 16.dp),
+                                onValueChange = {},
+                                value = transaction.note!!,
+                                supportingText = {
+                                    Text(
+                                        text = stringResource(Res.string.details_note)
+                                    )
+                                },
+                                readOnly = !isEditing,
+                                leadingIcon = {
+                                    Icon(
+                                        painter = painterResource(Res.drawable.ic_quill),
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                },
+                                colors = TextFieldDefaults.colors(
+                                    unfocusedTextColor = MaterialTheme.colorScheme.primary,
+                                    focusedTextColor = MaterialTheme.colorScheme.primary,
+                                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                                    focusedContainerColor = MaterialTheme.colorScheme.surface,
                                 )
-                            },
-                            leadingIcon = {
+                            )
+
+                            IconButton(
+                                modifier = Modifier.padding(end = 4.dp).align(Alignment.TopEnd),
+                                onClick = {
+                                    noteMenuExpanded.value = true
+                                }
+                            ) {
                                 Icon(
-                                    painter = painterResource(Res.drawable.ic_quill),
+                                    painter = painterResource(Res.drawable.ic_more),
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary
                                 )
-                            },
-                            colors = TextFieldDefaults.colors(
-                                unfocusedTextColor = MaterialTheme.colorScheme.primary,
-                                focusedTextColor = MaterialTheme.colorScheme.primary,
-                                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                            )
-                        )
-
-                        IconButton(
-                            modifier = Modifier.padding(end = 4.dp).align(Alignment.TopEnd),
-                            onClick = {
-                                // add button logic
+                                NoteDropDown(noteMenuExpanded)
                             }
-                        ) {
-                            Icon(
-                                painter = painterResource(Res.drawable.ic_more),
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
                         }
                     }
                 }
             }
         }
 
-        Button(
-            modifier = Modifier.align(Alignment.CenterHorizontally),
-            onClick = { component.goBack() }) {
-            Text(stringResource(Res.string.details_button_back))
+        // Buttons
+        Row(
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        ) {
+            if (transaction.note.isNullOrEmpty()) {
+                Button(
+                    modifier = Modifier.padding(16.dp),
+                    onClick = { }
+                ) {
+                    Text(stringResource(Res.string.details_button_add_note))
+                }
+            }
+            Button(
+                modifier = Modifier.align(Alignment.CenterVertically),
+                onClick = { component.goBack() }
+            ) {
+                Text(stringResource(Res.string.details_button_back))
+            }
         }
+    }
+}
+
+@Composable
+private fun NoteDropDown(
+    expanded: MutableState<Boolean>,
+) {
+    DropdownMenu(
+        modifier = Modifier.background(MaterialTheme.colorScheme.onSurface),
+        expanded = expanded.value,
+        onDismissRequest = { expanded.value = false }
+    ) {
+        DropdownMenuItem(
+            trailingIcon = {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_edit),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            },
+            text = {
+                Text(
+                    text = stringResource(Res.string.generic_button_edit),
+                    color = MaterialTheme.colorScheme.primary
+                )
+            },
+            onClick = {
+                expanded.value = false
+                // TODO(logic to edit note)
+            }
+        )
+
+        DropdownMenuItem(
+            trailingIcon = {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_delete),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error
+                )
+            },
+            text = {
+                Text(
+                    text = stringResource(Res.string.generic_button_delete),
+                    color = MaterialTheme.colorScheme.error
+                )
+            },
+            onClick = {
+                expanded.value = false
+                // TODO(logic to edit note)
+            }
+        )
     }
 }
 
@@ -527,22 +601,26 @@ private fun ExpenseTagDropdown(
     DropdownMenu(
         modifier = Modifier.background(MaterialTheme.colorScheme.onSurface),
         expanded = expanded.value,
-        onDismissRequest = { expanded.value = false }) {
-        DropdownMenuItem(leadingIcon = {
-            Icon(
-                painter = painterResource(Res.drawable.ic_tag),
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
-            )
-        }, text = {
-            Text(
-                text = stringResource(Res.string.details_expense_tag_empty),
-                color = MaterialTheme.colorScheme.primary
-            )
-        }, onClick = {
-            onTagSelected(null)
-            expanded.value = false
-        })
+        onDismissRequest = { expanded.value = false }
+    ) {
+        DropdownMenuItem(
+            leadingIcon = {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_tag),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            },
+            text = {
+                Text(
+                    text = stringResource(Res.string.details_expense_tag_empty),
+                    color = MaterialTheme.colorScheme.primary
+                )
+            },
+            onClick = {
+                onTagSelected(null)
+                expanded.value = false
+            })
         expenseTags.forEach { tag ->
             DropdownMenuItem(leadingIcon = {
                 Icon(
