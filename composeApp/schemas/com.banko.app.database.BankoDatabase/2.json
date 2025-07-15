@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 2,
-    "identityHash": "3dbac0e436a0d6c414df3b11be947251",
+    "identityHash": "0a8e4eda3b1e3c4143b8d92d7388017d",
     "entities": [
       {
         "tableName": "transactions",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `bookingDate` TEXT NOT NULL, `valueDate` TEXT NOT NULL, `amount` TEXT NOT NULL, `currency` TEXT NOT NULL, `debtorAccountId` TEXT, `remittanceInformationUnstructured` TEXT NOT NULL, `remittanceInformationUnstructuredArray` TEXT NOT NULL, `bankTransactionCode` TEXT NOT NULL, `internalTransactionId` TEXT NOT NULL, `creditorName` TEXT, `creditorAccountId` TEXT, `debtorName` TEXT, `remittanceInformationStructuredArray` TEXT, `expenseTagId` TEXT, PRIMARY KEY(`id`), FOREIGN KEY(`expenseTagId`) REFERENCES `expense_tag`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL , FOREIGN KEY(`creditorAccountId`) REFERENCES `creditor_account`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL , FOREIGN KEY(`debtorAccountId`) REFERENCES `debtor_account`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `bookingDate` TEXT NOT NULL, `valueDate` TEXT NOT NULL, `amount` TEXT NOT NULL, `currency` TEXT NOT NULL, `debtorAccountId` TEXT, `remittanceInformationUnstructured` TEXT NOT NULL, `remittanceInformationUnstructuredArray` TEXT NOT NULL, `bankTransactionCode` TEXT NOT NULL, `internalTransactionId` TEXT NOT NULL, `creditorName` TEXT, `creditorAccountId` TEXT, `debtorName` TEXT, `remittanceInformationStructuredArray` TEXT, `note` TEXT, `expenseTagId` TEXT, PRIMARY KEY(`id`), FOREIGN KEY(`expenseTagId`) REFERENCES `expense_tag`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL , FOREIGN KEY(`creditorAccountId`) REFERENCES `creditor_account`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL , FOREIGN KEY(`debtorAccountId`) REFERENCES `debtor_account`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
         "fields": [
           {
             "fieldPath": "id",
@@ -88,6 +88,11 @@
             "affinity": "TEXT"
           },
           {
+            "fieldPath": "note",
+            "columnName": "note",
+            "affinity": "TEXT"
+          },
+          {
             "fieldPath": "expenseTagId",
             "columnName": "expenseTagId",
             "affinity": "TEXT"
@@ -137,7 +142,7 @@
       },
       {
         "tableName": "expense_tag",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `color` INTEGER NOT NULL, `isEarning` INTEGER DEFAULT 0, `aka` TEXT, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `color` INTEGER NOT NULL, `aka` TEXT, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -156,12 +161,6 @@
             "columnName": "color",
             "affinity": "INTEGER",
             "notNull": true
-          },
-          {
-            "fieldPath": "isEarning",
-            "columnName": "isEarning",
-            "affinity": "INTEGER",
-            "defaultValue": "0"
           },
           {
             "fieldPath": "aka",
@@ -239,7 +238,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '3dbac0e436a0d6c414df3b11be947251')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '0a8e4eda3b1e3c4143b8d92d7388017d')"
     ]
   }
 }

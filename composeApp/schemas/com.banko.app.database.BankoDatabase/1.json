@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "63232052a539ff7e272ff41e08a8c3de",
+    "identityHash": "0a8e4eda3b1e3c4143b8d92d7388017d",
     "entities": [
       {
         "tableName": "transactions",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `bookingDate` TEXT NOT NULL, `valueDate` TEXT NOT NULL, `amount` TEXT NOT NULL, `currency` TEXT NOT NULL, `debtorAccountId` TEXT, `remittanceInformationUnstructured` TEXT NOT NULL, `remittanceInformationUnstructuredArray` TEXT NOT NULL, `bankTransactionCode` TEXT NOT NULL, `internalTransactionId` TEXT NOT NULL, `creditorName` TEXT, `creditorAccountId` TEXT, `debtorName` TEXT, `remittanceInformationStructuredArray` TEXT, `expenseTagId` TEXT, PRIMARY KEY(`id`), FOREIGN KEY(`expenseTagId`) REFERENCES `expense_tag`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL , FOREIGN KEY(`creditorAccountId`) REFERENCES `creditor_account`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL , FOREIGN KEY(`debtorAccountId`) REFERENCES `debtor_account`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `bookingDate` TEXT NOT NULL, `valueDate` TEXT NOT NULL, `amount` TEXT NOT NULL, `currency` TEXT NOT NULL, `debtorAccountId` TEXT, `remittanceInformationUnstructured` TEXT NOT NULL, `remittanceInformationUnstructuredArray` TEXT NOT NULL, `bankTransactionCode` TEXT NOT NULL, `internalTransactionId` TEXT NOT NULL, `creditorName` TEXT, `creditorAccountId` TEXT, `debtorName` TEXT, `remittanceInformationStructuredArray` TEXT, `note` TEXT, `expenseTagId` TEXT, PRIMARY KEY(`id`), FOREIGN KEY(`expenseTagId`) REFERENCES `expense_tag`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL , FOREIGN KEY(`creditorAccountId`) REFERENCES `creditor_account`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL , FOREIGN KEY(`debtorAccountId`) REFERENCES `debtor_account`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
         "fields": [
           {
             "fieldPath": "id",
@@ -85,6 +85,11 @@
           {
             "fieldPath": "remittanceInformationStructuredArray",
             "columnName": "remittanceInformationStructuredArray",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "note",
+            "columnName": "note",
             "affinity": "TEXT"
           },
           {
@@ -233,7 +238,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '63232052a539ff7e272ff41e08a8c3de')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '0a8e4eda3b1e3c4143b8d92d7388017d')"
     ]
   }
 }

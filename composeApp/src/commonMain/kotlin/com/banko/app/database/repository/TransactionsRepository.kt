@@ -111,4 +111,8 @@ class TransactionsRepository(
         return dao.getTransactionsForMonth(monthStart, monthEnd)
             .map { list -> list.map { it.toModelItem() } ?: emptyList() }
     }
+
+    suspend fun saveNote(id: String, note: String) {
+        dao.saveNote(id, note)
+    }
 }

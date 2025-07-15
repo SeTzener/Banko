@@ -32,6 +32,7 @@ data class Transaction(
     val creditorAccount: CreditorAccount? = null,
     val debtorName: String? = null,
     val remittanceInformationStructuredArray: List<String>? = null,
+    val note: String? = null,
     val expenseTag: ExpenseTag? = null
 )
 
@@ -64,6 +65,7 @@ fun Transaction.toModelItem() = ModelTransaction(
     creditorAccount = creditorAccount?.toModelItem(),
     debtorName = debtorName,
     remittanceInformationStructuredArray = remittanceInformationStructuredArray,
+    note = note,
     expenseTag = expenseTag?.toModelItem()
 )
 

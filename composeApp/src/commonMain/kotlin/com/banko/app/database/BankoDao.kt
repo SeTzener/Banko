@@ -65,6 +65,15 @@ interface BankoDao {
     @Query("SELECT COUNT(*) FROM transactions")
     suspend fun getTransactionCount(): Long
 
+    @Query(
+        """
+            UPDATE transactions
+            SET note = :note
+            WHERE id = :id
+        """
+    )
+    suspend fun saveNote(id: String, note: String)
+
     @Upsert
     suspend fun upsertTransaction(transaction: DaoTransaction)
 

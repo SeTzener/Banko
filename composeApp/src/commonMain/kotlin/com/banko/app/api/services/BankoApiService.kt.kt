@@ -109,4 +109,16 @@ class BankoApiService : KoinComponent {
             )
         }
     }
+
+    suspend fun saveNote( id: String, text: String): Result<String> {
+        return client.putSafe("$baseUrl/transactions/${id}/note") {
+            contentType(ContentType.Application.Json)
+            AcceptEncoding("application/json")
+            setBody(
+                mapOf(
+                    "note" to text
+                )
+            )
+        }
+    }
 }
