@@ -16,4 +16,13 @@ class TransactionsRepository(
         }
         return (result as Result.Success).value
     }
+
+    suspend fun saveNote(id: String, text: String): Result<String> {
+        val result = apiService.saveNote(text = text, id = id)
+        if (result is Result.Error) {
+            println("Error: $result")
+        }
+
+        return result
+    }
 }
