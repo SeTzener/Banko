@@ -128,6 +128,7 @@ fun DetailsScreen(
     if(isDeleteNote.value) {
         NoteDeleteDialog(
             onDismiss = isDeleteNote,
+            textToDelete = transactionNote,
             transactionId = transaction.id,
             onNoteDelete = saveNote
         )

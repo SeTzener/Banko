@@ -16,6 +16,7 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun NoteDeleteDialog(
     transactionId: String,
+    textToDelete: MutableState<String>,
     onDismiss: MutableState<Boolean>,
     onNoteDelete: (String, String) -> Unit
 ) {
@@ -38,6 +39,7 @@ fun NoteDeleteDialog(
                 onClick = {
                     onDismiss.value = false // Close the dialog
                     onNoteDelete(transactionId, "") // Trigger delete action
+                    textToDelete.value = ""
                 }
             ) {
                 Text(
