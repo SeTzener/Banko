@@ -14,12 +14,15 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
@@ -64,6 +67,9 @@ import banko.composeapp.generated.resources.ic_save
 import banko.composeapp.generated.resources.ic_tag
 import banko.composeapp.generated.resources.ic_tag_filled
 import com.banko.app.ui.models.ExpenseTag
+import com.banko.app.ui.models.Transaction
+import com.banko.app.ui.screens.details.bottomsheets.EditNoteBottomSheet
+import com.banko.app.ui.screens.details.bottomsheets.dialogs.NoteDeleteDialog
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -72,14 +78,60 @@ import org.koin.core.annotation.KoinExperimentalAPI
 @OptIn(KoinExperimentalAPI::class)
 @Composable
 fun DetailsScreen(component: DetailsComponent) {
-    var transaction by remember { mutableStateOf(component.transaction) }
-    var oldTag by remember { mutableStateOf(transaction.expenseTag?.id) }
     val viewModel = koinViewModel<DetailsScreenViewModel>()
     val screenState by viewModel.screenState.collectAsState()
 
+    DetailsScreen(
+        transactions = component.transaction,
+        expenseTags = screenState.expenseTags,
+        saveNote = { note: String, id: String -> viewModel.saveNote(id, note) },
+        getExpenseTags = { viewModel.getExpenseTags() },
+        assignExpenseTag = { id: String, tagId: String? -> viewModel.assignExpenseTag(id, tagId) },
+        goBack = { component.goBack() }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DetailsScreen(
+    transactions: Transaction,
+    expenseTags: List<ExpenseTag>,
+    saveNote: (String, String) -> Unit,
+    assignExpenseTag: (String, String?) -> Unit,
+    getExpenseTags: () -> Unit,
+    goBack: () -> Unit
+) {
+    var transaction by remember { mutableStateOf(transactions) }
+    val transactionNote = remember { mutableStateOf(transaction.note ?: "") }
+    var oldTag by remember { mutableStateOf(transaction.expenseTag?.id) }
     val isEditing by remember { mutableStateOf(false) }
+    val isEditNote = remember { mutableStateOf(false) }
+    val isDeleteNote = remember { mutableStateOf(false) }
     val tagMenuExpanded = remember { mutableStateOf(false) }
     val noteMenuExpanded = remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    if (isEditNote.value) {
+        ModalBottomSheet(
+            onDismissRequest = { isEditNote.value = false },
+            sheetState = sheetState
+        ) {
+            EditNoteBottomSheet(
+                initialText = transactionNote,
+                transactionId = transaction.id,
+                onSaveNote = saveNote,
+                isEditNote = isEditNote
+            )
+        }
+    }
+
+    if(isDeleteNote.value) {
+        NoteDeleteDialog(
+            onDismiss = isDeleteNote,
+            transactionId = transaction.id,
+            onNoteDelete = saveNote
+        )
+    }
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -420,7 +472,7 @@ fun DetailsScreen(component: DetailsComponent) {
                         },
                         trailingIcon = {
                             IconButton(onClick = {
-                                viewModel.getExpenseTags()
+                                getExpenseTags()
                                 tagMenuExpanded.value = true
                             }, content = {
                                 Icon(
@@ -430,7 +482,7 @@ fun DetailsScreen(component: DetailsComponent) {
                                 )
                                 ExpenseTagDropdown(
                                     expanded = tagMenuExpanded,
-                                    expenseTags = screenState.expenseTags,
+                                    expenseTags = expenseTags,
                                     onTagSelected = { tag ->
                                         transaction = transaction.copy(expenseTag = tag)
                                     })
@@ -446,7 +498,7 @@ fun DetailsScreen(component: DetailsComponent) {
                     if (oldTag != transaction.expenseTag?.id) {
                         IconButton(
                             modifier = Modifier.align(Alignment.Bottom), onClick = {
-                                viewModel.assignExpenseTag(
+                                assignExpenseTag(
                                     transaction.id, transaction.expenseTag?.id
                                 )
                                 oldTag = transaction.expenseTag?.id
@@ -463,7 +515,7 @@ fun DetailsScreen(component: DetailsComponent) {
 
             // Note
             item {
-                if (!transaction.note.isNullOrEmpty()) {
+                if (transactionNote.value.isNotEmpty()) {
                     Card(
                         modifier = Modifier.fillParentMaxWidth().padding(top = 20.dp),
                         colors = CardDefaults.cardColors(
@@ -478,7 +530,7 @@ fun DetailsScreen(component: DetailsComponent) {
                                 modifier = Modifier.fillMaxWidth()
                                     .padding(start = 16.dp, end = 36.dp, bottom = 16.dp),
                                 onValueChange = {},
-                                value = transaction.note!!,
+                                value = transactionNote.value,
                                 supportingText = {
                                     Text(
                                         text = stringResource(Res.string.details_note)
@@ -511,7 +563,7 @@ fun DetailsScreen(component: DetailsComponent) {
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary
                                 )
-                                NoteDropDown(noteMenuExpanded)
+                                NoteDropDown(noteMenuExpanded, isEditNote, isDeleteNote)
                             }
                         }
                     }
@@ -523,17 +575,19 @@ fun DetailsScreen(component: DetailsComponent) {
         Row(
             modifier = Modifier.align(Alignment.CenterHorizontally)
         ) {
-            if (transaction.note.isNullOrEmpty()) {
+            if (transactionNote.value.isEmpty()) {
                 Button(
                     modifier = Modifier.padding(16.dp),
-                    onClick = { }
+                    onClick = {
+                        isEditNote.value = true
+                    }
                 ) {
                     Text(stringResource(Res.string.details_button_add_note))
                 }
             }
             Button(
                 modifier = Modifier.align(Alignment.CenterVertically),
-                onClick = { component.goBack() }
+                onClick = { goBack() }
             ) {
                 Text(stringResource(Res.string.details_button_back))
             }
@@ -544,6 +598,8 @@ fun DetailsScreen(component: DetailsComponent) {
 @Composable
 private fun NoteDropDown(
     expanded: MutableState<Boolean>,
+    isEditNote: MutableState<Boolean>,
+    isDeleteNote: MutableState<Boolean>
 ) {
     DropdownMenu(
         modifier = Modifier.background(MaterialTheme.colorScheme.onSurface),
@@ -566,7 +622,7 @@ private fun NoteDropDown(
             },
             onClick = {
                 expanded.value = false
-                // TODO(logic to edit note)
+                isEditNote.value = true
             }
         )
 
@@ -586,7 +642,7 @@ private fun NoteDropDown(
             },
             onClick = {
                 expanded.value = false
-                // TODO(logic to edit note)
+                isDeleteNote.value = true
             }
         )
     }
