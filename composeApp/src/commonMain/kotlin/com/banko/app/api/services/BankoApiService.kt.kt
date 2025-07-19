@@ -60,11 +60,12 @@ class BankoApiService : KoinComponent {
             contentType(ContentType.Application.Json)
             AcceptEncoding("application/json")
             setBody(
-                mapOf(
-                    "id" to expenseTag.id,
-                    "name" to expenseTag.name,
-                    "color" to expenseTag.color.toString(),
-                    "aka" to expenseTag.aka
+                ExpenseTag(
+                    id = expenseTag.id,
+                    name = expenseTag.name,
+                    color = expenseTag.color,
+                    isEarning = expenseTag.isEarning,
+                    aka = expenseTag.aka
                 )
             )
         }
@@ -73,18 +74,20 @@ class BankoApiService : KoinComponent {
     @OptIn(ExperimentalUuidApi::class)
     suspend fun createExpenseTag(
         name: String,
-        color: Long
+        color: Long,
+        isEarning: Boolean
     ): Result<UpsertExpenseTag> {
         val tagId = Uuid.random().toString()
         return client.postSafe("$baseUrl/settings/expense-tag") {
             contentType(ContentType.Application.Json)
             AcceptEncoding("application/json")
             setBody(
-                mapOf(
-                    "id" to tagId,
-                    "name" to name,
-                    "color" to color.toString(),
-                    "aka" to null
+                ExpenseTag(
+                    id = tagId,
+                    name = name,
+                    color = color,
+                    isEarning = isEarning,
+                    aka = null
                 )
             )
         }

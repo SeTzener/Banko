@@ -50,10 +50,10 @@ class SettingsScreenViewModel(
         }
     }
 
-    fun createExpenseTag(name: String, color: Color) {
+    fun createExpenseTag(name: String, color: Color, isEarning: Boolean) {
         viewModelScope.launch {
             val result =
-                apiRepository.createExpenseTag(name, color.toArgb().toLong()) ?: return@launch
+                apiRepository.createExpenseTag(name, color.toArgb().toLong(), isEarning) ?: return@launch
             dbRepository.upsertExpenseTag(result.toDao())
         }
     }

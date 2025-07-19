@@ -23,6 +23,7 @@
     <string name="expense_tag_add_new_button_cancel">Cancel</string>
     <string name="expense_tag_add_new_button_save">Save</string>
     <string name="expense_tag_add_new_title">Add New Expense Tag</string>
+    <string name="expense_tag_add_new_is_earning">Set tag as income</string>
     <string name="expense_tag_add_new_text">Add a new tag name and color</string>
     <string name="expense_tag_colorpicker_button_cancel">Cancel</string>
     <string name="expense_tag_colorpicker_button_ok">OK</string>
@@ -32,6 +33,8 @@
     <string name="expense_tag_delete_title">Delete Tag</string>
     <string name="expense_tag_delete_yes">Yes</string>
     <string name="expense_tag_no_tag">- No tag added</string>
+    <string name="expense_tag_update_earning">Earning</string>
+    <string name="expense_tag_update_expense">Expense</string>
     <string name="expense_tags">Expense Tags</string>
     <string name="expense_tags_bottom_sheet_button_close">Close</string>
     <string name="expense_tags_title">EXPENSE TAGS</string>

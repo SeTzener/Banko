@@ -49,7 +49,7 @@ fun SettingsScreen(component: SettingsComponent) {
                     screenState = screenState,
                     loadNewTags = { viewModel.loadExpenseTags() },
                     onTagUpdate = { viewModel.updateExpenseTag(it) },
-                    onTagCreate = { name, color -> viewModel.createExpenseTag(name, color) },
+                    onTagCreate = { name, color, isEarning -> viewModel.createExpenseTag(name, color, isEarning) },
                     onTagDelete = { viewModel.deleteExpenseTag(it) }
                     ) {
                     currentBottomSheet = BottomSheetType.NONE

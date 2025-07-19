@@ -60,10 +60,10 @@ fun CircularIndicator(
     indicatorDateState: LocalDateTime
 ) {
     val monthlySpending = monthlyTransactions.filter {
-        it.bookingDate.month == indicatorDateState.month && it.expenseTag?.name != "Salary"
+        it.bookingDate.month == indicatorDateState.month && it.expenseTag?.isEarning != true
     }.sumOf { it.amount }.toInt()
     val monthlyEarnings = monthlyTransactions.filter {
-        it.bookingDate.month == indicatorDateState.month && it.expenseTag?.name == "Salary"
+        it.bookingDate.month == indicatorDateState.month && it.expenseTag?.isEarning == true
     }.sumOf { it.amount }.toInt()
     val categories = sortCategories(monthlyTransactions, month = indicatorDateState.month)
     val totalAmount = categories.sumOf { it.amount.toInt() }.toFloat()

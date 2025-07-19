@@ -24,7 +24,8 @@ interface BankoDao {
             transactions.*,
             creditor_account.id AS creditor_id, creditor_account.iban AS creditor_iban, creditor_account.bban AS creditor_bban,
             debtor_account.id AS debtor_id, debtor_account.iban AS debtor_iban, debtor_account.bban AS debtor_bban,
-            expense_tag.id AS expense_id, expense_tag.color AS expense_color, expense_tag.name AS expense_name, expense_tag.aka AS expense_aka
+            expense_tag.id AS expense_id, expense_tag.color AS expense_color, expense_tag.name AS expense_name, 
+            expense_tag.aka AS expense_aka, expense_tag.isEarning AS expense_isEarning
         FROM transactions
         LEFT JOIN creditor_account ON transactions.creditorAccountId = creditor_account.id
         LEFT JOIN debtor_account ON transactions.debtorAccountId = debtor_account.id
@@ -50,13 +51,15 @@ interface BankoDao {
             transactions.*,
             creditor_account.id AS creditor_id, creditor_account.iban AS creditor_iban, creditor_account.bban AS creditor_bban,
             debtor_account.id AS debtor_id, debtor_account.iban AS debtor_iban, debtor_account.bban AS debtor_bban,
-            expense_tag.id AS expense_id, expense_tag.color AS expense_color, expense_tag.name AS expense_name, expense_tag.aka AS expense_aka
+            expense_tag.id AS expense_id, expense_tag.color AS expense_color, expense_tag.name AS expense_name, 
+            expense_tag.aka AS expense_aka, expense_tag.isEarning AS expense_isEarning
         FROM transactions
         LEFT JOIN creditor_account ON transactions.creditorAccountId = creditor_account.id
         LEFT JOIN debtor_account ON transactions.debtorAccountId = debtor_account.id
         LEFT JOIN expense_tag ON transactions.expenseTagId = expense_tag.id 
         WHERE transactions.BookingDate BETWEEN :startDate AND :endDate
-            """)
+            """
+    )
     fun getTransactionsForMonth(startDate: String, endDate: String): Flow<List<FullTransaction>>
 
     @Query("SELECT * FROM transactions WHERE id = :transactionId")
