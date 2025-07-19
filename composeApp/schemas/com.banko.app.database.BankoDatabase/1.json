@@ -1,8 +1,8 @@
 {
   "formatVersion": 1,
   "database": {
-    "version": 2,
-    "identityHash": "425676a38807dd6689307de18c6211bc",
+    "version": 1,
+    "identityHash": "0a8e4eda3b1e3c4143b8d92d7388017d",
     "entities": [
       {
         "tableName": "transactions",
@@ -142,7 +142,7 @@
       },
       {
         "tableName": "expense_tag",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `color` INTEGER NOT NULL, `isEarning` INTEGER DEFAULT 0, `aka` TEXT, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `color` INTEGER NOT NULL, `aka` TEXT, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -161,12 +161,6 @@
             "columnName": "color",
             "affinity": "INTEGER",
             "notNull": true
-          },
-          {
-            "fieldPath": "isEarning",
-            "columnName": "isEarning",
-            "affinity": "INTEGER",
-            "defaultValue": "0"
           },
           {
             "fieldPath": "aka",
@@ -244,7 +238,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '425676a38807dd6689307de18c6211bc')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '0a8e4eda3b1e3c4143b8d92d7388017d')"
     ]
   }
 }

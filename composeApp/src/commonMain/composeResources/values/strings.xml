@@ -7,6 +7,7 @@
     <string name="details">Details</string>
     <string name="details_booking_date">Booking Date</string>
     <string name="details_button_back">Go Back</string>
+    <string name="details_button_add_note">Add Note</string>
     <string name="details_creditor_name_missing">Unknown</string>
     <string name="details_creditor_name">Creditor Name</string>
     <string name="details_creditor_bban">BBAN</string>
@@ -17,6 +18,15 @@
     <string name="details_debtor_name_missing">Unknown</string>
     <string name="details_expense_tag">Expense Tag</string>
     <string name="details_expense_tag_empty">Empty</string>
+    <string name="details_note">Note</string>
+    <string name="details_note_delete_no">No</string>
+    <string name="details_note_delete_text">Are you sure you want to delete this note?</string>
+    <string name="details_note_delete_title">Delete note</string>
+    <string name="details_note_delete_yes">Yes</string>
+    <string name="details_note_edit_placeholder">Enter your text here</string>
+    <string name="details_note_edit_save">Save</string>
+    <string name="details_note_edit_title_add_note">Add Note</string>
+    <string name="details_note_edit_title_edit_note">Edit Note</string>
     <string name="details_remittance_information">Remittance Information</string>
     <string name="details_value_date">Value Date</string>
     <string name="expense_tag_add_new">+</string>
@@ -38,6 +48,8 @@
     <string name="expense_tags">Expense Tags</string>
     <string name="expense_tags_bottom_sheet_button_close">Close</string>
     <string name="expense_tags_title">EXPENSE TAGS</string>
+    <string name="generic_button_edit">Edit</string>
+    <string name="generic_button_delete">Delete</string>
     <string name="monthly_budget">Monthly Budget</string>>
     <string name="monthly_income">Money Saved This Month:</string>
     <string name="saved_money_yesterday">Money Saved Yesterday:</string>

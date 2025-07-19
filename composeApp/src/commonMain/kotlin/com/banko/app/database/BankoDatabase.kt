@@ -17,8 +17,8 @@ import com.banko.app.database.Entities.Transaction
         CreditorAccount::class,
         DebtorAccount::class
     ],
-    version = 2,
-    exportSchema = true,
+    version = 3,
+    exportSchema = true
 )
 @ConstructedBy(BankoDatabaseConstructor::class)
 @TypeConverters(TypeConverter::class)

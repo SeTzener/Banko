@@ -2,6 +2,7 @@ package com.banko.app.ui.screens.details
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,12 +14,15 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
@@ -32,8 +36,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import banko.composeapp.generated.resources.Res
+import banko.composeapp.generated.resources.account_balance
 import banko.composeapp.generated.resources.details
 import banko.composeapp.generated.resources.details_booking_date
+import banko.composeapp.generated.resources.details_button_add_note
 import banko.composeapp.generated.resources.details_button_back
 import banko.composeapp.generated.resources.details_creditor_bban
 import banko.composeapp.generated.resources.details_creditor_iban
@@ -45,16 +51,25 @@ import banko.composeapp.generated.resources.details_debtor_name
 import banko.composeapp.generated.resources.details_debtor_name_missing
 import banko.composeapp.generated.resources.details_expense_tag
 import banko.composeapp.generated.resources.details_expense_tag_empty
+import banko.composeapp.generated.resources.details_note
 import banko.composeapp.generated.resources.details_remittance_information
 import banko.composeapp.generated.resources.details_value_date
 import banko.composeapp.generated.resources.expense_tag_no_tag
+import banko.composeapp.generated.resources.generic_button_delete
+import banko.composeapp.generated.resources.generic_button_edit
 import banko.composeapp.generated.resources.ic_arrow_drop_down
 import banko.composeapp.generated.resources.ic_calendar_month
+import banko.composeapp.generated.resources.ic_delete
+import banko.composeapp.generated.resources.ic_edit
+import banko.composeapp.generated.resources.ic_more
 import banko.composeapp.generated.resources.ic_quill
 import banko.composeapp.generated.resources.ic_save
 import banko.composeapp.generated.resources.ic_tag
 import banko.composeapp.generated.resources.ic_tag_filled
 import com.banko.app.ui.models.ExpenseTag
+import com.banko.app.ui.models.Transaction
+import com.banko.app.ui.screens.details.bottomsheets.EditNoteBottomSheet
+import com.banko.app.ui.screens.details.bottomsheets.dialogs.NoteDeleteDialog
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -63,13 +78,61 @@ import org.koin.core.annotation.KoinExperimentalAPI
 @OptIn(KoinExperimentalAPI::class)
 @Composable
 fun DetailsScreen(component: DetailsComponent) {
-    var transaction by remember { mutableStateOf(component.transaction) }
-    var oldTag by remember { mutableStateOf(transaction.expenseTag?.id) }
     val viewModel = koinViewModel<DetailsScreenViewModel>()
     val screenState by viewModel.screenState.collectAsState()
 
+    DetailsScreen(
+        transactions = component.transaction,
+        expenseTags = screenState.expenseTags,
+        saveNote = { note: String, id: String -> viewModel.saveNote(id, note) },
+        getExpenseTags = { viewModel.getExpenseTags() },
+        assignExpenseTag = { id: String, tagId: String? -> viewModel.assignExpenseTag(id, tagId) },
+        goBack = { component.goBack() }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DetailsScreen(
+    transactions: Transaction,
+    expenseTags: List<ExpenseTag>,
+    saveNote: (String, String) -> Unit,
+    assignExpenseTag: (String, String?) -> Unit,
+    getExpenseTags: () -> Unit,
+    goBack: () -> Unit
+) {
+    var transaction by remember { mutableStateOf(transactions) }
+    val transactionNote = remember { mutableStateOf(transaction.note ?: "") }
+    var oldTag by remember { mutableStateOf(transaction.expenseTag?.id) }
     val isEditing by remember { mutableStateOf(false) }
-    val expanded = remember { mutableStateOf(false) }
+    val isEditNote = remember { mutableStateOf(false) }
+    val isDeleteNote = remember { mutableStateOf(false) }
+    val tagMenuExpanded = remember { mutableStateOf(false) }
+    val noteMenuExpanded = remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    if (isEditNote.value) {
+        ModalBottomSheet(
+            onDismissRequest = { isEditNote.value = false },
+            sheetState = sheetState
+        ) {
+            EditNoteBottomSheet(
+                initialText = transactionNote,
+                transactionId = transaction.id,
+                onSaveNote = saveNote,
+                isEditNote = isEditNote
+            )
+        }
+    }
+
+    if(isDeleteNote.value) {
+        NoteDeleteDialog(
+            onDismiss = isDeleteNote,
+            textToDelete = transactionNote,
+            transactionId = transaction.id,
+            onNoteDelete = saveNote
+        )
+    }
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -81,13 +144,11 @@ fun DetailsScreen(component: DetailsComponent) {
                 style = MaterialTheme.typography.headlineMedium
             )
             Column(
-                modifier = Modifier.align(Alignment.Bottom)
-                    .padding(top = 24.dp, end = 20.dp)
+                modifier = Modifier.align(Alignment.Bottom).padding(top = 24.dp, end = 20.dp)
             ) {
                 Row(
                     modifier = Modifier.align(Alignment.End)
-                )
-                {
+                ) {
                     Text(
                         text = transaction.amount.toString(),
                         color = MaterialTheme.colorScheme.primary,
@@ -129,8 +190,7 @@ fun DetailsScreen(component: DetailsComponent) {
             // Remittance Information
             item {
                 TextField(
-                    modifier = Modifier.padding(start = 16.dp, end = 16.dp)
-                        .fillMaxWidth(),
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp).fillMaxWidth(),
                     onValueChange = {},
                     value = transaction.remittanceInformationUnstructuredArray.joinToString(" "),
                     supportingText = {
@@ -138,10 +198,10 @@ fun DetailsScreen(component: DetailsComponent) {
                             text = stringResource(Res.string.details_remittance_information)
                         )
                     },
-                    readOnly = !isEditing,
+                    readOnly = true,
                     leadingIcon = {
                         Icon(
-                            painter = painterResource(Res.drawable.ic_quill),
+                            painter = painterResource(Res.drawable.account_balance),
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary
                         )
@@ -233,7 +293,7 @@ fun DetailsScreen(component: DetailsComponent) {
                                     onValueChange = {},
                                     value = transaction.creditorName
                                         ?: stringResource(Res.string.details_creditor_name_missing),
-                                    readOnly = !isEditing,
+                                    readOnly = true,
                                     supportingText = {
                                         Text(
                                             text = stringResource(Res.string.details_creditor_name)
@@ -319,7 +379,7 @@ fun DetailsScreen(component: DetailsComponent) {
                                     onValueChange = {},
                                     value = transaction.debtorName
                                         ?: stringResource(Res.string.details_debtor_name_missing),
-                                    readOnly = !isEditing,
+                                    readOnly = true,
                                     supportingText = {
                                         Text(
                                             text = stringResource(Res.string.details_debtor_name)
@@ -412,26 +472,22 @@ fun DetailsScreen(component: DetailsComponent) {
                             )
                         },
                         trailingIcon = {
-                            IconButton(
-                                onClick = {
-                                    viewModel.getExpenseTags()
-                                    expanded.value = true
-                                },
-                                content = {
-                                    Icon(
-                                        painter = painterResource(Res.drawable.ic_arrow_drop_down),
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                    ExpenseTagDropdown(
-                                        expanded = expanded,
-                                        expenseTags = screenState.expenseTags,
-                                        onTagSelected = { tag ->
-                                            transaction = transaction.copy(expenseTag = tag)
-                                        }
-                                    )
-                                }
-                            )
+                            IconButton(onClick = {
+                                getExpenseTags()
+                                tagMenuExpanded.value = true
+                            }, content = {
+                                Icon(
+                                    painter = painterResource(Res.drawable.ic_arrow_drop_down),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                ExpenseTagDropdown(
+                                    expanded = tagMenuExpanded,
+                                    expenseTags = expenseTags,
+                                    onTagSelected = { tag ->
+                                        transaction = transaction.copy(expenseTag = tag)
+                                    })
+                            })
                         },
                         colors = TextFieldDefaults.colors(
                             unfocusedTextColor = MaterialTheme.colorScheme.primary,
@@ -442,12 +498,12 @@ fun DetailsScreen(component: DetailsComponent) {
                     )
                     if (oldTag != transaction.expenseTag?.id) {
                         IconButton(
-                            modifier = Modifier.align(Alignment.Bottom),
-                            onClick = {
-                                viewModel.assignExpenseTag(transaction.id, transaction.expenseTag?.id)
+                            modifier = Modifier.align(Alignment.Bottom), onClick = {
+                                assignExpenseTag(
+                                    transaction.id, transaction.expenseTag?.id
+                                )
                                 oldTag = transaction.expenseTag?.id
-                            }
-                        ) {
+                            }) {
                             Icon(
                                 painter = painterResource(Res.drawable.ic_save),
                                 contentDescription = null,
@@ -457,14 +513,139 @@ fun DetailsScreen(component: DetailsComponent) {
                     }
                 }
             }
+
+            // Note
+            item {
+                if (transactionNote.value.isNotEmpty()) {
+                    Card(
+                        modifier = Modifier.fillParentMaxWidth().padding(top = 20.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        ),
+                        border = BorderStroke(1.dp, Color.LightGray),
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            TextField(
+                                modifier = Modifier.fillMaxWidth()
+                                    .padding(start = 16.dp, end = 36.dp, bottom = 16.dp),
+                                onValueChange = {},
+                                value = transactionNote.value,
+                                supportingText = {
+                                    Text(
+                                        text = stringResource(Res.string.details_note)
+                                    )
+                                },
+                                readOnly = !isEditing,
+                                leadingIcon = {
+                                    Icon(
+                                        painter = painterResource(Res.drawable.ic_quill),
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                },
+                                colors = TextFieldDefaults.colors(
+                                    unfocusedTextColor = MaterialTheme.colorScheme.primary,
+                                    focusedTextColor = MaterialTheme.colorScheme.primary,
+                                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                )
+                            )
+
+                            IconButton(
+                                modifier = Modifier.padding(end = 4.dp).align(Alignment.TopEnd),
+                                onClick = {
+                                    noteMenuExpanded.value = true
+                                }
+                            ) {
+                                Icon(
+                                    painter = painterResource(Res.drawable.ic_more),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                NoteDropDown(noteMenuExpanded, isEditNote, isDeleteNote)
+                            }
+                        }
+                    }
+                }
+            }
         }
 
-        Button(
-            modifier = Modifier.align(Alignment.CenterHorizontally),
-            onClick = { component.goBack() }
+        // Buttons
+        Row(
+            modifier = Modifier.align(Alignment.CenterHorizontally)
         ) {
-            Text(stringResource(Res.string.details_button_back))
+            if (transactionNote.value.isEmpty()) {
+                Button(
+                    modifier = Modifier.padding(16.dp),
+                    onClick = {
+                        isEditNote.value = true
+                    }
+                ) {
+                    Text(stringResource(Res.string.details_button_add_note))
+                }
+            }
+            Button(
+                modifier = Modifier.align(Alignment.CenterVertically),
+                onClick = { goBack() }
+            ) {
+                Text(stringResource(Res.string.details_button_back))
+            }
         }
+    }
+}
+
+@Composable
+private fun NoteDropDown(
+    expanded: MutableState<Boolean>,
+    isEditNote: MutableState<Boolean>,
+    isDeleteNote: MutableState<Boolean>
+) {
+    DropdownMenu(
+        modifier = Modifier.background(MaterialTheme.colorScheme.onSurface),
+        expanded = expanded.value,
+        onDismissRequest = { expanded.value = false }
+    ) {
+        DropdownMenuItem(
+            trailingIcon = {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_edit),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            },
+            text = {
+                Text(
+                    text = stringResource(Res.string.generic_button_edit),
+                    color = MaterialTheme.colorScheme.primary
+                )
+            },
+            onClick = {
+                expanded.value = false
+                isEditNote.value = true
+            }
+        )
+
+        DropdownMenuItem(
+            trailingIcon = {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_delete),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error
+                )
+            },
+            text = {
+                Text(
+                    text = stringResource(Res.string.generic_button_delete),
+                    color = MaterialTheme.colorScheme.error
+                )
+            },
+            onClick = {
+                expanded.value = false
+                isDeleteNote.value = true
+            }
+        )
     }
 }
 
@@ -496,28 +677,22 @@ private fun ExpenseTagDropdown(
             onClick = {
                 onTagSelected(null)
                 expanded.value = false
-            }
-        )
+            })
         expenseTags.forEach { tag ->
-            DropdownMenuItem(
-                leadingIcon = {
-                    Icon(
-                        painter = painterResource(Res.drawable.ic_tag_filled),
-                        contentDescription = null,
-                        tint = tag.color
-                    )
-                },
-                text = {
-                    Text(
-                        text = tag.name,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                },
-                onClick = {
-                    onTagSelected(tag)
-                    expanded.value = false
-                }
-            )
+            DropdownMenuItem(leadingIcon = {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_tag_filled),
+                    contentDescription = null,
+                    tint = tag.color
+                )
+            }, text = {
+                Text(
+                    text = tag.name, color = MaterialTheme.colorScheme.primary
+                )
+            }, onClick = {
+                onTagSelected(tag)
+                expanded.value = false
+            })
         }
     }
 }
