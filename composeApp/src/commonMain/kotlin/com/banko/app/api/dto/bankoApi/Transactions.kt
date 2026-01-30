@@ -26,7 +26,7 @@ data class Transaction(
     val debtorAccount: DebtorAccount? = null,
     val remittanceInformationUnstructured: String,
     val remittanceInformationUnstructuredArray: List<String>,
-    val bankTransactionCode: String,
+    val bankTransactionCode: String?,
     val internalTransactionId: String,
     val creditorName: String? = null,
     val creditorAccount: CreditorAccount? = null,
