@@ -8,7 +8,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import banko.composeapp.generated.resources.Res
 import banko.composeapp.generated.resources.details_button_add_note
@@ -64,7 +63,7 @@ internal fun MoreOptionsDropDown(
             },
             onClick = {
                 expanded.value = false
-                isAddNote.value = true
+                isDeleteTransaction.value = true
             }
         )
     }
