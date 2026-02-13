@@ -1,7 +1,6 @@
 package com.banko.app.ui.screens.details
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,8 +11,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -39,7 +36,6 @@ import banko.composeapp.generated.resources.Res
 import banko.composeapp.generated.resources.account_balance
 import banko.composeapp.generated.resources.details
 import banko.composeapp.generated.resources.details_booking_date
-import banko.composeapp.generated.resources.details_button_add_note
 import banko.composeapp.generated.resources.details_button_back
 import banko.composeapp.generated.resources.details_creditor_bban
 import banko.composeapp.generated.resources.details_creditor_iban
@@ -50,17 +46,12 @@ import banko.composeapp.generated.resources.details_debtor_iban
 import banko.composeapp.generated.resources.details_debtor_name
 import banko.composeapp.generated.resources.details_debtor_name_missing
 import banko.composeapp.generated.resources.details_expense_tag
-import banko.composeapp.generated.resources.details_expense_tag_empty
 import banko.composeapp.generated.resources.details_note
 import banko.composeapp.generated.resources.details_remittance_information
 import banko.composeapp.generated.resources.details_value_date
 import banko.composeapp.generated.resources.expense_tag_no_tag
-import banko.composeapp.generated.resources.generic_button_delete
-import banko.composeapp.generated.resources.generic_button_edit
 import banko.composeapp.generated.resources.ic_arrow_drop_down
 import banko.composeapp.generated.resources.ic_calendar_month
-import banko.composeapp.generated.resources.ic_delete
-import banko.composeapp.generated.resources.ic_edit
 import banko.composeapp.generated.resources.ic_more
 import banko.composeapp.generated.resources.ic_quill
 import banko.composeapp.generated.resources.ic_save
@@ -72,7 +63,8 @@ import com.banko.app.ui.screens.details.DropDownMenus.ExpenseTagDropdown
 import com.banko.app.ui.screens.details.DropDownMenus.MoreOptionsDropDown
 import com.banko.app.ui.screens.details.DropDownMenus.NoteDropDown
 import com.banko.app.ui.screens.details.bottomsheets.EditNoteBottomSheet
-import com.banko.app.ui.screens.details.bottomsheets.dialogs.NoteDeleteDialog
+import com.banko.app.ui.components.dialogs.NoteDeleteDialog
+import com.banko.app.ui.components.dialogs.TransactionDeleteDialog
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -90,6 +82,7 @@ fun DetailsScreen(component: DetailsComponent) {
         saveNote = { note: String, id: String -> viewModel.saveNote(id, note) },
         getExpenseTags = { viewModel.getExpenseTags() },
         assignExpenseTag = { id: String, tagId: String? -> viewModel.assignExpenseTag(id, tagId) },
+        deleteTransaction = { id: String -> viewModel.deleteTransaction(id) },
         goBack = { component.goBack() }
     )
 }
@@ -102,6 +95,7 @@ fun DetailsScreen(
     saveNote: (String, String) -> Unit,
     assignExpenseTag: (String, String?) -> Unit,
     getExpenseTags: () -> Unit,
+    deleteTransaction: (String) -> Unit,
     goBack: () -> Unit
 ) {
     var transaction by remember { mutableStateOf(transactions) }
@@ -136,6 +130,15 @@ fun DetailsScreen(
             textToDelete = transactionNote,
             transactionId = transaction.id,
             onNoteDelete = saveNote
+        )
+    }
+
+    if (isDeleteTransaction.value) {
+        TransactionDeleteDialog(
+            transactionId = transaction.id,
+            goBack = goBack,
+            onDismiss = isDeleteTransaction,
+            onTransactionDelete = deleteTransaction
         )
     }
 
@@ -599,7 +602,7 @@ fun DetailsScreen(
             }
         }
 
-        // Buttons
+        // Button
         Row(
             modifier = Modifier.align(Alignment.CenterHorizontally)
         ) {

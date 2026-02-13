@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.banko.app.api.utils.Result
+import com.banko.app.domain.DeleteTransactionUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -21,6 +22,7 @@ private const val pageSize = 30
 
 class HomeScreenViewModel(
     private val repository: DatabaseTransactionRepository,
+    private val deleteTransactionUseCase: DeleteTransactionUseCase
 ) : ViewModel() {
     private val _state = MutableStateFlow(HomeScreenState())
     val state: StateFlow<HomeScreenState> = _state.asStateFlow()
@@ -102,6 +104,7 @@ class HomeScreenViewModel(
                                 )
                             }
                         }
+
                         is Result.Error.SerializationError -> {
                             println(result.exception.message)
                             _state.update {
@@ -111,6 +114,7 @@ class HomeScreenViewModel(
                                 )
                             }
                         }
+
                         is Result.Error.UnexpectedError -> {
                             println(result.exception.message)
                             _state.update {
@@ -211,6 +215,7 @@ class HomeScreenViewModel(
                                     )
                                 }
                             }
+
                             is Result.Error.SerializationError -> {
                                 println(result.exception.message)
                                 _state.update {
@@ -220,6 +225,7 @@ class HomeScreenViewModel(
                                     )
                                 }
                             }
+
                             is Result.Error.UnexpectedError -> {
                                 println(result.exception.message)
                                 _state.update {
@@ -313,6 +319,7 @@ class HomeScreenViewModel(
                             )
                         }
                     }
+
                     is Result.Error.SerializationError -> {
                         println(result.exception.message)
                         _state.update {
@@ -322,6 +329,7 @@ class HomeScreenViewModel(
                             )
                         }
                     }
+
                     is Result.Error.UnexpectedError -> {
                         println(result.exception.message)
                         _state.update {
@@ -351,5 +359,17 @@ class HomeScreenViewModel(
 
     fun indicatorDatePicker(date: LocalDateTime) {
         _state.update { it.copy(indicatorDateState = date) }
+    }
+
+    fun deleteTransaction(transactionId: String) {
+        viewModelScope.launch {
+            try {
+                deleteTransactionUseCase.invoke(transactionId)
+            } catch (ex: Exception) {
+                _state.update {
+                    it.copy(error = ex.message)
+                }
+            }
+        }
     }
 }

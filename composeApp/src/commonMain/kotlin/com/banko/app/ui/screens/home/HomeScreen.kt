@@ -25,7 +25,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -67,6 +66,7 @@ import com.banko.app.ui.components.ExpandableCard
 import com.banko.app.ui.components.ExpenseTag
 import com.banko.app.ui.components.MonthYearPickerDialog
 import com.banko.app.ui.models.Transaction
+import com.banko.app.ui.components.dialogs.TransactionDeleteDialog
 import kotlinx.datetime.LocalDateTime
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -86,7 +86,8 @@ fun HomeScreen(component: HomeComponent) {
         loadMore = { viewModel.handleEvent(event = TransactionsEvent.LoadMore) },
         onRefresh = { viewModel.handleEvent(event = TransactionsEvent.Refresh) },
         clearError = { viewModel.handleEvent(TransactionsEvent.ErrorShown(it)) },
-        datePickerDate = { viewModel.indicatorDatePicker(it) }
+        datePickerDate = { viewModel.indicatorDatePicker(it) },
+        onDeleteTransaction = { viewModel.deleteTransaction(it) }
     )
 }
 
@@ -97,7 +98,8 @@ fun HomeScreen(
     loadMore: () -> Unit,
     onRefresh: () -> Unit,
     clearError: (String) -> Unit,
-    datePickerDate: (LocalDateTime) -> Unit
+    datePickerDate: (LocalDateTime) -> Unit,
+    onDeleteTransaction: (String) -> Unit
 ) {
     val listState = rememberLazyListState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -165,66 +167,6 @@ fun HomeScreen(
                 )
             }
         )
-//        Card(
-//            modifier = Modifier.fillMaxWidth().padding(16.dp),
-//            shape = RoundedCornerShape(16.dp),
-//            colors = CardColors(
-//                contentColor = MaterialTheme.colorScheme.primary,
-//                containerColor = MaterialTheme.colorScheme.onSurface,
-//                disabledContentColor = MaterialTheme.colorScheme.primary,
-//                disabledContainerColor = MaterialTheme.colorScheme.onSurface
-//            ),
-//            border = BorderStroke(0.dp, Color.LightGray),
-//        ) {
-//            Column(modifier = Modifier.fillMaxWidth()) {
-//                Row(
-//                    modifier = Modifier.padding(
-//                        top = 12.dp,
-//                        start = 12.dp,
-//                        end = 12.dp,
-//                        bottom = 8.dp
-//                    ).fillMaxWidth()
-//                ) {
-//                    Column {
-//                        TextWithIcon(
-//                            text = stringResource(resource = Res.string.monthly_income),
-//                            iconResId = Res.drawable.payments,
-//                            textColor = MaterialTheme.colorScheme.primary,
-//                            iconPadding = 8.dp
-//                        )
-//                    }
-//                    Column(modifier = Modifier.fillMaxWidth()) {
-//                        Text(
-//                            modifier = Modifier.align(Alignment.End),
-//                            text = "800 Nok"
-//                        )
-//                    }
-//                }
-//                Row(
-//                    modifier = Modifier.padding(
-//                        top = 8.dp,
-//                        start = 12.dp,
-//                        end = 12.dp,
-//                        bottom = 12.dp
-//                    ).fillMaxWidth()
-//                ) {
-//                    Column {
-//                        TextWithIcon(
-//                            text = stringResource(Res.string.monthly_budget),
-//                            iconResId = Res.drawable.account_balance,
-//                            textColor = MaterialTheme.colorScheme.primary,
-//                            iconPadding = 8.dp
-//                        )
-//                    }
-//                    Column(modifier = Modifier.fillMaxWidth()) {
-//                        Text(
-//                            modifier = Modifier.align(Alignment.End),
-//                            text = "40.000 Nok"
-//                        )
-//                    }
-//                }
-//            }
-//        }
         Scaffold(
             snackbarHost = { SnackbarHost(snackbarHostState) }
         ) { padding ->
@@ -243,6 +185,7 @@ fun HomeScreen(
                     transactions = state.value.transactions,
                     navigateToDetails = navigateToDetails,
                     onRefresh = onRefresh,
+                    onDeleteTransaction = onDeleteTransaction
                 )
             }
         }
@@ -256,14 +199,23 @@ private fun SwipableTransactionRow(
     isOpen: Boolean,
     onOpen: () -> Unit,
     onClose: () -> Unit,
-    onDetailsClick: () -> Unit
+    onDetailsClick: () -> Unit,
+    onDeleteTransaction: (String) -> Unit
 ) {
     var offsetX by remember { mutableStateOf(0f) }
 
     val buttonWidth = 85.dp
     val density = LocalDensity.current
     val buttonWidthPx = with(density) { buttonWidth.toPx() }
+    val isDeleteTransaction = remember { mutableStateOf(false) }
 
+    if (isDeleteTransaction.value) {
+        TransactionDeleteDialog(
+            transactionId = transaction.id,
+            onDismiss = isDeleteTransaction,
+            onTransactionDelete = onDeleteTransaction
+        )
+    }
     LaunchedEffect(isOpen) {
         if (!isOpen) {
             offsetX = 0f
@@ -289,7 +241,7 @@ private fun SwipableTransactionRow(
         }
 
         IconButton(
-            onClick = {},
+            onClick = { isDeleteTransaction.value = true },
             modifier = Modifier.align(Alignment.CenterStart)
                 .background(Color.Red)
                 .width(85.dp)
@@ -398,6 +350,7 @@ private fun LazyTransactionList(
     listState: LazyListState,
     navigateToDetails: (ModelTransaction) -> Unit,
     onRefresh: () -> Unit,
+    onDeleteTransaction: (String) -> Unit
 ) {
     var openedRowId by remember { mutableStateOf<String?>(null) }
     val groupedTransactions = transactions.groupBy { it.bookingDate.date }
@@ -440,7 +393,8 @@ private fun LazyTransactionList(
                             isOpen = openedRowId == transaction.id,
                             onOpen = { openedRowId = transaction.id },
                             onClose = { openedRowId = null },
-                            onDetailsClick = { navigateToDetails(transaction) }
+                            onDetailsClick = { navigateToDetails(transaction) },
+                            onDeleteTransaction = onDeleteTransaction
                         )
                     }
                 }
