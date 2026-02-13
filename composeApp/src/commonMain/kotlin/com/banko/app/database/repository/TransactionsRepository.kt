@@ -115,4 +115,8 @@ class TransactionsRepository(
     suspend fun saveNote(id: String, note: String) {
         dao.saveNote(id, note)
     }
+
+    suspend fun deleteTransaction(transactionId: String) {
+        dao.deleteTransaction(transactionId)
+    }
 }

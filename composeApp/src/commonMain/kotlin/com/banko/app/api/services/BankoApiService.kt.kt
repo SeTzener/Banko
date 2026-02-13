@@ -124,4 +124,11 @@ class BankoApiService : KoinComponent {
             )
         }
     }
+
+    suspend fun deleteTransaction(transactionId: String): Result<String> {
+        return client.deleteSafe("$baseUrl/transactions/${transactionId}") {
+            contentType(ContentType.Application.Json)
+            AcceptEncoding("application/json")
+        }
+    }
 }
