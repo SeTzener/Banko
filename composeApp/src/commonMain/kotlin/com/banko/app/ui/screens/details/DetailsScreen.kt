@@ -1,7 +1,6 @@
 package com.banko.app.ui.screens.details
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,8 +11,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -39,7 +36,6 @@ import banko.composeapp.generated.resources.Res
 import banko.composeapp.generated.resources.account_balance
 import banko.composeapp.generated.resources.details
 import banko.composeapp.generated.resources.details_booking_date
-import banko.composeapp.generated.resources.details_button_add_note
 import banko.composeapp.generated.resources.details_button_back
 import banko.composeapp.generated.resources.details_creditor_bban
 import banko.composeapp.generated.resources.details_creditor_iban
@@ -50,17 +46,12 @@ import banko.composeapp.generated.resources.details_debtor_iban
 import banko.composeapp.generated.resources.details_debtor_name
 import banko.composeapp.generated.resources.details_debtor_name_missing
 import banko.composeapp.generated.resources.details_expense_tag
-import banko.composeapp.generated.resources.details_expense_tag_empty
 import banko.composeapp.generated.resources.details_note
 import banko.composeapp.generated.resources.details_remittance_information
 import banko.composeapp.generated.resources.details_value_date
 import banko.composeapp.generated.resources.expense_tag_no_tag
-import banko.composeapp.generated.resources.generic_button_delete
-import banko.composeapp.generated.resources.generic_button_edit
 import banko.composeapp.generated.resources.ic_arrow_drop_down
 import banko.composeapp.generated.resources.ic_calendar_month
-import banko.composeapp.generated.resources.ic_delete
-import banko.composeapp.generated.resources.ic_edit
 import banko.composeapp.generated.resources.ic_more
 import banko.composeapp.generated.resources.ic_quill
 import banko.composeapp.generated.resources.ic_save
@@ -68,8 +59,12 @@ import banko.composeapp.generated.resources.ic_tag
 import banko.composeapp.generated.resources.ic_tag_filled
 import com.banko.app.ui.models.ExpenseTag
 import com.banko.app.ui.models.Transaction
+import com.banko.app.ui.screens.details.DropDownMenus.ExpenseTagDropdown
+import com.banko.app.ui.screens.details.DropDownMenus.MoreOptionsDropDown
+import com.banko.app.ui.screens.details.DropDownMenus.NoteDropDown
 import com.banko.app.ui.screens.details.bottomsheets.EditNoteBottomSheet
-import com.banko.app.ui.screens.details.bottomsheets.dialogs.NoteDeleteDialog
+import com.banko.app.ui.components.dialogs.NoteDeleteDialog
+import com.banko.app.ui.components.dialogs.TransactionDeleteDialog
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -87,6 +82,7 @@ fun DetailsScreen(component: DetailsComponent) {
         saveNote = { note: String, id: String -> viewModel.saveNote(id, note) },
         getExpenseTags = { viewModel.getExpenseTags() },
         assignExpenseTag = { id: String, tagId: String? -> viewModel.assignExpenseTag(id, tagId) },
+        deleteTransaction = { id: String -> viewModel.deleteTransaction(id) },
         goBack = { component.goBack() }
     )
 }
@@ -99,6 +95,7 @@ fun DetailsScreen(
     saveNote: (String, String) -> Unit,
     assignExpenseTag: (String, String?) -> Unit,
     getExpenseTags: () -> Unit,
+    deleteTransaction: (String) -> Unit,
     goBack: () -> Unit
 ) {
     var transaction by remember { mutableStateOf(transactions) }
@@ -107,6 +104,8 @@ fun DetailsScreen(
     val isEditing by remember { mutableStateOf(false) }
     val isEditNote = remember { mutableStateOf(false) }
     val isDeleteNote = remember { mutableStateOf(false) }
+    val isMoreOptions = remember { mutableStateOf(false) }
+    val isDeleteTransaction = remember { mutableStateOf(false) }
     val tagMenuExpanded = remember { mutableStateOf(false) }
     val noteMenuExpanded = remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -125,7 +124,7 @@ fun DetailsScreen(
         }
     }
 
-    if(isDeleteNote.value) {
+    if (isDeleteNote.value) {
         NoteDeleteDialog(
             onDismiss = isDeleteNote,
             textToDelete = transactionNote,
@@ -133,6 +132,16 @@ fun DetailsScreen(
             onNoteDelete = saveNote
         )
     }
+
+    if (isDeleteTransaction.value) {
+        TransactionDeleteDialog(
+            transactionId = transaction.id,
+            goBack = goBack,
+            onDismiss = isDeleteTransaction,
+            onTransactionDelete = deleteTransaction
+        )
+    }
+
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -144,7 +153,7 @@ fun DetailsScreen(
                 style = MaterialTheme.typography.headlineMedium
             )
             Column(
-                modifier = Modifier.align(Alignment.Bottom).padding(top = 24.dp, end = 20.dp)
+                modifier = Modifier.align(Alignment.Bottom).padding(top = 24.dp, end = 10.dp)
             ) {
                 Row(
                     modifier = Modifier.align(Alignment.End)
@@ -163,7 +172,7 @@ fun DetailsScreen(
                     )
                 }
                 Row(
-                    modifier = Modifier.align(Alignment.Start)
+                    modifier = Modifier.align(Alignment.End)
                 ) {
                     if (transaction.expenseTag != null) {
                         Icon(
@@ -180,6 +189,27 @@ fun DetailsScreen(
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
+            }
+            Column(
+                modifier = Modifier.align(Alignment.Top).padding(top = 24.dp, end = 10.dp)
+            ) {
+                IconButton(
+                    modifier = Modifier.padding(end = 4.dp).align(Alignment.End),
+                    onClick = {
+                        isMoreOptions.value = true
+                    }
+                ) {
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_more),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+                MoreOptionsDropDown(
+                    isAddNote = isEditNote,
+                    isDeleteTransaction = isDeleteTransaction,
+                    expanded = isMoreOptions
+                )
             }
         }
 
@@ -572,127 +602,16 @@ fun DetailsScreen(
             }
         }
 
-        // Buttons
+        // Button
         Row(
             modifier = Modifier.align(Alignment.CenterHorizontally)
         ) {
-            if (transactionNote.value.isEmpty()) {
-                Button(
-                    modifier = Modifier.padding(16.dp),
-                    onClick = {
-                        isEditNote.value = true
-                    }
-                ) {
-                    Text(stringResource(Res.string.details_button_add_note))
-                }
-            }
             Button(
                 modifier = Modifier.align(Alignment.CenterVertically),
                 onClick = { goBack() }
             ) {
                 Text(stringResource(Res.string.details_button_back))
             }
-        }
-    }
-}
-
-@Composable
-private fun NoteDropDown(
-    expanded: MutableState<Boolean>,
-    isEditNote: MutableState<Boolean>,
-    isDeleteNote: MutableState<Boolean>
-) {
-    DropdownMenu(
-        modifier = Modifier.background(MaterialTheme.colorScheme.onSurface),
-        expanded = expanded.value,
-        onDismissRequest = { expanded.value = false }
-    ) {
-        DropdownMenuItem(
-            trailingIcon = {
-                Icon(
-                    painter = painterResource(Res.drawable.ic_edit),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            },
-            text = {
-                Text(
-                    text = stringResource(Res.string.generic_button_edit),
-                    color = MaterialTheme.colorScheme.primary
-                )
-            },
-            onClick = {
-                expanded.value = false
-                isEditNote.value = true
-            }
-        )
-
-        DropdownMenuItem(
-            trailingIcon = {
-                Icon(
-                    painter = painterResource(Res.drawable.ic_delete),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error
-                )
-            },
-            text = {
-                Text(
-                    text = stringResource(Res.string.generic_button_delete),
-                    color = MaterialTheme.colorScheme.error
-                )
-            },
-            onClick = {
-                expanded.value = false
-                isDeleteNote.value = true
-            }
-        )
-    }
-}
-
-@Composable
-private fun ExpenseTagDropdown(
-    expanded: MutableState<Boolean>,
-    expenseTags: List<ExpenseTag>,
-    onTagSelected: (ExpenseTag?) -> Unit
-) {
-    DropdownMenu(
-        modifier = Modifier.background(MaterialTheme.colorScheme.onSurface),
-        expanded = expanded.value,
-        onDismissRequest = { expanded.value = false }
-    ) {
-        DropdownMenuItem(
-            leadingIcon = {
-                Icon(
-                    painter = painterResource(Res.drawable.ic_tag),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            },
-            text = {
-                Text(
-                    text = stringResource(Res.string.details_expense_tag_empty),
-                    color = MaterialTheme.colorScheme.primary
-                )
-            },
-            onClick = {
-                onTagSelected(null)
-                expanded.value = false
-            })
-        expenseTags.forEach { tag ->
-            DropdownMenuItem(leadingIcon = {
-                Icon(
-                    painter = painterResource(Res.drawable.ic_tag_filled),
-                    contentDescription = null,
-                    tint = tag.color
-                )
-            }, text = {
-                Text(
-                    text = tag.name, color = MaterialTheme.colorScheme.primary
-                )
-            }, onClick = {
-                onTagSelected(tag)
-                expanded.value = false
-            })
         }
     }
 }

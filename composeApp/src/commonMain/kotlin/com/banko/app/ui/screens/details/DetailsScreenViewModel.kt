@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.banko.app.ApiExpenseTagRepository
 import com.banko.app.database.Entities.toModelItem
 import com.banko.app.domain.AssignExpenseTagToTransactionUseCase
+import com.banko.app.domain.DeleteTransactionUseCase
 import com.banko.app.domain.GetAllExpenseTagUseCase
 import com.banko.app.domain.SaveNoteUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,7 +17,8 @@ class DetailsScreenViewModel(
     private val apiTagRepository: ApiExpenseTagRepository,
     private val updateTransactionUseCase: AssignExpenseTagToTransactionUseCase,
     private val getExpenseTags: GetAllExpenseTagUseCase,
-    private val saveNoteUseCase: SaveNoteUseCase
+    private val saveNoteUseCase: SaveNoteUseCase,
+    private val deleteTransactionUseCase: DeleteTransactionUseCase
 ) : ViewModel() {
     private val _screenState = MutableStateFlow(DetailScreenState())
     val screenState: StateFlow<DetailScreenState> = _screenState
@@ -43,7 +45,7 @@ class DetailsScreenViewModel(
                 updateTransactionUseCase.invoke(transactionId = id, expenseTagId = expenseTagId)
                 pendingUpdates.remove(id)
 
-            } catch(e: Exception) {
+            } catch (e: Exception) {
                 pendingUpdates[id]?.let { oldTagId ->
                     updateTransactionUseCase.invoke(id, oldTagId)
                 }
@@ -56,6 +58,18 @@ class DetailsScreenViewModel(
         viewModelScope.launch {
             try {
                 saveNoteUseCase.invoke(id = id, note = text)
+            } catch (ex: Exception) {
+                screenState.value.copy(
+                    error = ex.message
+                )
+            }
+        }
+    }
+
+    fun deleteTransaction(transactionId: String) {
+        viewModelScope.launch {
+            try {
+                deleteTransactionUseCase.invoke(transactionId)
             } catch (ex: Exception) {
                 screenState.value.copy(
                     error = ex.message

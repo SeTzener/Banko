@@ -6,6 +6,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -26,6 +27,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -48,24 +50,29 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import banko.composeapp.generated.resources.Res
 import banko.composeapp.generated.resources.app_name
 import banko.composeapp.generated.resources.currency_nok
 import banko.composeapp.generated.resources.details
 import banko.composeapp.generated.resources.ic_arrow_drop_down
+import banko.composeapp.generated.resources.ic_delete
 import com.banko.app.ModelTransaction
 import com.banko.app.ui.components.CircularIndicator
 import com.banko.app.ui.components.ExpandableCard
 import com.banko.app.ui.components.ExpenseTag
 import com.banko.app.ui.components.MonthYearPickerDialog
 import com.banko.app.ui.models.Transaction
+import com.banko.app.ui.components.dialogs.TransactionDeleteDialog
 import kotlinx.datetime.LocalDateTime
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.annotation.KoinExperimentalAPI
+import kotlin.math.roundToInt
 
 @OptIn(KoinExperimentalAPI::class)
 @Composable
@@ -79,7 +86,8 @@ fun HomeScreen(component: HomeComponent) {
         loadMore = { viewModel.handleEvent(event = TransactionsEvent.LoadMore) },
         onRefresh = { viewModel.handleEvent(event = TransactionsEvent.Refresh) },
         clearError = { viewModel.handleEvent(TransactionsEvent.ErrorShown(it)) },
-        datePickerDate = { viewModel.indicatorDatePicker(it) }
+        datePickerDate = { viewModel.indicatorDatePicker(it) },
+        onDeleteTransaction = { viewModel.deleteTransaction(it) }
     )
 }
 
@@ -90,7 +98,8 @@ fun HomeScreen(
     loadMore: () -> Unit,
     onRefresh: () -> Unit,
     clearError: (String) -> Unit,
-    datePickerDate: (LocalDateTime) -> Unit
+    datePickerDate: (LocalDateTime) -> Unit,
+    onDeleteTransaction: (String) -> Unit
 ) {
     val listState = rememberLazyListState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -158,66 +167,6 @@ fun HomeScreen(
                 )
             }
         )
-//        Card(
-//            modifier = Modifier.fillMaxWidth().padding(16.dp),
-//            shape = RoundedCornerShape(16.dp),
-//            colors = CardColors(
-//                contentColor = MaterialTheme.colorScheme.primary,
-//                containerColor = MaterialTheme.colorScheme.onSurface,
-//                disabledContentColor = MaterialTheme.colorScheme.primary,
-//                disabledContainerColor = MaterialTheme.colorScheme.onSurface
-//            ),
-//            border = BorderStroke(0.dp, Color.LightGray),
-//        ) {
-//            Column(modifier = Modifier.fillMaxWidth()) {
-//                Row(
-//                    modifier = Modifier.padding(
-//                        top = 12.dp,
-//                        start = 12.dp,
-//                        end = 12.dp,
-//                        bottom = 8.dp
-//                    ).fillMaxWidth()
-//                ) {
-//                    Column {
-//                        TextWithIcon(
-//                            text = stringResource(resource = Res.string.monthly_income),
-//                            iconResId = Res.drawable.payments,
-//                            textColor = MaterialTheme.colorScheme.primary,
-//                            iconPadding = 8.dp
-//                        )
-//                    }
-//                    Column(modifier = Modifier.fillMaxWidth()) {
-//                        Text(
-//                            modifier = Modifier.align(Alignment.End),
-//                            text = "800 Nok"
-//                        )
-//                    }
-//                }
-//                Row(
-//                    modifier = Modifier.padding(
-//                        top = 8.dp,
-//                        start = 12.dp,
-//                        end = 12.dp,
-//                        bottom = 12.dp
-//                    ).fillMaxWidth()
-//                ) {
-//                    Column {
-//                        TextWithIcon(
-//                            text = stringResource(Res.string.monthly_budget),
-//                            iconResId = Res.drawable.account_balance,
-//                            textColor = MaterialTheme.colorScheme.primary,
-//                            iconPadding = 8.dp
-//                        )
-//                    }
-//                    Column(modifier = Modifier.fillMaxWidth()) {
-//                        Text(
-//                            modifier = Modifier.align(Alignment.End),
-//                            text = "40.000 Nok"
-//                        )
-//                    }
-//                }
-//            }
-//        }
         Scaffold(
             snackbarHost = { SnackbarHost(snackbarHostState) }
         ) { padding ->
@@ -236,6 +185,7 @@ fun HomeScreen(
                     transactions = state.value.transactions,
                     navigateToDetails = navigateToDetails,
                     onRefresh = onRefresh,
+                    onDeleteTransaction = onDeleteTransaction
                 )
             }
         }
@@ -244,18 +194,43 @@ fun HomeScreen(
 
 
 @Composable
-private fun SwipableTransactionRow(transaction: Transaction, onDetailsClick: () -> Unit) {
+private fun SwipableTransactionRow(
+    transaction: Transaction,
+    isOpen: Boolean,
+    onOpen: () -> Unit,
+    onClose: () -> Unit,
+    onDetailsClick: () -> Unit,
+    onDeleteTransaction: (String) -> Unit
+) {
     var offsetX by remember { mutableStateOf(0f) }
+
     val buttonWidth = 85.dp
+    val density = LocalDensity.current
+    val buttonWidthPx = with(density) { buttonWidth.toPx() }
+    val isDeleteTransaction = remember { mutableStateOf(false) }
+
+    if (isDeleteTransaction.value) {
+        TransactionDeleteDialog(
+            transactionId = transaction.id,
+            onDismiss = isDeleteTransaction,
+            onTransactionDelete = onDeleteTransaction
+        )
+    }
+    LaunchedEffect(isOpen) {
+        if (!isOpen) {
+            offsetX = 0f
+        }
+    }
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.primary)
+            .background(MaterialTheme.colorScheme.surface)
     ) {
         TextButton(
             onClick = onDetailsClick,
             modifier = Modifier.align(Alignment.CenterEnd)
+                .background(MaterialTheme.colorScheme.primary)
                 .width(85.dp)
                 .height(32.dp)
         ) {
@@ -265,27 +240,54 @@ private fun SwipableTransactionRow(transaction: Transaction, onDetailsClick: () 
             )
         }
 
+        IconButton(
+            onClick = { isDeleteTransaction.value = true },
+            modifier = Modifier.align(Alignment.CenterStart)
+                .background(Color.Red)
+                .width(85.dp)
+                .height(32.dp)
+        ) {
+            Icon(
+                painter = painterResource(Res.drawable.ic_delete),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary
+            )
+        }
+
         // Main Transaction Row
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .offset(x = offsetX.dp)
+                .offset { IntOffset(offsetX.roundToInt(), 0) }
                 .pointerInput(Unit) {
                     detectHorizontalDragGestures(
                         onHorizontalDrag = { change, dragAmount ->
-                            change.consume() // Consume gesture event
-                            offsetX = (offsetX + dragAmount).coerceIn(-buttonWidth.value, 0f)
+                            change.consume()
+                            offsetX = (offsetX + dragAmount)
+                                .coerceIn(-buttonWidthPx, buttonWidthPx)
                         },
                         onDragEnd = {
-                            // Snap to position
-                            offsetX =
-                                if (offsetX < -buttonWidth.value / 2) -buttonWidth.value else 0f
+                            offsetX = when {
+                                offsetX > buttonWidthPx / 2 -> {
+                                    onOpen()
+                                    buttonWidthPx
+                                }
+                                offsetX < -buttonWidthPx / 2 -> {
+                                    onOpen()
+                                    -buttonWidthPx
+                                }
+                                else -> {
+                                    onClose()
+                                    0f
+                                }
+                            }
                         }
                     )
                 }
                 .background(MaterialTheme.colorScheme.surface)
                 .padding(horizontal = 8.dp, vertical = 4.dp)
-        ) {
+        )
+        {
             Column(
                 modifier = Modifier
                     .weight(7f)
@@ -348,7 +350,9 @@ private fun LazyTransactionList(
     listState: LazyListState,
     navigateToDetails: (ModelTransaction) -> Unit,
     onRefresh: () -> Unit,
+    onDeleteTransaction: (String) -> Unit
 ) {
+    var openedRowId by remember { mutableStateOf<String?>(null) }
     val groupedTransactions = transactions.groupBy { it.bookingDate.date }
 
     LoadingProgressIndicator(isLoading = isLoading)
@@ -356,31 +360,48 @@ private fun LazyTransactionList(
         isRefreshing = isRefreshing,
         onRefresh = onRefresh,
     ) {
-        LazyColumn(state = listState) {
-            groupedTransactions.forEach { (date, transactionsByDate) ->
-                stickyHeader {
-                    Text(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.onSurface)
-                            .padding(12.dp),
-                        text = date.toString(),
-                        color = MaterialTheme.colorScheme.secondary
-                    )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(openedRowId) {
+                    if (openedRowId != null) {
+                        detectTapGestures {
+                            openedRowId = null
+                        }
+                    }
                 }
+        ) {
+            LazyColumn(state = listState) {
+                groupedTransactions.forEach { (date, transactionsByDate) ->
+                    stickyHeader {
+                        Text(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.onSurface)
+                                .padding(12.dp),
+                            text = date.toString(),
+                            color = MaterialTheme.colorScheme.secondary
+                        )
+                    }
 
-                items(
-                    items = transactionsByDate,
-                    key = { transaction -> transaction.id }
-                ) { transaction ->
-                    SwipableTransactionRow(
-                        transaction = transaction,
-                        onDetailsClick = { navigateToDetails(transaction) }
-                    )
+                    items(
+                        items = transactionsByDate,
+                        key = { it.id }
+                    ) { transaction ->
+                        SwipableTransactionRow(
+                            transaction = transaction,
+                            isOpen = openedRowId == transaction.id,
+                            onOpen = { openedRowId = transaction.id },
+                            onClose = { openedRowId = null },
+                            onDetailsClick = { navigateToDetails(transaction) },
+                            onDeleteTransaction = onDeleteTransaction
+                        )
+                    }
                 }
             }
         }
     }
+
 }
 
 @Composable

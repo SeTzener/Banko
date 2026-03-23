@@ -107,4 +107,6 @@ interface BankoDao {
     @Delete
     suspend fun deleteExpenseTag(expenseTag: DaoExpenseTag)
 
+    @Query("DELETE FROM transactions WHERE id = :transactionId")
+    suspend fun deleteTransaction(transactionId: String)
 }

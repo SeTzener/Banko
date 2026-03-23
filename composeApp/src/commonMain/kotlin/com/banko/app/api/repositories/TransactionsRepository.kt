@@ -25,4 +25,13 @@ class TransactionsRepository(
 
         return result
     }
+
+    suspend fun deleteTransaction(transactionId: String): Result<String> {
+        val result = apiService.deleteTransaction(transactionId)
+        if (result is Result.Error) {
+            println("Error: $result")
+        }
+
+        return result
+    }
 }

@@ -11,6 +11,7 @@ import com.banko.app.database.BankoDatabase
 import com.banko.app.database.CreateDatabase
 import com.banko.app.database.repository.ExpenseTagRepository
 import com.banko.app.domain.AssignExpenseTagToTransactionUseCase
+import com.banko.app.domain.DeleteTransactionUseCase
 import com.banko.app.domain.GetAllExpenseTagUseCase
 import com.banko.app.domain.SaveNoteUseCase
 import com.banko.app.ui.screens.details.DetailsScreenViewModel
@@ -39,6 +40,7 @@ val  sharedModule = module {
     singleOf(::AssignExpenseTagToTransactionUseCase)
     singleOf(::GetAllExpenseTagUseCase)
     singleOf(::SaveNoteUseCase)
+    singleOf(::DeleteTransactionUseCase)
 
     // View Models
     viewModelOf(::SettingsScreenViewModel)
