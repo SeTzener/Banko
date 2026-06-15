@@ -14,7 +14,6 @@ data class HomeScreenState(
     val error: String? = null,
     val oldestTransactionDate: LocalDateTime = currentMonth,
     val indicatorDateState: LocalDateTime = currentMonth,
-    val monthlyTransactions: List<ModelTransaction> = emptyList()
 )
 
 sealed class TransactionsEvent {

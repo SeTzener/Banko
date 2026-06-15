@@ -160,9 +160,12 @@ fun HomeScreen(
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
+                val monthlyTransactions = state.value.transactions.filter {
+                    it.bookingDate.month == state.value.indicatorDateState.month
+                }
                 CircularIndicator(
                     currency = stringResource(Res.string.currency_nok),
-                    monthlyTransactions = state.value.monthlyTransactions,
+                    monthlyTransactions = monthlyTransactions,
                     indicatorDateState = state.value.indicatorDateState
                 )
             }
