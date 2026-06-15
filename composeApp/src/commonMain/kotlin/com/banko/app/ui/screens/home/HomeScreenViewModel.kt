@@ -2,14 +2,14 @@ package com.banko.app.ui.screens.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.banko.app.DatabaseTransactionRepository
+import com.banko.app.domain.repository.TransactionRepository
+import com.banko.app.ui.models.toUi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.banko.app.api.utils.Result
-import com.banko.app.domain.DeleteTransactionUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -23,8 +23,7 @@ import kotlinx.datetime.LocalDateTime
 private const val pageSize = 30
 
 class HomeScreenViewModel(
-    private val repository: DatabaseTransactionRepository,
-    private val deleteTransactionUseCase: DeleteTransactionUseCase
+    private val repository: TransactionRepository
 ) : ViewModel() {
     private val _state = MutableStateFlow(HomeScreenState())
     val state: StateFlow<HomeScreenState> = _state.asStateFlow()
@@ -51,7 +50,8 @@ class HomeScreenViewModel(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
             try {
-                val job = repository.getLocalTransactions(limit = pageSize)
+                val job = repository.getTransactions(limit = pageSize)
+                    .map { list -> list.map { it.toUi() } }
                     .onEach { transactions ->
                         _state.update {
                             it.copy(
@@ -63,15 +63,16 @@ class HomeScreenViewModel(
                     .launchIn(this)
 
                 val monthlyTransactions = repository.getTransactionsForMonth(
-                    month = _state.value.indicatorDateState,
-                    year = _state.value.indicatorDateState.year
-                ).onEach { transactions ->
-                    _state.update {
-                        it.copy(
-                            monthlyTransactions = transactions
-                        )
-                    }
-                }.launchIn(this)
+                    date = _state.value.indicatorDateState
+                )
+                    .map { list -> list.map { it.toUi() } }
+                    .onEach { transactions ->
+                        _state.update {
+                            it.copy(
+                                monthlyTransactions = transactions
+                            )
+                        }
+                    }.launchIn(this)
 
                 activeFlowJobs.addAll(
                     listOf(
@@ -159,13 +160,14 @@ class HomeScreenViewModel(
         activeFlowJobs.removeAll { it.isCompleted }
 
         val job = repository.getTransactionsForMonth(
-            month = date,
-            year = date.year
-        ).onEach { transactions ->
-            _state.update {
-                it.copy(monthlyTransactions = transactions)
-            }
-        }.launchIn(viewModelScope)
+            date = date
+        )
+            .map { list -> list.map { it.toUi() } }
+            .onEach { transactions ->
+                _state.update {
+                    it.copy(monthlyTransactions = transactions)
+                }
+            }.launchIn(viewModelScope)
 
         activeFlowJobs.add(job)
     }
@@ -278,7 +280,8 @@ class HomeScreenViewModel(
     }
 
     private fun loadLocalTransactions(nextPage: Int, offset: Int, scope: CoroutineScope) {
-        val job = repository.getLocalTransactions(limit = offset)
+        val job = repository.getTransactions(limit = offset)
+            .map { list -> list.map { it.toUi() } }
             .onEach { newTransactions ->
                 _state.update {
                     it.copy(
@@ -372,7 +375,7 @@ class HomeScreenViewModel(
     private fun handleDeleteTransaction(transactionId: String) {
         viewModelScope.launch {
             try {
-                deleteTransactionUseCase.invoke(transactionId)
+                repository.deleteTransaction(transactionId)
                 _state.update { state ->
                     state.copy(
                         transactions = state.transactions.filter { it.id != transactionId },
