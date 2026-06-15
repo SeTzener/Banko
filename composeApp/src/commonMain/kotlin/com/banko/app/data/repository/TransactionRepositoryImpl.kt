@@ -16,9 +16,6 @@ class TransactionRepositoryImpl(
     override fun getTransactions(limit: Int): Flow<List<Transaction>> =
         local.getTransactions(limit)
 
-    override fun getTransactionsForMonth(date: LocalDateTime): Flow<List<Transaction>> =
-        local.getTransactionsForMonth(date)
-
     override suspend fun fetchAndStoreTransactions(pageNumber: Int, pageSize: Int): Result<Long> {
         val result = remote.fetchTransactions(pageNumber, pageSize)
         return when (result) {

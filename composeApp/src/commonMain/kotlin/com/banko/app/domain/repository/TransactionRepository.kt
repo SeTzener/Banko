@@ -7,7 +7,6 @@ import kotlinx.datetime.LocalDateTime
 
 interface TransactionRepository {
     fun getTransactions(limit: Int): Flow<List<Transaction>>
-    fun getTransactionsForMonth(date: LocalDateTime): Flow<List<Transaction>>
     suspend fun fetchAndStoreTransactions(pageNumber: Int, pageSize: Int): Result<Long>
     suspend fun getStoredTransactionCount(): Long
     suspend fun getOldestTransactions(): LocalDateTime

@@ -4,10 +4,9 @@ import com.banko.app.database.BankoDatabase
 import com.banko.app.data.mapper.toDao
 import com.banko.app.data.mapper.toDomain
 import com.banko.app.domain.model.Transaction
-import com.banko.app.utils.getLastDayOfMonth
+import com.banko.app.utils.now
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import com.banko.app.utils.now
 import kotlinx.datetime.LocalDateTime
 
 class TransactionLocalDataSource(
@@ -18,18 +17,6 @@ class TransactionLocalDataSource(
     fun getTransactions(limit: Int): Flow<List<Transaction>> =
         dao.getTransactionsPagingSource(limit)
             .map { it.toDomain() }
-
-    fun getTransactionsForMonth(date: LocalDateTime): Flow<List<Transaction>> {
-        val monthStart = LocalDateTime(date.year, date.monthNumber, 1, 0, 0).toString()
-        val monthEnd = LocalDateTime(
-            date.year,
-            date.monthNumber,
-            getLastDayOfMonth(date.year, date.monthNumber),
-            23, 59
-        ).toString()
-        return dao.getTransactionsForMonth(monthStart, monthEnd)
-            .map { it.toDomain() }
-    }
 
     suspend fun getStoredTransactionCount(): Long = dao.getTransactionCount()
 
