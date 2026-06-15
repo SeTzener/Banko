@@ -21,4 +21,6 @@ sealed class TransactionsEvent {
     data object Refresh : TransactionsEvent()
     data object LoadMore : TransactionsEvent()
     data class ErrorShown(val error: String) : TransactionsEvent()
+    data class DeleteTransaction(val transactionId: String) : TransactionsEvent()
+    data class IndicatorDatePicked(val date: LocalDateTime) : TransactionsEvent()
 }

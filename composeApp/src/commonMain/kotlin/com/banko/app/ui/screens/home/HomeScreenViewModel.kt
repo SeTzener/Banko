@@ -12,10 +12,12 @@ import com.banko.app.api.utils.Result
 import com.banko.app.domain.DeleteTransactionUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.datetime.LocalDateTime
 
 private const val pageSize = 30
@@ -29,6 +31,8 @@ class HomeScreenViewModel(
 
     private var currentPage = 0
     private var activeFlowJobs = mutableListOf<Job>()
+    private val _sideEffects = Channel<String>(Channel.BUFFERED)
+    val sideEffects = _sideEffects.receiveAsFlow()
 
     init {
         loadInitialData()
@@ -86,7 +90,7 @@ class HomeScreenViewModel(
                         }
 
                         is Result.Error.HttpError -> {
-                            println(result.fullErrorMessage())
+                            _sideEffects.trySend(result.fullErrorMessage())
                             _state.update {
                                 it.copy(
                                     isLoading = false,
@@ -96,7 +100,7 @@ class HomeScreenViewModel(
                         }
 
                         is Result.Error.NetworkError -> {
-                            println(result.exception.message)
+                            _sideEffects.trySend(result.exception.message.orEmpty())
                             _state.update {
                                 it.copy(
                                     isRefreshing = false,
@@ -106,7 +110,7 @@ class HomeScreenViewModel(
                         }
 
                         is Result.Error.SerializationError -> {
-                            println(result.exception.message)
+                            _sideEffects.trySend(result.exception.message.orEmpty())
                             _state.update {
                                 it.copy(
                                     isRefreshing = false,
@@ -116,7 +120,7 @@ class HomeScreenViewModel(
                         }
 
                         is Result.Error.UnexpectedError -> {
-                            println(result.exception.message)
+                            _sideEffects.trySend(result.exception.message.orEmpty())
                             _state.update {
                                 it.copy(
                                     isRefreshing = false,
@@ -171,6 +175,8 @@ class HomeScreenViewModel(
             is TransactionsEvent.LoadMore -> loadMoreData()
             is TransactionsEvent.Refresh -> refreshData()
             is TransactionsEvent.ErrorShown -> clearError(event.error)
+            is TransactionsEvent.IndicatorDatePicked -> handleDatePicked(event.date)
+            is TransactionsEvent.DeleteTransaction -> handleDeleteTransaction(event.transactionId)
         }
     }
 
@@ -198,16 +204,18 @@ class HomeScreenViewModel(
                                 loadLocalTransactions(nextPage, offset, this)
                             }
 
-                            is Result.Error.HttpError -> _state.update {
-                                println(result.fullErrorMessage())
-                                it.copy(
-                                    isLoading = false,
-                                    error = result.errorMessageToDisplay()
-                                )
+                            is Result.Error.HttpError -> {
+                                _sideEffects.trySend(result.fullErrorMessage())
+                                _state.update {
+                                    it.copy(
+                                        isLoading = false,
+                                        error = result.errorMessageToDisplay()
+                                    )
+                                }
                             }
 
                             is Result.Error.NetworkError -> {
-                                println(result.exception.message)
+                                _sideEffects.trySend(result.exception.message.orEmpty())
                                 _state.update {
                                     it.copy(
                                         isRefreshing = false,
@@ -217,7 +225,7 @@ class HomeScreenViewModel(
                             }
 
                             is Result.Error.SerializationError -> {
-                                println(result.exception.message)
+                                _sideEffects.trySend(result.exception.message.orEmpty())
                                 _state.update {
                                     it.copy(
                                         isRefreshing = false,
@@ -227,7 +235,7 @@ class HomeScreenViewModel(
                             }
 
                             is Result.Error.UnexpectedError -> {
-                                println(result.exception.message)
+                                _sideEffects.trySend(result.exception.message.orEmpty())
                                 _state.update {
                                     it.copy(
                                         isRefreshing = false,
@@ -311,7 +319,7 @@ class HomeScreenViewModel(
                     }
 
                     is Result.Error.NetworkError -> {
-                        println(result.exception.message)
+                        _sideEffects.trySend(result.exception.message.orEmpty())
                         _state.update {
                             it.copy(
                                 isRefreshing = false,
@@ -321,7 +329,7 @@ class HomeScreenViewModel(
                     }
 
                     is Result.Error.SerializationError -> {
-                        println(result.exception.message)
+                        _sideEffects.trySend(result.exception.message.orEmpty())
                         _state.update {
                             it.copy(
                                 isRefreshing = false,
@@ -331,7 +339,7 @@ class HomeScreenViewModel(
                     }
 
                     is Result.Error.UnexpectedError -> {
-                        println(result.exception.message)
+                        _sideEffects.trySend(result.exception.message.orEmpty())
                         _state.update {
                             it.copy(
                                 isRefreshing = false,
@@ -357,14 +365,20 @@ class HomeScreenViewModel(
         }
     }
 
-    fun indicatorDatePicker(date: LocalDateTime) {
+    private fun handleDatePicked(date: LocalDateTime) {
         _state.update { it.copy(indicatorDateState = date) }
     }
 
-    fun deleteTransaction(transactionId: String) {
+    private fun handleDeleteTransaction(transactionId: String) {
         viewModelScope.launch {
             try {
                 deleteTransactionUseCase.invoke(transactionId)
+                _state.update { state ->
+                    state.copy(
+                        transactions = state.transactions.filter { it.id != transactionId },
+                        monthlyTransactions = state.monthlyTransactions.filter { it.id != transactionId }
+                    )
+                }
             } catch (ex: Exception) {
                 _state.update {
                     it.copy(error = ex.message)

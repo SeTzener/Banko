@@ -86,8 +86,8 @@ fun HomeScreen(component: HomeComponent) {
         loadMore = { viewModel.handleEvent(event = TransactionsEvent.LoadMore) },
         onRefresh = { viewModel.handleEvent(event = TransactionsEvent.Refresh) },
         clearError = { viewModel.handleEvent(TransactionsEvent.ErrorShown(it)) },
-        datePickerDate = { viewModel.indicatorDatePicker(it) },
-        onDeleteTransaction = { viewModel.deleteTransaction(it) }
+        datePickerDate = { viewModel.handleEvent(TransactionsEvent.IndicatorDatePicked(it)) },
+        onDeleteTransaction = { viewModel.handleEvent(TransactionsEvent.DeleteTransaction(it)) }
     )
 }
 
