@@ -86,8 +86,8 @@ fun HomeScreen(component: HomeComponent) {
         loadMore = { viewModel.handleEvent(event = TransactionsEvent.LoadMore) },
         onRefresh = { viewModel.handleEvent(event = TransactionsEvent.Refresh) },
         clearError = { viewModel.handleEvent(TransactionsEvent.ErrorShown(it)) },
-        datePickerDate = { viewModel.indicatorDatePicker(it) },
-        onDeleteTransaction = { viewModel.deleteTransaction(it) }
+        datePickerDate = { viewModel.handleEvent(TransactionsEvent.IndicatorDatePicked(it)) },
+        onDeleteTransaction = { viewModel.handleEvent(TransactionsEvent.DeleteTransaction(it)) }
     )
 }
 
@@ -160,9 +160,12 @@ fun HomeScreen(
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
+                val monthlyTransactions = state.value.transactions.filter {
+                    it.bookingDate.month == state.value.indicatorDateState.month
+                }
                 CircularIndicator(
                     currency = stringResource(Res.string.currency_nok),
-                    monthlyTransactions = state.value.monthlyTransactions,
+                    monthlyTransactions = monthlyTransactions,
                     indicatorDateState = state.value.indicatorDateState
                 )
             }

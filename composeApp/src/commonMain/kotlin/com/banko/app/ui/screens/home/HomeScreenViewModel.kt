@@ -2,43 +2,39 @@ package com.banko.app.ui.screens.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.banko.app.DatabaseTransactionRepository
+import com.banko.app.api.utils.Result
+import com.banko.app.domain.repository.TransactionRepository
+import com.banko.app.ui.models.toUi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
-import com.banko.app.api.utils.Result
-import com.banko.app.domain.DeleteTransactionUseCase
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDateTime
 
 private const val pageSize = 30
 
 class HomeScreenViewModel(
-    private val repository: DatabaseTransactionRepository,
-    private val deleteTransactionUseCase: DeleteTransactionUseCase
+    private val repository: TransactionRepository
 ) : ViewModel() {
     private val _state = MutableStateFlow(HomeScreenState())
     val state: StateFlow<HomeScreenState> = _state.asStateFlow()
 
     private var currentPage = 0
-    private var activeFlowJobs = mutableListOf<Job>()
+    private var transactionsJob: Job? = null
 
     init {
         loadInitialData()
-        observeIndicatorDateChanges()
         getOldestTransactionDate()
     }
 
     override fun onCleared() {
         super.onCleared()
-        activeFlowJobs.forEach { it.cancel() }
+        transactionsJob?.cancel()
     }
 
     private fun loadInitialData() {
@@ -47,7 +43,9 @@ class HomeScreenViewModel(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
             try {
-                val job = repository.getLocalTransactions(limit = pageSize)
+                transactionsJob?.cancel()
+                transactionsJob = repository.getTransactions(limit = pageSize)
+                    .map { list -> list.map { it.toUi() } }
                     .onEach { transactions ->
                         _state.update {
                             it.copy(
@@ -56,25 +54,8 @@ class HomeScreenViewModel(
                             )
                         }
                     }
-                    .launchIn(this)
+                    .launchIn(viewModelScope)
 
-                val monthlyTransactions = repository.getTransactionsForMonth(
-                    month = _state.value.indicatorDateState,
-                    year = _state.value.indicatorDateState.year
-                ).onEach { transactions ->
-                    _state.update {
-                        it.copy(
-                            monthlyTransactions = transactions
-                        )
-                    }
-                }.launchIn(this)
-
-                activeFlowJobs.addAll(
-                    listOf(
-                        job,
-                        monthlyTransactions,
-                    )
-                )
                 if (_state.value.totalTransactionCount == 0L) {
                     val result =
                         repository.fetchAndStoreTransactions(pageNumber = 1, pageSize = pageSize)
@@ -86,7 +67,6 @@ class HomeScreenViewModel(
                         }
 
                         is Result.Error.HttpError -> {
-                            println(result.fullErrorMessage())
                             _state.update {
                                 it.copy(
                                     isLoading = false,
@@ -96,30 +76,27 @@ class HomeScreenViewModel(
                         }
 
                         is Result.Error.NetworkError -> {
-                            println(result.exception.message)
                             _state.update {
                                 it.copy(
-                                    isRefreshing = false,
+                                    isLoading = false,
                                     error = result.exception.message
                                 )
                             }
                         }
 
                         is Result.Error.SerializationError -> {
-                            println(result.exception.message)
                             _state.update {
                                 it.copy(
-                                    isRefreshing = false,
+                                    isLoading = false,
                                     error = result.exception.message
                                 )
                             }
                         }
 
                         is Result.Error.UnexpectedError -> {
-                            println(result.exception.message)
                             _state.update {
                                 it.copy(
-                                    isRefreshing = false,
+                                    isLoading = false,
                                     error = result.exception.message
                                 )
                             }
@@ -140,37 +117,13 @@ class HomeScreenViewModel(
         }
     }
 
-    private fun observeIndicatorDateChanges() {
-        viewModelScope.launch {
-            state
-                .map { it.indicatorDateState }
-                .distinctUntilChanged()
-                .collect { date ->
-                    loadMonthlyTransactions(date)
-                }
-        }
-    }
-
-    private fun loadMonthlyTransactions(date: LocalDateTime) {
-        activeFlowJobs.removeAll { it.isCompleted }
-
-        val job = repository.getTransactionsForMonth(
-            month = date,
-            year = date.year
-        ).onEach { transactions ->
-            _state.update {
-                it.copy(monthlyTransactions = transactions)
-            }
-        }.launchIn(viewModelScope)
-
-        activeFlowJobs.add(job)
-    }
-
     fun handleEvent(event: TransactionsEvent) {
         when (event) {
             is TransactionsEvent.LoadMore -> loadMoreData()
             is TransactionsEvent.Refresh -> refreshData()
             is TransactionsEvent.ErrorShown -> clearError(event.error)
+            is TransactionsEvent.IndicatorDatePicked -> handleDatePicked(event.date)
+            is TransactionsEvent.DeleteTransaction -> handleDeleteTransaction(event.transactionId)
         }
     }
 
@@ -185,7 +138,7 @@ class HomeScreenViewModel(
                 val offset = nextPage * pageSize
                 val storedTransactionCount = repository.getStoredTransactionCount()
 
-                activeFlowJobs.forEach { it.cancel() }
+                transactionsJob?.cancel()
 
                 if (storedTransactionCount < _state.value.totalTransactionCount) {
                     if (offset >= storedTransactionCount) {
@@ -195,19 +148,19 @@ class HomeScreenViewModel(
                         )
                         when (result) {
                             is Result.Success -> {
-                                loadLocalTransactions(nextPage, offset, this)
+                                loadLocalTransactions(nextPage, offset)
                             }
 
-                            is Result.Error.HttpError -> _state.update {
-                                println(result.fullErrorMessage())
-                                it.copy(
-                                    isLoading = false,
-                                    error = result.errorMessageToDisplay()
-                                )
+                            is Result.Error.HttpError -> {
+                                _state.update {
+                                    it.copy(
+                                        isLoading = false,
+                                        error = result.errorMessageToDisplay()
+                                    )
+                                }
                             }
 
                             is Result.Error.NetworkError -> {
-                                println(result.exception.message)
                                 _state.update {
                                     it.copy(
                                         isRefreshing = false,
@@ -217,7 +170,6 @@ class HomeScreenViewModel(
                             }
 
                             is Result.Error.SerializationError -> {
-                                println(result.exception.message)
                                 _state.update {
                                     it.copy(
                                         isRefreshing = false,
@@ -227,7 +179,6 @@ class HomeScreenViewModel(
                             }
 
                             is Result.Error.UnexpectedError -> {
-                                println(result.exception.message)
                                 _state.update {
                                     it.copy(
                                         isRefreshing = false,
@@ -237,11 +188,11 @@ class HomeScreenViewModel(
                             }
                         }
                     } else {
-                        loadLocalTransactions(nextPage, offset, this)
+                        loadLocalTransactions(nextPage, offset)
                     }
                 } else {
                     if (_state.value.transactions.count() < storedTransactionCount) {
-                        loadLocalTransactions(nextPage, offset, this)
+                        loadLocalTransactions(nextPage, offset)
                     } else {
                         _state.update {
                             it.copy(
@@ -269,8 +220,10 @@ class HomeScreenViewModel(
         }
     }
 
-    private fun loadLocalTransactions(nextPage: Int, offset: Int, scope: CoroutineScope) {
-        val job = repository.getLocalTransactions(limit = offset)
+    private fun loadLocalTransactions(nextPage: Int, offset: Int) {
+        transactionsJob?.cancel()
+        transactionsJob = repository.getTransactions(limit = offset)
+            .map { list -> list.map { it.toUi() } }
             .onEach { newTransactions ->
                 _state.update {
                     it.copy(
@@ -281,24 +234,21 @@ class HomeScreenViewModel(
                     )
                 }
                 currentPage = nextPage
-            }.launchIn(scope)
-
-        activeFlowJobs.add(job)
+            }.launchIn(viewModelScope)
     }
 
     private fun refreshData() {
         viewModelScope.launch {
             _state.update { it.copy(isRefreshing = true) }
             try {
-                activeFlowJobs.forEach { it.cancel() }
-                activeFlowJobs.clear()
+                transactionsJob?.cancel()
 
                 val result =
                     repository.fetchAndStoreTransactions(pageNumber = 1, pageSize = pageSize)
 
                 when (result) {
                     is Result.Success -> {
-                        loadLocalTransactions(currentPage, pageSize, this)
+                        loadLocalTransactions(currentPage, pageSize)
                     }
 
                     is Result.Error.HttpError -> {
@@ -311,7 +261,6 @@ class HomeScreenViewModel(
                     }
 
                     is Result.Error.NetworkError -> {
-                        println(result.exception.message)
                         _state.update {
                             it.copy(
                                 isRefreshing = false,
@@ -321,7 +270,6 @@ class HomeScreenViewModel(
                     }
 
                     is Result.Error.SerializationError -> {
-                        println(result.exception.message)
                         _state.update {
                             it.copy(
                                 isRefreshing = false,
@@ -331,7 +279,6 @@ class HomeScreenViewModel(
                     }
 
                     is Result.Error.UnexpectedError -> {
-                        println(result.exception.message)
                         _state.update {
                             it.copy(
                                 isRefreshing = false,
@@ -357,14 +304,19 @@ class HomeScreenViewModel(
         }
     }
 
-    fun indicatorDatePicker(date: LocalDateTime) {
+    private fun handleDatePicked(date: LocalDateTime) {
         _state.update { it.copy(indicatorDateState = date) }
     }
 
-    fun deleteTransaction(transactionId: String) {
+    private fun handleDeleteTransaction(transactionId: String) {
         viewModelScope.launch {
             try {
-                deleteTransactionUseCase.invoke(transactionId)
+                repository.deleteTransaction(transactionId)
+                _state.update { state ->
+                    state.copy(
+                        transactions = state.transactions.filter { it.id != transactionId }
+                    )
+                }
             } catch (ex: Exception) {
                 _state.update {
                     it.copy(error = ex.message)
