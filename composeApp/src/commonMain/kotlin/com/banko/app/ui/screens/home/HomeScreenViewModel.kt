@@ -89,27 +89,35 @@ class HomeScreenViewModel(
         viewModelScope.launch {
             delay(200)
 
+            // Show cached DB data immediately
             val oldestDate = repository.getOldestTransactions()
             val months = generateMonthRange(oldestDate)
             _state.update { it.copy(availableMonths = months) }
-
-            // Bootstrap if the DB has very few months of data
-            if (months.size < 24) {
-                try {
-                    val now = beginningOfCurrentMonth()
-                    val fromDate = LocalDate(now.year - 3, 1, 1)
-                    val toDate = LocalDate(now.year, now.monthNumber, now.dayOfMonth)
-                    repository.fetchAndStoreTransactionsForDateRange(fromDate, toDate)
-
-                    val refreshedOldestDate = repository.getOldestTransactions()
-                    val refreshedMonths = generateMonthRange(refreshedOldestDate)
-                    _state.update { it.copy(availableMonths = refreshedMonths) }
-                } catch (_: Exception) { }
-            }
-
             loadTransactionsForCurrentSelection()
-            scheduleBackgroundSync()
+
+            // Sync in background — never block screen init
+            if (months.size < 24) {
+                viewModelScope.launch {
+                    delay(500)
+                    bootstrapData()
+                }
+            } else {
+                scheduleBackgroundSync()
+            }
         }
+    }
+
+    private suspend fun bootstrapData() {
+        try {
+            val now = beginningOfCurrentMonth()
+            val fromDate = LocalDate(now.year - 3, 1, 1)
+            val toDate = LocalDate(now.year, now.monthNumber, now.dayOfMonth)
+            repository.fetchAndStoreTransactionsForDateRange(fromDate, toDate)
+
+            val refreshedOldestDate = repository.getOldestTransactions()
+            val refreshedMonths = generateMonthRange(refreshedOldestDate)
+            _state.update { it.copy(availableMonths = refreshedMonths) }
+        } catch (_: Exception) { }
     }
 
     private fun loadTransactionsForCurrentSelection() {
