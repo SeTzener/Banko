@@ -58,6 +58,7 @@ interface BankoDao {
         LEFT JOIN debtor_account ON transactions.debtorAccountId = debtor_account.id
         LEFT JOIN expense_tag ON transactions.expenseTagId = expense_tag.id 
         WHERE transactions.BookingDate BETWEEN :startDate AND :endDate
+        ORDER BY transactions.bookingDate DESC
             """
     )
     fun getTransactionsForMonth(startDate: String, endDate: String): Flow<List<FullTransaction>>

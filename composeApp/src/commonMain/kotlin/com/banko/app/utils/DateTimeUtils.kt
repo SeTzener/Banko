@@ -21,6 +21,12 @@ fun beginningOfCurrentMonth(): LocalDateTime {
 val LocalDateTime.Companion.now: LocalDateTime
     get() = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
 
+fun monthRange(year: Int, month: Int): Pair<LocalDate, LocalDate> {
+    val fromDate = LocalDate(year, month, 1)
+    val toDate = LocalDate(year, month, getLastDayOfMonth(year, month))
+    return fromDate to toDate
+}
+
 fun getLastDayOfMonth(year: Int, month: Int): Int {
     val firstDayOfThisMonth = LocalDate(year, month, 1)
     val firstDayOfNextMonth = firstDayOfThisMonth.plus(DatePeriod(months = 1))

@@ -7,6 +7,7 @@ import com.banko.app.domain.model.Transaction
 import com.banko.app.utils.now
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 
 class TransactionLocalDataSource(
@@ -24,6 +25,10 @@ class TransactionLocalDataSource(
         val result = dao.getOldestTransactions() ?: return LocalDateTime.now
         return LocalDateTime.parse(result)
     }
+
+    fun getTransactionsForDateRange(fromDate: LocalDate, toDate: LocalDate): Flow<List<Transaction>> =
+        dao.getTransactionsForMonth(fromDate.toString(), toDate.toString())
+            .map { it.toDomain() }
 
     suspend fun upsertTransaction(transaction: Transaction) {
         transaction.creditorAccount?.let { dao.upsertCreditorAccount(it.toDao()) }

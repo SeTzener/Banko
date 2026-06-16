@@ -4,6 +4,7 @@ import com.banko.app.api.services.BankoApiService
 import com.banko.app.api.utils.Result
 import com.banko.app.data.mapper.toDomain
 import com.banko.app.domain.model.Transaction
+import kotlinx.datetime.LocalDate
 
 class TransactionRemoteDataSource(
     private val apiService: BankoApiService
@@ -15,6 +16,27 @@ class TransactionRemoteDataSource(
 
     suspend fun fetchTransactions(pageNumber: Int, pageSize: Int): Result<FetchResult> {
         val result = apiService.getTransactions(pageNumber = pageNumber, pageSize = pageSize)
+        return when (result) {
+            is Result.Error -> result
+            is Result.Success -> {
+                val dto = result.value
+                Result.Success(
+                    FetchResult(
+                        transactions = dto.transactions.map { it.toDomain() },
+                        totalCount = dto.totalCount
+                    )
+                )
+            }
+        }
+    }
+
+    suspend fun fetchTransactionsForDateRange(fromDate: LocalDate, toDate: LocalDate): Result<FetchResult> {
+        val result = apiService.getTransactions(
+            pageNumber = 1,
+            pageSize = 10000,
+            fromDate = fromDate,
+            toDate = toDate
+        )
         return when (result) {
             is Result.Error -> result
             is Result.Success -> {

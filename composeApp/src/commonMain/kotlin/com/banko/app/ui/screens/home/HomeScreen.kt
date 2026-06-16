@@ -1,19 +1,28 @@
 package com.banko.app.ui.screens.home
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,9 +31,10 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,6 +42,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -43,7 +54,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -58,16 +68,14 @@ import banko.composeapp.generated.resources.Res
 import banko.composeapp.generated.resources.app_name
 import banko.composeapp.generated.resources.currency_nok
 import banko.composeapp.generated.resources.details
-import banko.composeapp.generated.resources.ic_arrow_drop_down
 import banko.composeapp.generated.resources.ic_delete
 import com.banko.app.ModelTransaction
 import com.banko.app.ui.components.CircularIndicator
 import com.banko.app.ui.components.ExpandableCard
 import com.banko.app.ui.components.ExpenseTag
-import com.banko.app.ui.components.MonthYearPickerDialog
 import com.banko.app.ui.models.Transaction
 import com.banko.app.ui.components.dialogs.TransactionDeleteDialog
-import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.Month
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -83,10 +91,9 @@ fun HomeScreen(component: HomeComponent) {
     HomeScreen(
         state = state,
         navigateToDetails = component::navigateToDetails,
-        loadMore = { viewModel.handleEvent(event = TransactionsEvent.LoadMore) },
+        onTimespanSelected = { viewModel.handleEvent(TransactionsEvent.SelectTimespan(it)) },
         onRefresh = { viewModel.handleEvent(event = TransactionsEvent.Refresh) },
         clearError = { viewModel.handleEvent(TransactionsEvent.ErrorShown(it)) },
-        datePickerDate = { viewModel.handleEvent(TransactionsEvent.IndicatorDatePicked(it)) },
         onDeleteTransaction = { viewModel.handleEvent(TransactionsEvent.DeleteTransaction(it)) }
     )
 }
@@ -95,15 +102,14 @@ fun HomeScreen(component: HomeComponent) {
 fun HomeScreen(
     state: State<HomeScreenState>,
     navigateToDetails: (ModelTransaction) -> Unit,
-    loadMore: () -> Unit,
+    onTimespanSelected: (TimespanSelection) -> Unit,
     onRefresh: () -> Unit,
     clearError: (String) -> Unit,
-    datePickerDate: (LocalDateTime) -> Unit,
     onDeleteTransaction: (String) -> Unit
 ) {
-    val listState = rememberLazyListState()
     val snackbarHostState = remember { SnackbarHostState() }
-    var isDatePickerVisible by remember { mutableStateOf(false) }
+    var dragOffset by remember { mutableStateOf(0f) }
+    val swipeThreshold = 50f
 
     LaunchedEffect(state.value.error) {
         state.value.error?.let { error ->
@@ -112,62 +118,73 @@ fun HomeScreen(
         }
     }
 
-    LaunchedEffect(listState) {
-        snapshotFlow { listState.layoutInfo.visibleItemsInfo }
-            .collect { visibleItems ->
-                if (state.value.isLoading || state.value.endReached) return@collect
-
-                val lastVisibleItem = visibleItems.lastOrNull()
-                if (lastVisibleItem != null &&
-                    lastVisibleItem.index >= listState.layoutInfo.totalItemsCount - 5
-                ) {
-                    loadMore()
-                }
-            }
-    }
-
-    MonthYearPickerDialog(
-        visible = isDatePickerVisible,
-        startYear = state.value.oldestTransactionDate.year,
-        startMonth = state.value.oldestTransactionDate.month.ordinal,
-        onConfirm = { date ->
-            isDatePickerVisible = false
-            datePickerDate(date)
-        },
-        onCancel = { isDatePickerVisible = false }
-    )
-
     Column(
         Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        TopContent()
+        TimespanBar(
+            selectedTimespan = state.value.selectedTimespan,
+            availableMonths = state.value.availableMonths,
+            onTimespanSelected = onTimespanSelected
+        )
         ExpandableCard(
             isExpanded = true,
-            topContent = { TopContent() },
+            topContent = {},
             expandedContent = {
-                TextButton(
-                    modifier = Modifier.padding(start = 16.dp),
-                    onClick = { isDatePickerVisible = true },
-                ) {
-                    Text(
-                        text = "${state.value.indicatorDateState.month.name} - ${state.value.indicatorDateState.year}",
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Icon(
-                        modifier = Modifier.align(Alignment.Top),
-                        painter = painterResource(Res.drawable.ic_arrow_drop_down),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
-                    )
+                AnimatedContent(
+                    targetState = state.value.indicatorDateState,
+                    transitionSpec = {
+                        val target = targetState.year * 12 + targetState.monthNumber
+                        val initial = initialState.year * 12 + initialState.monthNumber
+                        if (target > initial) {
+                            slideInHorizontally { width -> -width } + fadeIn() togetherWith
+                            slideOutHorizontally { width -> width } + fadeOut()
+                        } else {
+                            slideInHorizontally { width -> width } + fadeIn() togetherWith
+                            slideOutHorizontally { width -> -width } + fadeOut()
+                        }
+                    },
+                    label = "widgetAnimation"
+                ) { _ ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .pointerInput(Unit) {
+                                detectHorizontalDragGestures(
+                                    onDragStart = { dragOffset = 0f },
+                                    onHorizontalDrag = { change, amount ->
+                                        change.consume()
+                                        dragOffset += amount
+                                    },
+                                    onDragEnd = {
+                                        val current = state.value
+                                        val sel = current.selectedTimespan as TimespanSelection.Month
+                                        when {
+                                            dragOffset < -swipeThreshold -> {
+                                                val idx = current.availableMonths.indexOf(sel.ym)
+                                                if (idx < current.availableMonths.size - 1) {
+                                                    onTimespanSelected(TimespanSelection.Month(current.availableMonths[idx + 1]))
+                                                }
+                                            }
+                                            dragOffset > swipeThreshold -> {
+                                                val idx = current.availableMonths.indexOf(sel.ym)
+                                                if (idx > 0) {
+                                                    onTimespanSelected(TimespanSelection.Month(current.availableMonths[idx - 1]))
+                                                }
+                                            }
+                                        }
+                                    }
+                                )
+                            }
+                    ) {
+                        CircularIndicator(
+                            currency = stringResource(Res.string.currency_nok),
+                            monthlyTransactions = state.value.transactions,
+                            indicatorDateState = state.value.indicatorDateState
+                        )
+                    }
                 }
-                val monthlyTransactions = state.value.transactions.filter {
-                    it.bookingDate.month == state.value.indicatorDateState.month
-                }
-                CircularIndicator(
-                    currency = stringResource(Res.string.currency_nok),
-                    monthlyTransactions = monthlyTransactions,
-                    indicatorDateState = state.value.indicatorDateState
-                )
             }
         )
         Scaffold(
@@ -179,12 +196,9 @@ fun HomeScreen(
                     .padding(padding),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Your existing content here
-
                 LazyTransactionList(
                     isLoading = state.value.isLoading,
                     isRefreshing = state.value.isRefreshing,
-                    listState = listState,
                     transactions = state.value.transactions,
                     navigateToDetails = navigateToDetails,
                     onRefresh = onRefresh,
@@ -334,7 +348,7 @@ private fun TopContent() {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 16.dp),
+            .padding(horizontal = 16.dp, vertical = 20.dp),
     ) {
         Text(
             text = stringResource(Res.string.app_name),
@@ -345,16 +359,70 @@ private fun TopContent() {
 }
 
 @Composable
+private fun TimespanBar(
+    selectedTimespan: TimespanSelection,
+    availableMonths: List<YearMonth>,
+    onTimespanSelected: (TimespanSelection) -> Unit
+) {
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(selectedTimespan, availableMonths.size) {
+        val ym = (selectedTimespan as? TimespanSelection.Month)?.ym
+        val index = availableMonths.indexOf(ym)
+        if (index == -1) return@LaunchedEffect
+        listState.animateScrollToItem(index)
+    }
+
+    LazyRow(
+        state = listState,
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        items(availableMonths) { ym ->
+            val monthName = Month(ym.month).name.take(3)
+            MonthChip(
+                label = "$monthName ${ym.year}",
+                selected = (selectedTimespan as? TimespanSelection.Month)?.ym == ym,
+                onClick = { onTimespanSelected(TimespanSelection.Month(ym)) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun MonthChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = if (selected) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
+        modifier = Modifier.clickable(onClick = onClick)
+    ) {
+        Text(
+            text = label,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            style = MaterialTheme.typography.bodySmall,
+            color = if (selected) MaterialTheme.colorScheme.onPrimary
+                    else MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+        )
+    }
+}
+
+@Composable
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 private fun LazyTransactionList(
     isLoading: Boolean,
     isRefreshing: Boolean,
     transactions: List<ModelTransaction>,
-    listState: LazyListState,
     navigateToDetails: (ModelTransaction) -> Unit,
     onRefresh: () -> Unit,
     onDeleteTransaction: (String) -> Unit
 ) {
+    val listState = rememberLazyListState()
     var openedRowId by remember { mutableStateOf<String?>(null) }
     val groupedTransactions = transactions.groupBy { it.bookingDate.date }
 
@@ -404,7 +472,6 @@ private fun LazyTransactionList(
             }
         }
     }
-
 }
 
 @Composable
