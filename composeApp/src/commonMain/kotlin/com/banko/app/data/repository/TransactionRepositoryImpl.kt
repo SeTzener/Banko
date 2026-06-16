@@ -6,6 +6,7 @@ import com.banko.app.data.remote.TransactionRemoteDataSource
 import com.banko.app.domain.model.Transaction
 import com.banko.app.domain.repository.TransactionRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 
 class TransactionRepositoryImpl(
@@ -32,6 +33,16 @@ class TransactionRepositoryImpl(
 
     override suspend fun getOldestTransactions(): LocalDateTime =
         local.getOldestTransactions()
+
+    override fun getTransactionsForDateRange(fromDate: LocalDate, toDate: LocalDate): Flow<List<Transaction>> =
+        local.getTransactionsForDateRange(fromDate, toDate)
+
+    override suspend fun fetchAndStoreTransactionsForDateRange(fromDate: LocalDate, toDate: LocalDate) {
+        val result = remote.fetchTransactionsForDateRange(fromDate, toDate)
+        if (result is Result.Success) {
+            result.value.transactions.forEach { local.upsertTransaction(it) }
+        }
+    }
 
     override suspend fun deleteTransaction(transactionId: String) {
         val apiResult = remote.deleteTransaction(transactionId)

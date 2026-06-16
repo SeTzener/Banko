@@ -4,22 +4,26 @@ import com.banko.app.ModelTransaction
 import com.banko.app.utils.beginningOfCurrentMonth
 import kotlinx.datetime.LocalDateTime
 
+data class YearMonth(val year: Int, val month: Int)
+
+sealed class TimespanSelection {
+    data class Month(val ym: YearMonth) : TimespanSelection()
+}
+
 data class HomeScreenState(
-    private val currentMonth: LocalDateTime = beginningOfCurrentMonth(),
     val transactions: List<ModelTransaction> = emptyList(),
-    val totalTransactionCount: Long = 0,
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
-    val endReached: Boolean = false,
     val error: String? = null,
-    val oldestTransactionDate: LocalDateTime = currentMonth,
-    val indicatorDateState: LocalDateTime = currentMonth,
+    val indicatorDateState: LocalDateTime = beginningOfCurrentMonth(),
+    val selectedTimespan: TimespanSelection = TimespanSelection.Month(YearMonth(beginningOfCurrentMonth().year, beginningOfCurrentMonth().monthNumber)),
+    val availableMonths: List<YearMonth> = emptyList(),
+    val isSyncing: Boolean = false,
 )
 
 sealed class TransactionsEvent {
     data object Refresh : TransactionsEvent()
-    data object LoadMore : TransactionsEvent()
     data class ErrorShown(val error: String) : TransactionsEvent()
     data class DeleteTransaction(val transactionId: String) : TransactionsEvent()
-    data class IndicatorDatePicked(val date: LocalDateTime) : TransactionsEvent()
+    data class SelectTimespan(val timespan: TimespanSelection) : TransactionsEvent()
 }
