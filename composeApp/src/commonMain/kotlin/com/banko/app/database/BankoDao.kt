@@ -57,11 +57,11 @@ interface BankoDao {
         LEFT JOIN creditor_account ON transactions.creditorAccountId = creditor_account.id
         LEFT JOIN debtor_account ON transactions.debtorAccountId = debtor_account.id
         LEFT JOIN expense_tag ON transactions.expenseTagId = expense_tag.id 
-        WHERE transactions.BookingDate BETWEEN :startDate AND :endDate
+        WHERE transactions.BookingDate >= :startDate AND transactions.BookingDate < :endDateExclusive
         ORDER BY transactions.bookingDate DESC
             """
     )
-    fun getTransactionsForMonth(startDate: String, endDate: String): Flow<List<FullTransaction>>
+    fun getTransactionsForMonth(startDate: String, endDateExclusive: String): Flow<List<FullTransaction>>
 
     @Query("SELECT * FROM transactions WHERE id = :transactionId")
     suspend fun getRawTransactionById(transactionId: String): DaoTransaction?
