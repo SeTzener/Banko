@@ -7,8 +7,10 @@ import com.banko.app.domain.model.Transaction
 import com.banko.app.utils.now
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.plus
 
 class TransactionLocalDataSource(
     private val database: BankoDatabase
@@ -26,9 +28,11 @@ class TransactionLocalDataSource(
         return LocalDateTime.parse(result)
     }
 
-    fun getTransactionsForDateRange(fromDate: LocalDate, toDate: LocalDate): Flow<List<Transaction>> =
-        dao.getTransactionsForMonth(fromDate.toString(), toDate.toString())
+    fun getTransactionsForDateRange(fromDate: LocalDate, toDate: LocalDate): Flow<List<Transaction>> {
+        val endExclusive = toDate.plus(DatePeriod(days = 1))
+        return dao.getTransactionsForMonth(fromDate.toString(), endExclusive.toString())
             .map { it.toDomain() }
+    }
 
     suspend fun upsertTransaction(transaction: Transaction) {
         transaction.creditorAccount?.let { dao.upsertCreditorAccount(it.toDao()) }
