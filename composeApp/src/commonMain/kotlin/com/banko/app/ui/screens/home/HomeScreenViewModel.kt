@@ -5,7 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.banko.app.domain.repository.TransactionRepository
 import com.banko.app.ui.models.toUi
 import com.banko.app.utils.beginningOfCurrentMonth
-import com.banko.app.utils.monthRange
+import com.banko.app.utils.computeYearEndDate
+import com.banko.app.utils.getLastDayOfMonth
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,6 +28,7 @@ class HomeScreenViewModel(
 
     private var transactionsJob: Job? = null
     private var syncJob: Job? = null
+    private var lastMonthSelection: YearMonth? = null
 
     init {
         initializeTimespanSelection()
@@ -44,6 +46,8 @@ class HomeScreenViewModel(
             is TransactionsEvent.ErrorShown -> clearError(event.error)
             is TransactionsEvent.DeleteTransaction -> handleDeleteTransaction(event.transactionId)
             is TransactionsEvent.SelectTimespan -> handleSelectTimespan(event.timespan)
+            is TransactionsEvent.ToggleTimespanView -> handleToggleView()
+            is TransactionsEvent.LoadMore -> handleLoadMore()
         }
     }
 
@@ -51,10 +55,8 @@ class HomeScreenViewModel(
         viewModelScope.launch {
             _state.update { it.copy(isRefreshing = true) }
             try {
-                val state = _state.value
-                val sel = state.selectedTimespan as TimespanSelection.Month
-                val (fromDate, toDate) = monthRange(sel.ym.year, sel.ym.month)
-                repository.fetchAndStoreTransactionsForDateRange(fromDate, toDate)
+                val sel = _state.value.selectedTimespan
+                repository.fetchAndStoreTransactionsForDateRange(sel.fromDate, sel.toDate)
                 loadTransactionsForCurrentSelection()
             } catch (_: Exception) {
                 _state.update { it.copy(isRefreshing = false) }
@@ -92,7 +94,8 @@ class HomeScreenViewModel(
             // Show cached DB data immediately
             val oldestDate = repository.getOldestTransactions()
             val months = generateMonthRange(oldestDate)
-            _state.update { it.copy(availableMonths = months) }
+            val years = months.map { it.year }.distinct().sortedDescending()
+            _state.update { it.copy(availableMonths = months, availableYears = years) }
             loadTransactionsForCurrentSelection()
 
             // Sync in background — never block screen init
@@ -116,7 +119,8 @@ class HomeScreenViewModel(
 
             val refreshedOldestDate = repository.getOldestTransactions()
             val refreshedMonths = generateMonthRange(refreshedOldestDate)
-            _state.update { it.copy(availableMonths = refreshedMonths) }
+            val refreshedYears = refreshedMonths.map { it.year }.distinct().sortedDescending()
+            _state.update { it.copy(availableMonths = refreshedMonths, availableYears = refreshedYears) }
         } catch (_: Exception) { }
     }
 
@@ -124,10 +128,8 @@ class HomeScreenViewModel(
         val state = _state.value
         transactionsJob?.cancel()
 
-        val sel = state.selectedTimespan as TimespanSelection.Month
-        val (fromDate, toDate) = monthRange(sel.ym.year, sel.ym.month)
-
-        transactionsJob = repository.getTransactionsForDateRange(fromDate, toDate)
+        val sel = state.selectedTimespan
+        transactionsJob = repository.getTransactionsForDateRange(sel.fromDate, sel.toDate)
             .map { list -> list.map { it.toUi() } }
             .onEach { transactions ->
                 _state.update {
@@ -146,15 +148,14 @@ class HomeScreenViewModel(
     }
 
     private suspend fun performBackgroundSync() {
-        val state = _state.value
-        val sel = state.selectedTimespan as TimespanSelection.Month
-        val (fromDate, toDate) = monthRange(sel.ym.year, sel.ym.month)
+        val sel = _state.value.selectedTimespan
         try {
-            repository.fetchAndStoreTransactionsForDateRange(fromDate, toDate)
+            repository.fetchAndStoreTransactionsForDateRange(sel.fromDate, sel.toDate)
             val oldestDate = repository.getOldestTransactions()
             val months = generateMonthRange(oldestDate)
             if (months.size > _state.value.availableMonths.size) {
-                _state.update { it.copy(availableMonths = months) }
+                val years = months.map { it.year }.distinct().sortedDescending()
+                _state.update { it.copy(availableMonths = months, availableYears = years) }
             }
         } catch (_: Exception) {
             // silent background sync failure
@@ -162,17 +163,81 @@ class HomeScreenViewModel(
     }
 
     private fun handleSelectTimespan(timespan: TimespanSelection) {
-        val monthTimespan = timespan as TimespanSelection.Month
-        _state.update {
-            it.copy(
-                selectedTimespan = timespan,
-                indicatorDateState = LocalDateTime(
-                    monthTimespan.ym.year, monthTimespan.ym.month, 1, 0, 0
-                )
-            )
+        when (timespan) {
+            is TimespanSelection.Month -> {
+                lastMonthSelection = timespan.ym
+                _state.update {
+                    it.copy(
+                        selectedTimespan = timespan,
+                        indicatorDateState = LocalDateTime(timespan.ym.year, timespan.ym.month, 1, 0, 0),
+                        isYearView = false
+                    )
+                }
+            }
+            is TimespanSelection.Year -> {
+                _state.update {
+                    it.copy(
+                        selectedTimespan = timespan,
+                        indicatorDateState = LocalDateTime(timespan.year, 1, 1, 0, 0),
+                        isYearView = true
+                    )
+                }
+            }
         }
         loadTransactionsForCurrentSelection()
         scheduleBackgroundSync()
+    }
+
+    private fun handleToggleView() {
+        val state = _state.value
+        if (state.isYearView) {
+            val month = lastMonthSelection ?: YearMonth(
+                beginningOfCurrentMonth().year,
+                beginningOfCurrentMonth().monthNumber
+            )
+            handleSelectTimespan(TimespanSelection.Month(month))
+        } else {
+            val ym = (state.selectedTimespan as? TimespanSelection.Month)?.ym
+                ?: YearMonth(beginningOfCurrentMonth().year, beginningOfCurrentMonth().monthNumber)
+            lastMonthSelection = ym
+            handleSelectTimespan(TimespanSelection.Year(ym.year))
+        }
+    }
+
+    private fun handleLoadMore() {
+        val currentState = _state.value
+        if (currentState.isLoadingMore) return
+
+        _state.update { it.copy(isLoadingMore = true) }
+        viewModelScope.launch {
+            try {
+                val s = _state.value
+                val (fromDate, toDate) = if (s.isYearView) {
+                    val oldestYear = s.availableYears.last()
+                    LocalDate(oldestYear - 1, 1, 1) to computeYearEndDate(oldestYear - 1)
+                } else {
+                    val oldestMonth = s.availableMonths.last()
+                    val prevYear = if (oldestMonth.month == 1) oldestMonth.year - 1 else oldestMonth.year
+                    val prevMonth = if (oldestMonth.month == 1) 12 else oldestMonth.month - 1
+                    LocalDate(prevYear, prevMonth, 1) to LocalDate(prevYear, prevMonth, getLastDayOfMonth(prevYear, prevMonth))
+                }
+
+                repository.fetchAndStoreTransactionsForDateRange(fromDate, toDate)
+
+                val refreshedOldestDate = repository.getOldestTransactions()
+                val refreshedMonths = generateMonthRange(refreshedOldestDate)
+                val refreshedYears = refreshedMonths.map { it.year }.distinct().sortedDescending()
+                _state.update {
+                    it.copy(
+                        availableMonths = refreshedMonths,
+                        availableYears = refreshedYears,
+                        isLoadingMore = false
+                    )
+                }
+            } catch (_: Exception) {
+                _state.update { it.copy(isLoadingMore = false) }
+            }
+        }
     }
 
     private fun generateMonthRange(from: LocalDateTime): List<YearMonth> {
