@@ -37,12 +37,13 @@ import androidx.compose.ui.unit.dp
 import banko.composeapp.generated.resources.Res
 import banko.composeapp.generated.resources.monthly_earnings
 import banko.composeapp.generated.resources.monthly_spendings
+import banko.composeapp.generated.resources.yearly_earnings
+import banko.composeapp.generated.resources.yearly_spendings
 import com.banko.app.ModelTransaction
 import com.banko.app.ui.models.Category
 import com.banko.app.ui.models.Transaction
-import com.banko.app.ui.screens.home.HomeScreenState
+import com.banko.app.ui.screens.home.TimespanSelection
 import com.banko.app.ui.theme.Grey_Nevada
-import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.Month
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToLong
@@ -50,46 +51,66 @@ import kotlin.math.roundToLong
 @Composable
 fun CircularIndicator(
     currency: String,
-    monthlyTransactions: List<ModelTransaction>,
+    transactions: List<ModelTransaction>,
+    selectedTimespan: TimespanSelection,
     bigTextFontSize: TextUnit = MaterialTheme.typography.bodyLarge.fontSize,
     bigTextColor: Color = MaterialTheme.colorScheme.primary,
     canvasSize: Dp = 256.dp,
     indicatorStroke: Float = 60f,
     smallTextColor: Color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
     smallTextFontSize: TextUnit = MaterialTheme.typography.bodyMedium.fontSize,
-    indicatorDateState: LocalDateTime
 ) {
-    val monthlySpending = monthlyTransactions.filter {
-        it.bookingDate.month == indicatorDateState.month && it.expenseTag?.isEarning != true
+    val (transactionsInRange, isYearView) = when (selectedTimespan) {
+        is TimespanSelection.Month -> {
+            Pair(
+                transactions.filter {
+                    it.bookingDate.monthNumber == selectedTimespan.ym.month &&
+                            it.bookingDate.year == selectedTimespan.ym.year
+                },
+                false
+            )
+        }
+        is TimespanSelection.Year -> {
+            Pair(
+                transactions.filter { it.bookingDate.year == selectedTimespan.year },
+                true
+            )
+        }
+    }
+
+    val totalSpending = transactionsInRange.filter {
+        it.expenseTag?.isEarning != true
     }.sumOf { it.amount }.toInt()
-    val monthlyEarnings = monthlyTransactions.filter {
-        it.bookingDate.month == indicatorDateState.month && it.expenseTag?.isEarning == true
+    val totalEarnings = transactionsInRange.filter {
+        it.expenseTag?.isEarning == true
     }.sumOf { it.amount }.toInt()
-    val categories = sortCategories(monthlyTransactions, month = indicatorDateState.month)
+    val categories = when (selectedTimespan) {
+        is TimespanSelection.Month -> sortCategories(transactions, month = Month(selectedTimespan.ym.month))
+        is TimespanSelection.Year -> sortCategories(transactions, year = selectedTimespan.year)
+    }
     val totalAmount = categories.sumOf { it.amount.toInt() }.toFloat()
-    var animatedMonthlyBudgetValue by remember { mutableIntStateOf(0) }
-    var animatedMonthlySpendingsValue by remember { mutableIntStateOf(0) }
+    var animatedEarningsValue by remember { mutableIntStateOf(0) }
+    var animatedSpendingsValue by remember { mutableIntStateOf(0) }
 
-    LaunchedEffect(monthlyEarnings) {
-        animatedMonthlyBudgetValue = monthlyEarnings
+    LaunchedEffect(totalEarnings) {
+        animatedEarningsValue = totalEarnings
     }
-    LaunchedEffect(monthlySpending) {
-        animatedMonthlySpendingsValue = monthlySpending
+    LaunchedEffect(totalSpending) {
+        animatedSpendingsValue = totalSpending
     }
 
-    val animatedMonthlySpendings by animateIntAsState(
-        targetValue = animatedMonthlySpendingsValue,
+    val animatedSpendings by animateIntAsState(
+        targetValue = animatedSpendingsValue,
         animationSpec = tween(1000),
         label = ""
     )
 
-    val animatedMonthlyBudget by animateIntAsState(
-        targetValue = animatedMonthlyBudgetValue,
+    val animatedEarnings by animateIntAsState(
+        targetValue = animatedEarningsValue,
         animationSpec = tween(1000),
         label = ""
     )
 
-    // Remember and animate the sweep angles for each category
     val animatedSweepAngles = categories.mapIndexed { index, category ->
         animateFloatAsState(
             targetValue = (category.amount.toInt() / totalAmount) * 240f,
@@ -97,6 +118,9 @@ fun CircularIndicator(
             label = ""
         ).value
     }
+
+    val spendingsLabel = if (isYearView) stringResource(Res.string.yearly_spendings) else stringResource(Res.string.monthly_spendings)
+    val earningsLabel = if (isYearView) stringResource(Res.string.yearly_earnings) else stringResource(Res.string.monthly_earnings)
 
     Column(
         verticalArrangement = Arrangement.Center,
@@ -115,7 +139,7 @@ fun CircularIndicator(
                     foregroundIndicator(
                         categories = categories,
                         animatedSweepAngles = animatedSweepAngles,
-                        startAngle = 150f, // È il punto da cui parte il tag
+                        startAngle = 150f,
                         componentSize = componentSize,
                         indicatorStroke = indicatorStroke,
                     )
@@ -124,13 +148,13 @@ fun CircularIndicator(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             EmbeddedElements(
-                dailyBudget = animatedMonthlySpendings,
-                monthlyBudget = animatedMonthlyBudget,
+                dailyBudget = animatedSpendings,
+                monthlyBudget = animatedEarnings,
                 bigTextFontSize = bigTextFontSize,
                 bigTextColor = bigTextColor,
                 currency = currency,
-                monthlySpendings = stringResource(Res.string.monthly_spendings),
-                monthlyEarnings = stringResource(Res.string.monthly_earnings),
+                monthlySpendings = spendingsLabel,
+                monthlyEarnings = earningsLabel,
                 smallTextColor = smallTextColor,
                 smallTextFontSize = smallTextFontSize,
             )
@@ -240,7 +264,6 @@ private fun CategoryGrid(categories: List<Category>, itemsPerRow: Int = 5) {
             .fillMaxWidth().offset(y = (-30).dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // Break the list into chunks of `itemsPerRow`
         categories.chunked(itemsPerRow).forEach { rowCategories ->
             Row(
                 modifier = Modifier
@@ -279,9 +302,23 @@ private fun CategoryGrid(categories: List<Category>, itemsPerRow: Int = 5) {
     }
 }
 
-private fun sortCategories(transactions: List<ModelTransaction>, month: Month): List<Category> {
+private fun sortCategories(transactions: List<ModelTransaction>, month: kotlinx.datetime.Month): List<Category> {
     val result =
         transactions.filter { it.expenseTag != null && it.bookingDate.month == month && it.expenseTag.name != "Salary" }
+    return result.groupBy { it.expenseTag }.map {
+        val sum = it.value.sumOf { it.amount }
+        val roundedAmount = (sum * 100).roundToLong() / 100.0
+        Category(
+            name = it.key!!.name,
+            amount = roundedAmount,
+            color = it.key!!.color
+        )
+    }
+}
+
+private fun sortCategories(transactions: List<ModelTransaction>, year: Int): List<Category> {
+    val result =
+        transactions.filter { it.expenseTag != null && it.bookingDate.year == year && it.expenseTag.name != "Salary" }
     return result.groupBy { it.expenseTag }.map {
         val sum = it.value.sumOf { it.amount }
         val roundedAmount = (sum * 100).roundToLong() / 100.0

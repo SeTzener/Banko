@@ -27,6 +27,11 @@ fun monthRange(year: Int, month: Int): Pair<LocalDate, LocalDate> {
     return fromDate to toDate
 }
 
+fun computeYearEndDate(year: Int): LocalDate {
+    val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+    return if (year == today.year) today else LocalDate(year, 12, 31)
+}
+
 fun getLastDayOfMonth(year: Int, month: Int): Int {
     val firstDayOfThisMonth = LocalDate(year, month, 1)
     val firstDayOfNextMonth = firstDayOfThisMonth.plus(DatePeriod(months = 1))

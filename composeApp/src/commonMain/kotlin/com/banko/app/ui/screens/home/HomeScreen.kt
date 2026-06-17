@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -21,6 +22,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -39,9 +41,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -49,6 +53,8 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -59,10 +65,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import banko.composeapp.generated.resources.Res
 import banko.composeapp.generated.resources.app_name
@@ -94,7 +106,9 @@ fun HomeScreen(component: HomeComponent) {
         onTimespanSelected = { viewModel.handleEvent(TransactionsEvent.SelectTimespan(it)) },
         onRefresh = { viewModel.handleEvent(event = TransactionsEvent.Refresh) },
         clearError = { viewModel.handleEvent(TransactionsEvent.ErrorShown(it)) },
-        onDeleteTransaction = { viewModel.handleEvent(TransactionsEvent.DeleteTransaction(it)) }
+        onDeleteTransaction = { viewModel.handleEvent(TransactionsEvent.DeleteTransaction(it)) },
+        onToggleView = { viewModel.handleEvent(TransactionsEvent.ToggleTimespanView) },
+        onLoadMore = { viewModel.handleEvent(TransactionsEvent.LoadMore) }
     )
 }
 
@@ -105,7 +119,9 @@ fun HomeScreen(
     onTimespanSelected: (TimespanSelection) -> Unit,
     onRefresh: () -> Unit,
     clearError: (String) -> Unit,
-    onDeleteTransaction: (String) -> Unit
+    onDeleteTransaction: (String) -> Unit,
+    onToggleView: () -> Unit,
+    onLoadMore: () -> Unit
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     var dragOffset by remember { mutableStateOf(0f) }
@@ -126,17 +142,26 @@ fun HomeScreen(
         TimespanBar(
             selectedTimespan = state.value.selectedTimespan,
             availableMonths = state.value.availableMonths,
-            onTimespanSelected = onTimespanSelected
+            availableYears = state.value.availableYears,
+            isYearView = state.value.isYearView,
+            onTimespanSelected = onTimespanSelected,
+            isLoadingMore = state.value.isLoadingMore,
+            onToggleView = onToggleView,
+            onLoadMore = onLoadMore
         )
         ExpandableCard(
             isExpanded = true,
             topContent = {},
             expandedContent = {
                 AnimatedContent(
-                    targetState = state.value.indicatorDateState,
+                    targetState = state.value.selectedTimespan,
                     transitionSpec = {
-                        val target = targetState.year * 12 + targetState.monthNumber
-                        val initial = initialState.year * 12 + initialState.monthNumber
+                        fun TimespanSelection.weight(): Int = when (this) {
+                            is TimespanSelection.Month -> ym.year * 12 + ym.month
+                            is TimespanSelection.Year -> year * 12 + 6
+                        }
+                        val target = targetState.weight()
+                        val initial = initialState.weight()
                         if (target > initial) {
                             slideInHorizontally { width -> -width } + fadeIn() togetherWith
                             slideOutHorizontally { width -> width } + fadeOut()
@@ -159,34 +184,55 @@ fun HomeScreen(
                                     },
                                     onDragEnd = {
                                         val current = state.value
-                                        val sel = current.selectedTimespan as TimespanSelection.Month
-                                        when {
-                                            dragOffset < -swipeThreshold -> {
-                                                val idx = current.availableMonths.indexOf(sel.ym)
-                                                if (idx < current.availableMonths.size - 1) {
-                                                    onTimespanSelected(TimespanSelection.Month(current.availableMonths[idx + 1]))
+                                        when (val sel = current.selectedTimespan) {
+                                            is TimespanSelection.Month -> {
+                                                when {
+                                                    dragOffset < -swipeThreshold -> {
+                                                        val idx = current.availableMonths.indexOf(sel.ym)
+                                                        if (idx < current.availableMonths.size - 1) {
+                                                            onTimespanSelected(TimespanSelection.Month(current.availableMonths[idx + 1]))
+                                                        }
+                                                    }
+                                                    dragOffset > swipeThreshold -> {
+                                                        val idx = current.availableMonths.indexOf(sel.ym)
+                                                        if (idx > 0) {
+                                                            onTimespanSelected(TimespanSelection.Month(current.availableMonths[idx - 1]))
+                                                        }
+                                                    }
                                                 }
                                             }
-                                            dragOffset > swipeThreshold -> {
-                                                val idx = current.availableMonths.indexOf(sel.ym)
-                                                if (idx > 0) {
-                                                    onTimespanSelected(TimespanSelection.Month(current.availableMonths[idx - 1]))
+                                            is TimespanSelection.Year -> {
+                                                when {
+                                                    dragOffset < -swipeThreshold -> {
+                                                        val idx = current.availableYears.indexOf(sel.year)
+                                                        if (idx < current.availableYears.size - 1) {
+                                                            onTimespanSelected(TimespanSelection.Year(current.availableYears[idx + 1]))
+                                                        }
+                                                    }
+                                                    dragOffset > swipeThreshold -> {
+                                                        val idx = current.availableYears.indexOf(sel.year)
+                                                        if (idx > 0) {
+                                                            onTimespanSelected(TimespanSelection.Year(current.availableYears[idx - 1]))
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
+                                        dragOffset = 0f
                                     }
                                 )
                             }
                     ) {
                         CircularIndicator(
                             currency = stringResource(Res.string.currency_nok),
-                            monthlyTransactions = state.value.transactions,
-                            indicatorDateState = state.value.indicatorDateState
+                            transactions = state.value.transactions,
+                            selectedTimespan = state.value.selectedTimespan
                         )
                     }
                 }
             }
         )
+        LoadingProgressIndicator(isLoading = state.value.isLoadingMore)
         Scaffold(
             snackbarHost = { SnackbarHost(snackbarHostState) }
         ) { padding ->
@@ -362,29 +408,130 @@ private fun TopContent() {
 private fun TimespanBar(
     selectedTimespan: TimespanSelection,
     availableMonths: List<YearMonth>,
-    onTimespanSelected: (TimespanSelection) -> Unit
+    availableYears: List<Int>,
+    isYearView: Boolean,
+    isLoadingMore: Boolean,
+    onTimespanSelected: (TimespanSelection) -> Unit,
+    onToggleView: () -> Unit,
+    onLoadMore: () -> Unit
 ) {
     val listState = rememberLazyListState()
+    var overscrollOffset by remember { mutableFloatStateOf(0f) }
+    val overscrollThreshold = 100f
 
-    LaunchedEffect(selectedTimespan, availableMonths.size) {
-        val ym = (selectedTimespan as? TimespanSelection.Month)?.ym
-        val index = availableMonths.indexOf(ym)
-        if (index == -1) return@LaunchedEffect
-        listState.animateScrollToItem(index)
+    val isAtEnd by remember {
+        derivedStateOf {
+            val layoutInfo = listState.layoutInfo
+            val lastVisible = layoutInfo.visibleItemsInfo.lastOrNull()
+            lastVisible != null && lastVisible.index == layoutInfo.totalItemsCount - 1
+        }
     }
 
-    LazyRow(
-        state = listState,
+    val nestedScrollConnection = remember(isAtEnd, isLoadingMore, overscrollThreshold) {
+        object : NestedScrollConnection {
+            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
+                if (isAtEnd && !isLoadingMore && source == NestedScrollSource.UserInput) {
+                    val overscroll = -available.x
+                    if (overscroll > 0) {
+                        overscrollOffset = (overscrollOffset + overscroll).coerceAtMost(overscrollThreshold)
+                        return Offset(available.x, 0f)
+                    }
+                }
+                return Offset.Zero
+            }
+
+            override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
+                if (isAtEnd && overscrollOffset >= overscrollThreshold && !isLoadingMore) {
+                    onLoadMore()
+                }
+                overscrollOffset = 0f
+                return Velocity.Zero
+            }
+        }
+    }
+
+    LaunchedEffect(selectedTimespan, isYearView) {
+        overscrollOffset = 0f
+        val index = when (val sel = selectedTimespan) {
+            is TimespanSelection.Month -> availableMonths.indexOf(sel.ym)
+            is TimespanSelection.Year -> availableYears.indexOf(sel.year)
+        }
+        if (index != -1) {
+            listState.animateScrollToItem(index)
+        }
+    }
+
+    Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        items(availableMonths) { ym ->
-            val monthName = Month(ym.month).name.take(3)
-            MonthChip(
-                label = "$monthName ${ym.year}",
-                selected = (selectedTimespan as? TimespanSelection.Month)?.ym == ym,
-                onClick = { onTimespanSelected(TimespanSelection.Month(ym)) }
+        LazyRow(
+            state = listState,
+            modifier = Modifier
+                .weight(1f)
+                .nestedScroll(nestedScrollConnection),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+        ) {
+            if (isYearView) {
+                items(availableYears, key = { it }) { year ->
+                    MonthChip(
+                        label = year.toString(),
+                        selected = (selectedTimespan as? TimespanSelection.Year)?.year == year,
+                        onClick = { onTimespanSelected(TimespanSelection.Year(year)) }
+                    )
+                }
+            } else {
+                items(availableMonths) { ym ->
+                    val monthName = Month(ym.month).name.take(3)
+                    MonthChip(
+                        label = "$monthName ${ym.year}",
+                        selected = (selectedTimespan as? TimespanSelection.Month)?.ym == ym,
+                        onClick = { onTimespanSelected(TimespanSelection.Month(ym)) }
+                    )
+                }
+            }
+        }
+
+        val pullProgress = (overscrollOffset / overscrollThreshold).coerceIn(0f, 1f)
+        if (pullProgress > 0f && !isLoadingMore) {
+            val indicatorAlpha by animateFloatAsState(
+                targetValue = pullProgress.coerceIn(0.3f, 1f),
+                animationSpec = tween(durationMillis = 300)
+            )
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .padding(end = 4.dp)
+                    .alpha(indicatorAlpha)
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp,
+                    progress = pullProgress
+                )
+            }
+        }
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .padding(start = 0.dp, end = 0.dp, top = 8.dp, bottom = 8.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f),
+                    shape = RoundedCornerShape(20.dp)
+                )
+                .padding(horizontal = 8.dp)
+        ) {
+            Text(
+                text = if (isYearView) "Year" else "Month",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Switch(
+                checked = isYearView,
+                onCheckedChange = { onToggleView() },
+                modifier = Modifier.scale(0.7f)
             )
         }
     }

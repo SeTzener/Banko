@@ -57,5 +57,7 @@
     <string name="monthly_budget">Monthly Budget</string>>
     <string name="monthly_income">Money Saved This Month:</string>
     <string name="saved_money_yesterday">Money Saved Yesterday:</string>
+    <string name="yearly_spendings">Yearly Spendings</string>
+    <string name="yearly_earnings">Yearly Earnings</string>
     <string name="settings">Settings</string>
 </resources>
