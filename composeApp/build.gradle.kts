@@ -28,6 +28,7 @@ kotlin {
         iosTarget.binaries.framework {
             baseName = "ComposeApp"
             isStatic = true
+            binaryOption("bundleId", "com.banko.app")
         }
     }
 
@@ -44,6 +45,12 @@ kotlin {
         iosMain.dependencies {
             implementation(libs.ktor.client.ios)
             implementation(libs.koin.core)
+        }
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+        }
+        androidUnitTest.dependencies {
+            implementation(libs.mockk)
         }
         commonMain.dependencies {
             implementation(libs.compose.material)
@@ -120,8 +127,10 @@ dependencies {
     debugImplementation(compose.uiTooling)
 
     // Room target platform
+    add("kspAndroid", libs.room.compiler)
     add("kspIosSimulatorArm64", libs.room.compiler)
-    ksp(libs.room.compiler)
+    add("kspIosX64", libs.room.compiler)
+    add("kspIosArm64", libs.room.compiler)
 }
 
 val env = Properties().apply {

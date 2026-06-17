@@ -24,6 +24,7 @@ kotlinxDatetime = "0.6.0"
 ktor = "3.0.2"
 ksp = "2.1.0-1.0.29"
 material = "1.7.0"
+mockk = "1.13.14"
 room = "2.7.0-alpha12"
 serialization = "1.7.3"
 sqllite = "2.5.0-alpha12"
@@ -31,6 +32,7 @@ sqllite = "2.5.0-alpha12"
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
+mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "androidx-core-ktx" }
 androidx-test-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidx-test-junit" }
