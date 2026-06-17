@@ -27,3 +27,4 @@ This file gives an AI agent a quick overview of where the Banko project code liv
 ## Rule
 
 Always consider all Banko-related repositories together. Do not assume the current repo contains the full context.
+Never commit anything if you didn't receive an approval for that.
