@@ -23,8 +23,6 @@ class DetailsScreenViewModel(
     private val _screenState = MutableStateFlow(DetailScreenState())
     val screenState: StateFlow<DetailScreenState> = _screenState
 
-    private val pendingUpdates = mutableMapOf<String, String?>()
-
     init {
         getExpenseTags()
     }
@@ -40,19 +38,15 @@ class DetailsScreenViewModel(
     fun assignExpenseTag(id: String, expenseTagId: String?) {
         viewModelScope.launch {
             val previousTagId = transactionRepository.getTransactionById(id)?.expenseTag?.id
-            pendingUpdates[id] = expenseTagId
             try {
                 apiTagRepository.assignExpenseTag(id, expenseTagId)
                 updateTransactionUseCase.invoke(transactionId = id, expenseTagId = expenseTagId)
-                pendingUpdates.remove(id)
-
             } catch (e: Exception) {
                 if (previousTagId != expenseTagId) {
                     previousTagId?.let { oldTagId ->
                         updateTransactionUseCase.invoke(id, oldTagId)
                     }
                 }
-                pendingUpdates.remove(id)
             }
         }
     }
