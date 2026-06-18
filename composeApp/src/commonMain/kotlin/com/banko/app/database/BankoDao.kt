@@ -12,7 +12,6 @@ import com.banko.app.DaoExpenseTag
 import com.banko.app.DaoTransaction
 import com.banko.app.database.Entities.FullTransaction
 import kotlinx.coroutines.flow.Flow
-import kotlinx.datetime.LocalDateTime
 
 @Dao
 interface BankoDao {

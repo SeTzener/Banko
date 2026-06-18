@@ -14,8 +14,6 @@ import com.banko.app.database.Entities.toModelItem
 import com.banko.app.ui.models.toDao
 import com.banko.app.utils.getLastDayOfMonth
 import com.banko.app.utils.now
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.LocalDateTime
@@ -24,7 +22,6 @@ class TransactionsRepository(
     private val bankoDatabase: BankoDatabase,
     private val apiService: BankoApiService
 ) {
-    private val dispatchers = Dispatchers.IO
     private val dao = bankoDatabase.bankoDao()
 
     private suspend fun upsertTransaction(transaction: ModelTransaction) {
@@ -88,7 +85,6 @@ class TransactionsRepository(
                 result.value.transactions.forEach { transaction ->
                     upsertTransaction(transaction.toModelItem())
                 }
-                Result.Success(result.value.totalCount <= (pageNumber * pageSize))
 
                 return Result.Success(transactions.totalCount)
             }

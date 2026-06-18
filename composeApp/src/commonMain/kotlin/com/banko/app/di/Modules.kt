@@ -4,9 +4,6 @@ import com.banko.app.ApiExpenseTagRepository
 import com.banko.app.ApiTransactionRepository
 import com.banko.app.DatabaseTransactionRepository
 import com.banko.app.api.services.BankoApiService
-import com.banko.app.api.services.NordigenTokenProvider
-import com.banko.app.api.services.OauthNordigenApi
-import com.banko.app.api.services.TokenInterceptor
 import com.banko.app.database.BankoDatabase
 import com.banko.app.database.CreateDatabase
 import com.banko.app.database.repository.ExpenseTagRepository
@@ -27,10 +24,6 @@ import org.koin.dsl.module
 expect val platformModule: Module
 
 val  sharedModule = module {
-    singleOf(::TokenInterceptor)
-    single { TokenInterceptor.Feature(get()) }
-    singleOf(::NordigenTokenProvider)
-    singleOf(::OauthNordigenApi)
     single<BankoDatabase> { CreateDatabase(get()).getDatabase() }
     singleOf(::ExpenseTagRepository)
     single { BankoApiService() }
@@ -55,7 +48,7 @@ val  sharedModule = module {
 //    Example 1
 //    single {
         // MyRepositoryImpl(get())
-//    }//.bind<TokenInterceptor>()
+//    }
 
 //    Example 2
 //    singleOf(::MyRepositoryImpl).bind<MyRepository>()
