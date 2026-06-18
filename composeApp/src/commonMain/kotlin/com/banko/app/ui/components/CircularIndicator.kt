@@ -90,7 +90,7 @@ fun CircularIndicator(
             is TimespanSelection.Year -> sortCategories(transactions, year = selectedTimespan.year)
         }
     }
-    val totalAmount = categories.sumOf { it.amount.toInt() }.toFloat()
+    val totalAmount = categories.sumOf { it.amount }.toFloat()
     var animatedEarningsValue by remember { mutableIntStateOf(0) }
     var animatedSpendingsValue by remember { mutableIntStateOf(0) }
 
@@ -113,12 +113,22 @@ fun CircularIndicator(
         label = ""
     )
 
-    val animatedSweepAngles = categories.mapIndexed { index, category ->
-        animateFloatAsState(
-            targetValue = (category.amount.toInt() / totalAmount) * 240f,
-            animationSpec = tween(1000),
-            label = ""
-        ).value
+    val animatedSweepAngles = if (totalAmount == 0f) {
+        categories.map { 0f }
+    } else {
+        val rawAngles = categories.map { category ->
+            animateFloatAsState(
+                targetValue = (category.amount.toFloat() / totalAmount) * 240f,
+                animationSpec = tween(1000),
+                label = ""
+            ).value
+        }
+        rawAngles.toMutableList().also { angles ->
+            if (angles.isNotEmpty()) {
+                val sum = angles.sum()
+                angles[angles.lastIndex] += 240f - sum
+            }
+        }
     }
 
     val spendingsLabel = if (isYearView) stringResource(Res.string.yearly_spendings) else stringResource(Res.string.monthly_spendings)
