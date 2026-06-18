@@ -7,7 +7,7 @@ import com.banko.app.database.Entities.toModelItem
 import com.banko.app.domain.AssignExpenseTagToTransactionUseCase
 import com.banko.app.domain.GetAllExpenseTagUseCase
 import com.banko.app.domain.SaveNoteUseCase
-import com.banko.app.domain.repository.TransactionRepository
+import com.banko.app.data.repository.TransactionRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -38,16 +38,19 @@ class DetailsScreenViewModel(
     }
 
     fun assignExpenseTag(id: String, expenseTagId: String?) {
-        pendingUpdates[id] = expenseTagId
         viewModelScope.launch {
+            val previousTagId = transactionRepository.getTransactionById(id)?.expenseTag?.id
+            pendingUpdates[id] = expenseTagId
             try {
                 apiTagRepository.assignExpenseTag(id, expenseTagId)
                 updateTransactionUseCase.invoke(transactionId = id, expenseTagId = expenseTagId)
                 pendingUpdates.remove(id)
 
             } catch (e: Exception) {
-                pendingUpdates[id]?.let { oldTagId ->
-                    updateTransactionUseCase.invoke(id, oldTagId)
+                if (previousTagId != expenseTagId) {
+                    previousTagId?.let { oldTagId ->
+                        updateTransactionUseCase.invoke(id, oldTagId)
+                    }
                 }
                 pendingUpdates.remove(id)
             }

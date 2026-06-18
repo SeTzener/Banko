@@ -6,7 +6,9 @@ import com.banko.app.database.Entities.ExpenseTag as DaoExpenseTag
 import com.banko.app.domain.AssignExpenseTagToTransactionUseCase
 import com.banko.app.domain.GetAllExpenseTagUseCase
 import com.banko.app.domain.SaveNoteUseCase
-import com.banko.app.domain.repository.TransactionRepository
+import com.banko.app.data.repository.TransactionRepository
+import com.banko.app.domain.model.ExpenseTag as DomainExpenseTag
+import com.banko.app.domain.model.Transaction as DomainTransaction
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -89,6 +91,25 @@ class DetailsScreenViewModelTest {
     @Test
     fun `should roll back tag assignment on API failure`() = runTest(testDispatcher) {
         coEvery { apiTagRepository.assignExpenseTag(any(), any()) } throws RuntimeException("API error")
+        val previousTransaction = DomainTransaction(
+            id = "tx-1",
+            bookingDate = kotlinx.datetime.LocalDateTime(2024, 1, 15, 10, 30, 0),
+            valueDate = kotlinx.datetime.LocalDateTime(2024, 1, 15, 10, 30, 0),
+            amount = 10.0,
+            currency = "EUR",
+            debtorAccount = null,
+            remittanceInformationUnstructured = "Test",
+            remittanceInformationUnstructuredArray = emptyList(),
+            bankTransactionCode = "PMNT",
+            internalTransactionId = "int-1",
+            creditorName = null,
+            creditorAccount = null,
+            debtorName = null,
+            remittanceInformationStructuredArray = null,
+            note = null,
+            expenseTag = DomainExpenseTag(id = "old-tag", name = "Old", color = 0, isEarning = false, aka = emptyList())
+        )
+        coEvery { transactionRepository.getTransactionById("tx-1") } returns previousTransaction
 
         val vm = DetailsScreenViewModel(
             apiTagRepository = apiTagRepository,
@@ -104,7 +125,7 @@ class DetailsScreenViewModelTest {
 
         coVerify {
             apiTagRepository.assignExpenseTag("tx-1", "tag-1")
-            updateTransactionUseCase.invoke(transactionId = "tx-1", expenseTagId = "tag-1")
+            updateTransactionUseCase.invoke(transactionId = "tx-1", expenseTagId = "old-tag")
         }
     }
 

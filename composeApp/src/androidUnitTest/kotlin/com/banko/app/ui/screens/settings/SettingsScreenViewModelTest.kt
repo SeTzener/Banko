@@ -96,8 +96,8 @@ class SettingsScreenViewModelTest {
     }
 
     @Test
-    fun `should not upsert locally when API update returns null`() = runTest(testDispatcher) {
-        coEvery { apiRepository.updateExpenseTag(any()) } returns null
+    fun `should not upsert locally when API update throws`() = runTest(testDispatcher) {
+        coEvery { apiRepository.updateExpenseTag(any()) } throws RuntimeException("API error")
 
         val vm = SettingsScreenViewModel(
             dbRepository = dbRepository,
@@ -134,8 +134,8 @@ class SettingsScreenViewModelTest {
     }
 
     @Test
-    fun `should not upsert locally when API create returns null`() = runTest(testDispatcher) {
-        coEvery { apiRepository.createExpenseTag(any(), any(), any()) } returns null
+    fun `should not upsert locally when API create throws`() = runTest(testDispatcher) {
+        coEvery { apiRepository.createExpenseTag(any(), any(), any()) } throws RuntimeException("API error")
 
         val vm = SettingsScreenViewModel(
             dbRepository = dbRepository,
