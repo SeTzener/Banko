@@ -316,7 +316,7 @@ private fun CategoryGrid(categories: List<Category>, itemsPerRow: Int = 5) {
 
 private fun sortCategories(transactions: List<ModelTransaction>, month: kotlinx.datetime.Month): List<Category> {
     val result =
-        transactions.filter { it.expenseTag != null && it.bookingDate.month == month && it.expenseTag.name != "Salary" }
+        transactions.filter { it.expenseTag != null && it.bookingDate.month == month && it.expenseTag.isEarning != true }
     return result.groupBy { it.expenseTag }.map {
         val sum = it.value.sumOf { it.amount }
         val roundedAmount = (sum * 100).roundToLong() / 100.0
@@ -330,7 +330,7 @@ private fun sortCategories(transactions: List<ModelTransaction>, month: kotlinx.
 
 private fun sortCategories(transactions: List<ModelTransaction>, year: Int): List<Category> {
     val result =
-        transactions.filter { it.expenseTag != null && it.bookingDate.year == year && it.expenseTag.name != "Salary" }
+        transactions.filter { it.expenseTag != null && it.bookingDate.year == year && it.expenseTag.isEarning != true }
     return result.groupBy { it.expenseTag }.map {
         val sum = it.value.sumOf { it.amount }
         val roundedAmount = (sum * 100).roundToLong() / 100.0
