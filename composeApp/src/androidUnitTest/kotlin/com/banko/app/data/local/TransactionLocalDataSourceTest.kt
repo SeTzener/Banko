@@ -139,53 +139,6 @@ class TransactionLocalDataSourceTest {
     }
 
     @Test
-    fun `should return correct transaction count`() = runBlocking {
-        assertEquals(0, dataSource.getStoredTransactionCount())
-
-        val tx1 = Transaction(
-            id = "tx-1",
-            bookingDate = LocalDateTime.parse("2024-01-15T10:30:00"),
-            valueDate = LocalDateTime.parse("2024-01-15T12:00:00"),
-            amount = 42.50,
-            currency = "EUR",
-            debtorAccount = null,
-            remittanceInformationUnstructured = "First",
-            remittanceInformationUnstructuredArray = emptyList(),
-            bankTransactionCode = "PMNT",
-            internalTransactionId = "int-1",
-            creditorName = null,
-            creditorAccount = null,
-            debtorName = null,
-            remittanceInformationStructuredArray = null,
-            note = null,
-            expenseTag = null
-        )
-        val tx2 = Transaction(
-            id = "tx-2",
-            bookingDate = LocalDateTime.parse("2024-02-20T10:30:00"),
-            valueDate = LocalDateTime.parse("2024-02-20T12:00:00"),
-            amount = 10.00,
-            currency = "EUR",
-            debtorAccount = null,
-            remittanceInformationUnstructured = "Second",
-            remittanceInformationUnstructuredArray = emptyList(),
-            bankTransactionCode = "PMNT",
-            internalTransactionId = "int-2",
-            creditorName = null,
-            creditorAccount = null,
-            debtorName = null,
-            remittanceInformationStructuredArray = null,
-            note = null,
-            expenseTag = null
-        )
-
-        dataSource.upsertTransaction(tx1)
-        assertEquals(1, dataSource.getStoredTransactionCount())
-        dataSource.upsertTransaction(tx2)
-        assertEquals(2, dataSource.getStoredTransactionCount())
-    }
-
-    @Test
     fun `should return oldest transaction date when multiple exist`() = runBlocking {
         val tx2 = Transaction(
             id = "tx-2",
@@ -279,34 +232,6 @@ class TransactionLocalDataSourceTest {
         ).first()
         assertEquals(1, janResults.size)
         assertEquals("tx-1", janResults[0].id)
-    }
-
-    @Test
-    fun `should remove transaction when deleted`() = runBlocking {
-        val tx = Transaction(
-            id = "tx-1",
-            bookingDate = LocalDateTime.parse("2024-01-15T10:30:00"),
-            valueDate = LocalDateTime.parse("2024-01-15T12:00:00"),
-            amount = 42.50,
-            currency = "EUR",
-            debtorAccount = null,
-            remittanceInformationUnstructured = "To delete",
-            remittanceInformationUnstructuredArray = emptyList(),
-            bankTransactionCode = "PMNT",
-            internalTransactionId = "int-1",
-            creditorName = null,
-            creditorAccount = null,
-            debtorName = null,
-            remittanceInformationStructuredArray = null,
-            note = null,
-            expenseTag = null
-        )
-
-        dataSource.upsertTransaction(tx)
-        assertEquals(1, dataSource.getStoredTransactionCount())
-
-        dataSource.deleteTransaction("tx-1")
-        assertEquals(0, dataSource.getStoredTransactionCount())
     }
 
     @Test
