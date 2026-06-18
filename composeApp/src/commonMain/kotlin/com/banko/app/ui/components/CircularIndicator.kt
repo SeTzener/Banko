@@ -46,6 +46,7 @@ import com.banko.app.ui.screens.home.TimespanSelection
 import com.banko.app.ui.theme.Grey_Nevada
 import kotlinx.datetime.Month
 import org.jetbrains.compose.resources.stringResource
+import kotlin.math.abs
 import kotlin.math.roundToLong
 
 @Composable
@@ -317,9 +318,10 @@ private fun CategoryGrid(categories: List<Category>, itemsPerRow: Int = 5) {
 private fun sortCategories(transactions: List<ModelTransaction>, month: kotlinx.datetime.Month): List<Category> {
     val result =
         transactions.filter { it.expenseTag != null && it.bookingDate.month == month && it.expenseTag.isEarning != true }
-    return result.groupBy { it.expenseTag }.map {
+    return result.groupBy { it.expenseTag }.mapNotNull {
         val sum = it.value.sumOf { it.amount }
-        val roundedAmount = (sum * 100).roundToLong() / 100.0
+        if (sum >= 0) return@mapNotNull null
+        val roundedAmount = (abs(sum) * 100).roundToLong() / 100.0
         Category(
             name = it.key!!.name,
             amount = roundedAmount,
@@ -331,9 +333,10 @@ private fun sortCategories(transactions: List<ModelTransaction>, month: kotlinx.
 private fun sortCategories(transactions: List<ModelTransaction>, year: Int): List<Category> {
     val result =
         transactions.filter { it.expenseTag != null && it.bookingDate.year == year && it.expenseTag.isEarning != true }
-    return result.groupBy { it.expenseTag }.map {
+    return result.groupBy { it.expenseTag }.mapNotNull {
         val sum = it.value.sumOf { it.amount }
-        val roundedAmount = (sum * 100).roundToLong() / 100.0
+        if (sum >= 0) return@mapNotNull null
+        val roundedAmount = (abs(sum) * 100).roundToLong() / 100.0
         Category(
             name = it.key!!.name,
             amount = roundedAmount,
