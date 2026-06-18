@@ -8,6 +8,8 @@ import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -235,5 +237,107 @@ class HomeScreenViewModelTest {
         advanceUntilIdle()
 
         assertNull(vm.state.value.error)
+    }
+
+    @Test
+    fun `timespanState mirrors timespan changes`() = runTest(testDispatcher) {
+        coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
+
+        val vm = HomeScreenViewModel(repository)
+        advanceUntilIdle()
+
+        val monthSel = TimespanSelection.Month(YearMonth(2024, 6))
+        vm.handleEvent(TransactionsEvent.SelectTimespan(monthSel))
+        advanceUntilIdle()
+
+        assertEquals(monthSel, vm.timespanState.value.selectedTimespan)
+        assertEquals(LocalDateTime(2024, 6, 1, 0, 0), vm.timespanState.value.indicatorDateState)
+        assertEquals(false, vm.timespanState.value.isYearView)
+    }
+
+    @Test
+    fun `uiState mirrors error changes`() = runTest(testDispatcher) {
+        coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
+        coEvery { repository.deleteTransaction(any()) } throws RuntimeException("Delete failed")
+
+        val vm = HomeScreenViewModel(repository)
+        advanceUntilIdle()
+
+        vm.handleEvent(TransactionsEvent.DeleteTransaction("tx-1"))
+        advanceUntilIdle()
+
+        assertNotNull(vm.uiState.value.error)
+        assertEquals("Delete failed", vm.uiState.value.error)
+    }
+
+    @Test
+    fun `transactionListState mirrors transaction changes`() = runTest(testDispatcher) {
+        val domainTx = DomainTransaction(
+            id = "tx-1",
+            bookingDate = LocalDateTime.parse("2024-01-15T10:30:00"),
+            valueDate = LocalDateTime.parse("2024-01-15T12:00:00"),
+            amount = 42.50,
+            currency = "EUR",
+            debtorAccount = null,
+            remittanceInformationUnstructured = "Test",
+            remittanceInformationUnstructuredArray = emptyList(),
+            bankTransactionCode = "PMNT",
+            internalTransactionId = "int-1",
+            creditorName = null,
+            creditorAccount = null,
+            debtorName = null,
+            remittanceInformationStructuredArray = null,
+            note = null,
+            expenseTag = null
+        )
+        coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(listOf(domainTx))
+        coEvery { repository.deleteTransaction("tx-1") } returns Unit
+
+        val vm = HomeScreenViewModel(repository)
+        advanceUntilIdle()
+
+        assertEquals(1, vm.transactionListState.value.transactions.size)
+
+        vm.handleEvent(TransactionsEvent.DeleteTransaction("tx-1"))
+        advanceUntilIdle()
+
+        assertTrue(vm.transactionListState.value.transactions.isEmpty())
+    }
+
+    @Test
+    fun `sub-state flows do not emit when unrelated fields change`() = runTest(testDispatcher) {
+        coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
+
+        val vm = HomeScreenViewModel(repository)
+        advanceUntilIdle()
+
+        val tsEmissions = mutableListOf<TimespanState>()
+
+        val collectJob = vm.timespanState
+            .onEach { tsEmissions.add(it) }
+            .launchIn(this)
+        advanceUntilIdle()
+        tsEmissions.clear()
+
+        vm.handleEvent(TransactionsEvent.DeleteTransaction("tx-1"))
+        advanceUntilIdle()
+
+        collectJob.cancel()
+        advanceUntilIdle()
+
+        assertTrue(tsEmissions.isEmpty(), "timespanState should not emit when deleting a transaction")
+    }
+
+    @Test
+    fun `sub-state initial values match combined state defaults`() = runTest(testDispatcher) {
+        coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
+
+        val vm = HomeScreenViewModel(repository)
+        advanceUntilIdle()
+
+        val combined = vm.state.value
+        assertEquals(combined.transactions, vm.transactionListState.value.transactions)
+        assertEquals(combined.selectedTimespan, vm.timespanState.value.selectedTimespan)
+        assertEquals(combined.error, vm.uiState.value.error)
     }
 }
