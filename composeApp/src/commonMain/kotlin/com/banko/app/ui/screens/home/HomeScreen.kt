@@ -58,6 +58,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -131,6 +132,7 @@ fun HomeScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var dragOffset by remember { mutableStateOf(0f) }
     val swipeThreshold = 50f
+    val currentTimespanState by rememberUpdatedState(timespanState)
 
     LaunchedEffect(uiState.error) {
         uiState.error?.let { error ->
@@ -188,19 +190,20 @@ fun HomeScreen(
                                         dragOffset += amount
                                     },
                                     onDragEnd = {
-                                        when (val sel = timespanState.selectedTimespan) {
+                                        val ts = currentTimespanState
+                                        when (val sel = ts.selectedTimespan) {
                                             is TimespanSelection.Month -> {
                                                 when {
                                                     dragOffset < -swipeThreshold -> {
-                                                        val idx = timespanState.availableMonths.indexOf(sel.ym)
-                                                        if (idx < timespanState.availableMonths.size - 1) {
-                                                            onTimespanSelected(TimespanSelection.Month(timespanState.availableMonths[idx + 1]))
+                                                        val idx = ts.availableMonths.indexOf(sel.ym)
+                                                        if (idx < ts.availableMonths.size - 1) {
+                                                            onTimespanSelected(TimespanSelection.Month(ts.availableMonths[idx + 1]))
                                                         }
                                                     }
                                                     dragOffset > swipeThreshold -> {
-                                                        val idx = timespanState.availableMonths.indexOf(sel.ym)
+                                                        val idx = ts.availableMonths.indexOf(sel.ym)
                                                         if (idx > 0) {
-                                                            onTimespanSelected(TimespanSelection.Month(timespanState.availableMonths[idx - 1]))
+                                                            onTimespanSelected(TimespanSelection.Month(ts.availableMonths[idx - 1]))
                                                         }
                                                     }
                                                 }
@@ -208,15 +211,15 @@ fun HomeScreen(
                                             is TimespanSelection.Year -> {
                                                 when {
                                                     dragOffset < -swipeThreshold -> {
-                                                        val idx = timespanState.availableYears.indexOf(sel.year)
-                                                        if (idx < timespanState.availableYears.size - 1) {
-                                                            onTimespanSelected(TimespanSelection.Year(timespanState.availableYears[idx + 1]))
+                                                        val idx = ts.availableYears.indexOf(sel.year)
+                                                        if (idx < ts.availableYears.size - 1) {
+                                                            onTimespanSelected(TimespanSelection.Year(ts.availableYears[idx + 1]))
                                                         }
                                                     }
                                                     dragOffset > swipeThreshold -> {
-                                                        val idx = timespanState.availableYears.indexOf(sel.year)
+                                                        val idx = ts.availableYears.indexOf(sel.year)
                                                         if (idx > 0) {
-                                                            onTimespanSelected(TimespanSelection.Year(timespanState.availableYears[idx - 1]))
+                                                            onTimespanSelected(TimespanSelection.Year(ts.availableYears[idx - 1]))
                                                         }
                                                     }
                                                 }
