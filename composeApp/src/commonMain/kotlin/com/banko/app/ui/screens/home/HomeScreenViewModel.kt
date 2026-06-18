@@ -8,6 +8,7 @@ import com.banko.app.utils.beginningOfCurrentMonth
 import com.banko.app.utils.computeYearEndDate
 import com.banko.app.utils.getLastDayOfMonth
 import kotlinx.coroutines.Job
+import kotlinx.datetime.Clock
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,6 +21,8 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 
+private const val SYNC_COOLDOWN_MS = 300_000L
+
 class HomeScreenViewModel(
     private val repository: TransactionRepository
 ) : ViewModel() {
@@ -29,6 +32,7 @@ class HomeScreenViewModel(
     private var transactionsJob: Job? = null
     private var syncJob: Job? = null
     private var lastMonthSelection: YearMonth? = null
+    private val lastSyncTimestamps = mutableMapOf<String, Long>()
 
     init {
         initializeTimespanSelection()
@@ -57,6 +61,7 @@ class HomeScreenViewModel(
             try {
                 val sel = _state.value.selectedTimespan
                 repository.fetchAndStoreTransactionsForDateRange(sel.fromDate, sel.toDate)
+                lastSyncTimestamps["${sel.fromDate}-${sel.toDate}"] = Clock.System.now().toEpochMilliseconds()
                 loadTransactionsForCurrentSelection()
             } catch (_: Exception) {
                 _state.update { it.copy(isRefreshing = false) }
@@ -149,8 +154,15 @@ class HomeScreenViewModel(
 
     private suspend fun performBackgroundSync() {
         val sel = _state.value.selectedTimespan
+        val rangeKey = "${sel.fromDate}-${sel.toDate}"
+        val now = Clock.System.now().toEpochMilliseconds()
+        val lastSync = lastSyncTimestamps[rangeKey]
+
+        if (lastSync != null && now - lastSync < SYNC_COOLDOWN_MS) return
+
         try {
             repository.fetchAndStoreTransactionsForDateRange(sel.fromDate, sel.toDate)
+            lastSyncTimestamps[rangeKey] = Clock.System.now().toEpochMilliseconds()
             val oldestDate = repository.getOldestTransactions()
             val months = generateMonthRange(oldestDate)
             if (months.size > _state.value.availableMonths.size) {
