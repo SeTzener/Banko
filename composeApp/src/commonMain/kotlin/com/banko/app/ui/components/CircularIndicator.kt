@@ -84,9 +84,11 @@ fun CircularIndicator(
     val totalEarnings = transactionsInRange.filter {
         it.expenseTag?.isEarning == true
     }.sumOf { it.amount }.toInt()
-    val categories = when (selectedTimespan) {
-        is TimespanSelection.Month -> sortCategories(transactions, month = Month(selectedTimespan.ym.month))
-        is TimespanSelection.Year -> sortCategories(transactions, year = selectedTimespan.year)
+    val categories = remember(transactions, selectedTimespan) {
+        when (selectedTimespan) {
+            is TimespanSelection.Month -> sortCategories(transactions, month = Month(selectedTimespan.ym.month))
+            is TimespanSelection.Year -> sortCategories(transactions, year = selectedTimespan.year)
+        }
     }
     val totalAmount = categories.sumOf { it.amount.toInt() }.toFloat()
     var animatedEarningsValue by remember { mutableIntStateOf(0) }

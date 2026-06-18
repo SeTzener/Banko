@@ -571,7 +571,7 @@ private fun LazyTransactionList(
 ) {
     val listState = rememberLazyListState()
     var openedRowId by remember { mutableStateOf<String?>(null) }
-    val groupedTransactions = transactions.groupBy { it.bookingDate.date }
+    val groupedTransactions = remember(transactions) { transactions.groupBy { it.bookingDate.date } }
 
     LoadingProgressIndicator(isLoading = isLoading)
     PullToRefreshBox(
