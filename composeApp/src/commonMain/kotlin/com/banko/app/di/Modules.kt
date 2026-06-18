@@ -34,7 +34,7 @@ val  sharedModule = module {
     singleOf(::OauthNordigenApi)
     single<BankoDatabase> { CreateDatabase(get()).getDatabase() }
     singleOf(::ExpenseTagRepository)
-    singleOf(::BankoApiService)
+    single { BankoApiService() }
     singleOf(::DatabaseTransactionRepository)
     singleOf(::ApiTransactionRepository)
     singleOf(::ApiExpenseTagRepository)
