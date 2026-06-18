@@ -1,4 +1,13 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "instructions": ["AGENT_INSTRUCTIONS.md"]
+  "instructions": ["AGENT_INSTRUCTIONS.md"],
+  "permission": {
+    "bash": {
+      "git commit*": "ask",
+      "git push*": "ask",
+      "git rebase*": "ask",
+      "git merge*": "ask",
+      "*": "allow"
+    }
+  }
 }
