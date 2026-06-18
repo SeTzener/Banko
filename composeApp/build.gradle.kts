@@ -97,6 +97,7 @@ kotlin {
             implementation(libs.androidx.test.core)
             implementation(libs.kotlinx.coroutines.test)
             implementation(libs.robolectric)
+            implementation(libs.ktor.client.mock)
         }
     }
 }

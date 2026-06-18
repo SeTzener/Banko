@@ -75,6 +75,7 @@ ktor-client-auth = { group = "io.ktor", name = "ktor-client-auth", version.ref =
 ktor-client-serialization = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
 ktor-client-android = { group = "io.ktor", name = "ktor-client-okhttp", version.ref = "ktor" }
 ktor-client-ios = { group = "io.ktor", name = "ktor-client-darwin", version.ref = "ktor" }
+ktor-client-mock = { group = "io.ktor", name = "ktor-client-mock", version.ref = "ktor" }
 
 # Navigation
 decompose = { group = "com.arkivanov.decompose", name = "decompose", version.ref = "decompose" }
