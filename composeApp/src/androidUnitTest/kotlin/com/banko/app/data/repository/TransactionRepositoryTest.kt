@@ -28,9 +28,9 @@ import kotlin.test.assertTrue
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
-class TransactionRepositoryImplTest {
+class TransactionRepositoryTest {
 
-    private lateinit var repo: TransactionRepositoryImpl
+    private lateinit var repo: TransactionRepository
     private lateinit var db: BankoDatabase
     private val remote = mockk<TransactionRemoteDataSource>(relaxed = true)
 
@@ -41,7 +41,7 @@ class TransactionRepositoryImplTest {
             .allowMainThreadQueries()
             .build()
         val local = TransactionLocalDataSource(db)
-        repo = TransactionRepositoryImpl(local, remote)
+        repo = TransactionRepository(local, remote)
     }
 
     @After

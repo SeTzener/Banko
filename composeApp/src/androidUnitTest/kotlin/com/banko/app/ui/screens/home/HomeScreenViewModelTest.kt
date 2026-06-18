@@ -1,7 +1,7 @@
 package com.banko.app.ui.screens.home
 
 import com.banko.app.domain.model.Transaction as DomainTransaction
-import com.banko.app.domain.repository.TransactionRepository
+import com.banko.app.data.repository.TransactionRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk

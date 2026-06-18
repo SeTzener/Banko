@@ -13,29 +13,26 @@ class ExpenseTagRepository(
     suspend fun getExpenseTags(): List<ExpenseTag> {
         val result = apiService.getExpenseTags()
         if (result is Result.Error) {
-            println("Error: $result")
-            return emptyList()
+            throw RuntimeException("Failed to get expense tags: $result")
         }
 
         return (result as Result.Success).value.expenseTags.map { it.toModelItem() }
     }
 
-    suspend fun updateExpenseTag(expenseTag: ExpenseTag): ExpenseTag? {
+    suspend fun updateExpenseTag(expenseTag: ExpenseTag): ExpenseTag {
         val result = apiService.updateExpenseTag(expenseTag.toDto())
         if (result is Result.Error) {
-            println("Error: $result")
-            return null
+            throw RuntimeException("Failed to update expense tag: $result")
         }
 
         return (result as Result.Success).value.expenseTag.toModelItem()
     }
 
     @OptIn(ExperimentalUuidApi::class)
-    suspend fun createExpenseTag(name: String, color: Long, isEarning: Boolean): ExpenseTag? {
+    suspend fun createExpenseTag(name: String, color: Long, isEarning: Boolean): ExpenseTag {
         val result = apiService.createExpenseTag(name, color, isEarning)
         if (result is Result.Error) {
-            println("Error: $result")
-            return null
+            throw RuntimeException("Failed to create expense tag: $result")
         }
 
         return (result as Result.Success).value.expenseTag.toModelItem()
@@ -44,16 +41,14 @@ class ExpenseTagRepository(
     suspend fun deleteExpenseTag(expenseTagId: String) {
         val result = apiService.deleteExpenseTag(expenseTagId)
         if (result is Result.Error) {
-            println("Error: $result")
-            return
+            throw RuntimeException("Failed to delete expense tag: $result")
         }
     }
 
     suspend fun assignExpenseTag(id: String, expenseTagId: String?) {
         val result = apiService.assignExpenseTag(id, expenseTagId)
         if (result is Result.Error) {
-            println("Error: $result")
-            return
+            throw RuntimeException("Failed to assign expense tag: $result")
         }
     }
 }

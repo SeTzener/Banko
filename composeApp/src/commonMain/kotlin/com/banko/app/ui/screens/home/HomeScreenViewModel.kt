@@ -2,7 +2,7 @@ package com.banko.app.ui.screens.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.banko.app.domain.repository.TransactionRepository
+import com.banko.app.data.repository.TransactionRepository
 import com.banko.app.ui.models.toUi
 import com.banko.app.utils.beginningOfCurrentMonth
 import com.banko.app.utils.computeYearEndDate

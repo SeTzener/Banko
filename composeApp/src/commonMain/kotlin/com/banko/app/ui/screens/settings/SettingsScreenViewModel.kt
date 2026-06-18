@@ -36,32 +36,40 @@ class SettingsScreenViewModel(
 
     fun loadExpenseTags() {
         viewModelScope.launch {
-            val result = apiRepository.getExpenseTags()
-            result.forEach {
-                dbRepository.upsertExpenseTag(it.toDao())
-            }
+            try {
+                val result = apiRepository.getExpenseTags()
+                result.forEach {
+                    dbRepository.upsertExpenseTag(it.toDao())
+                }
+            } catch (_: Exception) { }
         }
     }
 
     fun updateExpenseTag(expenseTag: ExpenseTag) {
         viewModelScope.launch {
-            val result = apiRepository.updateExpenseTag(expenseTag) ?: return@launch
-            dbRepository.upsertExpenseTag(result.toDao())
+            try {
+                val result = apiRepository.updateExpenseTag(expenseTag)
+                dbRepository.upsertExpenseTag(result.toDao())
+            } catch (_: Exception) { }
         }
     }
 
     fun createExpenseTag(name: String, color: Color, isEarning: Boolean) {
         viewModelScope.launch {
-            val result =
-                apiRepository.createExpenseTag(name, color.toArgb().toLong(), isEarning) ?: return@launch
-            dbRepository.upsertExpenseTag(result.toDao())
+            try {
+                val result =
+                    apiRepository.createExpenseTag(name, color.toArgb().toLong(), isEarning)
+                dbRepository.upsertExpenseTag(result.toDao())
+            } catch (_: Exception) { }
         }
     }
 
     fun deleteExpenseTag(expenseTagId: String) {
         viewModelScope.launch {
-            apiRepository.deleteExpenseTag(expenseTagId) ?: return@launch
-            dbRepository.deleteExpenseTag(expenseTagId)
+            try {
+                apiRepository.deleteExpenseTag(expenseTagId)
+                dbRepository.deleteExpenseTag(expenseTagId)
+            } catch (_: Exception) { }
         }
     }
 }

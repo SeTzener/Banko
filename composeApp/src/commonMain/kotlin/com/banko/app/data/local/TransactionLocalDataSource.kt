@@ -34,6 +34,9 @@ class TransactionLocalDataSource(
             .map { it.toDomain() }
     }
 
+    suspend fun getTransactionById(transactionId: String): Transaction? =
+        dao.getFullTransactionById(transactionId)?.toDomain()
+
     suspend fun upsertTransaction(transaction: Transaction) {
         transaction.creditorAccount?.let { dao.upsertCreditorAccount(it.toDao()) }
         transaction.debtorAccount?.let { dao.upsertDebtorAccount(it.toDao()) }

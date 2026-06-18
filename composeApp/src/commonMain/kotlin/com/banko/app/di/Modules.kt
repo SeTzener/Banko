@@ -12,11 +12,10 @@ import com.banko.app.database.CreateDatabase
 import com.banko.app.database.repository.ExpenseTagRepository
 import com.banko.app.data.local.TransactionLocalDataSource
 import com.banko.app.data.remote.TransactionRemoteDataSource
-import com.banko.app.data.repository.TransactionRepositoryImpl
+import com.banko.app.data.repository.TransactionRepository
 import com.banko.app.domain.AssignExpenseTagToTransactionUseCase
 import com.banko.app.domain.GetAllExpenseTagUseCase
 import com.banko.app.domain.SaveNoteUseCase
-import com.banko.app.domain.repository.TransactionRepository
 import com.banko.app.ui.screens.details.DetailsScreenViewModel
 import com.banko.app.ui.screens.home.HomeScreenViewModel
 import com.banko.app.ui.screens.settings.SettingsScreenViewModel
@@ -40,7 +39,7 @@ val  sharedModule = module {
     singleOf(::ApiExpenseTagRepository)
     singleOf(::TransactionLocalDataSource)
     singleOf(::TransactionRemoteDataSource)
-    single<TransactionRepository> { TransactionRepositoryImpl(get(), get()) }
+    singleOf(::TransactionRepository)
 
     // Use Cases
     singleOf(::AssignExpenseTagToTransactionUseCase)
