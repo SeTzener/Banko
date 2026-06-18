@@ -10,7 +10,9 @@ androidx-core-ktx = "1.13.1"
 androidx-espresso-core = "3.6.1"
 androidx-lifecycle = "2.8.3"
 androidx-material = "1.12.0"
+androidx-test-core = "1.6.1"
 androidx-test-junit = "1.2.1"
+kotlinx-coroutines-test = "1.9.0"
 buildKonfig = "0.13.3"
 composeMaterialCore = "1.4.0"
 compose-multiplatform = "1.7.0"
@@ -25,6 +27,7 @@ ktor = "3.0.2"
 ksp = "2.1.0-1.0.29"
 material = "1.7.0"
 mockk = "1.13.14"
+robolectric = "4.14.1"
 room = "2.7.0-alpha12"
 serialization = "1.7.3"
 sqllite = "2.5.0-alpha12"
@@ -35,7 +38,10 @@ kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "androidx-core-ktx" }
+androidx-test-core = { group = "androidx.test", name = "core", version.ref = "androidx-test-core" }
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 androidx-test-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidx-test-junit" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinx-coroutines-test" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "androidx-espresso-core" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "androidx-appcompat" }
 androidx-material = { group = "com.google.android.material", name = "material", version.ref = "androidx-material" }

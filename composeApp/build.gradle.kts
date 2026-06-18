@@ -94,6 +94,9 @@ kotlin {
             implementation(kotlin("test-junit"))
             implementation(libs.mockk)
             implementation(libs.junit)
+            implementation(libs.androidx.test.core)
+            implementation(libs.kotlinx.coroutines.test)
+            implementation(libs.robolectric)
         }
     }
 }
