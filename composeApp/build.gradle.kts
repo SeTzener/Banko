@@ -33,25 +33,16 @@ kotlin {
     }
 
     sourceSets {
+        val commonMain by getting
+        val androidMain by getting
+        val commonTest by getting
+        val androidUnitTest by getting
 
-        androidMain.dependencies {
-            implementation(compose.preview)
-            implementation(libs.androidx.activity.compose)
-            implementation(libs.decompose)
-            implementation(libs.koin.android)
-            implementation(libs.koin.android.compose)
-            implementation(libs.ktor.client.android)
-        }
         iosMain.dependencies {
             implementation(libs.ktor.client.ios)
             implementation(libs.koin.core)
         }
-        commonTest.dependencies {
-            implementation(kotlin("test"))
-        }
-        androidUnitTest.dependencies {
-            implementation(libs.mockk)
-        }
+
         commonMain.dependencies {
             implementation(libs.compose.material)
             implementation(compose.runtime)
@@ -83,6 +74,26 @@ kotlin {
             api(libs.datastore)
             api(libs.datastore.preferences)
             api(libs.koin.core)
+        }
+
+        androidMain.dependencies {
+            implementation(compose.preview)
+            implementation(libs.androidx.activity.compose)
+            implementation(libs.decompose)
+            implementation(libs.koin.android)
+            implementation(libs.koin.android.compose)
+            implementation(libs.ktor.client.android)
+        }
+
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+        }
+
+        androidUnitTest.dependencies {
+            implementation(kotlin("test"))
+            implementation(kotlin("test-junit"))
+            implementation(libs.mockk)
+            implementation(libs.junit)
         }
     }
 }
@@ -131,6 +142,12 @@ dependencies {
     add("kspIosSimulatorArm64", libs.room.compiler)
     add("kspIosX64", libs.room.compiler)
     add("kspIosArm64", libs.room.compiler)
+
+    // IDE help: explicitly declare Android test dependencies
+    testImplementation(kotlin("test"))
+    testImplementation(kotlin("test-junit"))
+    testImplementation(libs.mockk)
+    testImplementation(libs.junit)
 }
 
 val env = Properties().apply {
