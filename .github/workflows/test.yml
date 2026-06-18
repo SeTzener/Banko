@@ -1,0 +1,30 @@
+name: Run tests
+
+on:
+  pull_request:
+    branches: [main, master]
+  push:
+    branches: [main, master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Create .env file
+        run: |
+          echo "NORDIGEN_ID=${{ secrets.NORDIGEN_ID }}" >> .env
+          echo "NORDIGEN_SECRET=${{ secrets.NORDIGEN_SECRET }}" >> .env
+          echo "NORDIGEN_ACCOUNT_ID=${{ secrets.NORDIGEN_ACCOUNT_ID }}" >> .env
+
+      - name: Grant gradlew execution permission
+        run: chmod +x gradlew
+
+      - name: Run unit tests
+        run: ./gradlew :composeApp:testDebugUnitTest

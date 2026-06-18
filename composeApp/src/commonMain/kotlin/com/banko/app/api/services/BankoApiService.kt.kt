@@ -22,13 +22,10 @@ import kotlinx.datetime.LocalDate
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
-class BankoApiService : KoinComponent {
+class BankoApiService(
+    private val client: HttpClient = HttpClient(HttpClientProvider())
+) : KoinComponent {
     private val baseUrl = "https://www.bankoapi.space"
-    private val client by lazy {
-        HttpClient(
-            HttpClientProvider()
-        )
-    }
 
     suspend fun getTransactions(
         pageNumber: Int,
