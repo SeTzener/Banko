@@ -113,7 +113,7 @@ class ExpenseTagRepositoryTest {
         repo.upsertExpenseTag(tag)
         assertEquals(1, db.bankoDao().getAllExpenseTags().first().size)
 
-        db.bankoDao().deleteExpenseTag(tag)
+        repo.deleteExpenseTag("tag-1")
 
         assertEquals(0, db.bankoDao().getAllExpenseTags().first().size)
     }
