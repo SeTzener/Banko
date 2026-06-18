@@ -52,7 +52,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.collectAsState
@@ -98,10 +97,14 @@ import kotlin.math.roundToInt
 @Composable
 fun HomeScreen(component: HomeComponent) {
     val viewModel = koinViewModel<HomeScreenViewModel>()
-    val state = viewModel.state.collectAsState()
+    val transactionListState by viewModel.transactionListState.collectAsState()
+    val timespanState by viewModel.timespanState.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
 
     HomeScreen(
-        state = state,
+        transactionListState = transactionListState,
+        timespanState = timespanState,
+        uiState = uiState,
         navigateToDetails = component::navigateToDetails,
         onTimespanSelected = { viewModel.handleEvent(TransactionsEvent.SelectTimespan(it)) },
         onRefresh = { viewModel.handleEvent(event = TransactionsEvent.Refresh) },
@@ -114,7 +117,9 @@ fun HomeScreen(component: HomeComponent) {
 
 @Composable
 fun HomeScreen(
-    state: State<HomeScreenState>,
+    transactionListState: TransactionListState,
+    timespanState: TimespanState,
+    uiState: UiState,
     navigateToDetails: (ModelTransaction) -> Unit,
     onTimespanSelected: (TimespanSelection) -> Unit,
     onRefresh: () -> Unit,
@@ -127,8 +132,8 @@ fun HomeScreen(
     var dragOffset by remember { mutableStateOf(0f) }
     val swipeThreshold = 50f
 
-    LaunchedEffect(state.value.error) {
-        state.value.error?.let { error ->
+    LaunchedEffect(uiState.error) {
+        uiState.error?.let { error ->
             snackbarHostState.showSnackbar(error)
             clearError(error)
         }
@@ -140,12 +145,12 @@ fun HomeScreen(
     ) {
         TopContent()
         TimespanBar(
-            selectedTimespan = state.value.selectedTimespan,
-            availableMonths = state.value.availableMonths,
-            availableYears = state.value.availableYears,
-            isYearView = state.value.isYearView,
+            selectedTimespan = timespanState.selectedTimespan,
+            availableMonths = timespanState.availableMonths,
+            availableYears = timespanState.availableYears,
+            isYearView = timespanState.isYearView,
             onTimespanSelected = onTimespanSelected,
-            isLoadingMore = state.value.isLoadingMore,
+            isLoadingMore = transactionListState.isLoadingMore,
             onToggleView = onToggleView,
             onLoadMore = onLoadMore
         )
@@ -154,7 +159,7 @@ fun HomeScreen(
             topContent = {},
             expandedContent = {
                 AnimatedContent(
-                    targetState = state.value.selectedTimespan,
+                    targetState = timespanState.selectedTimespan,
                     transitionSpec = {
                         fun TimespanSelection.weight(): Int = when (this) {
                             is TimespanSelection.Month -> ym.year * 12 + ym.month
@@ -183,20 +188,19 @@ fun HomeScreen(
                                         dragOffset += amount
                                     },
                                     onDragEnd = {
-                                        val current = state.value
-                                        when (val sel = current.selectedTimespan) {
+                                        when (val sel = timespanState.selectedTimespan) {
                                             is TimespanSelection.Month -> {
                                                 when {
                                                     dragOffset < -swipeThreshold -> {
-                                                        val idx = current.availableMonths.indexOf(sel.ym)
-                                                        if (idx < current.availableMonths.size - 1) {
-                                                            onTimespanSelected(TimespanSelection.Month(current.availableMonths[idx + 1]))
+                                                        val idx = timespanState.availableMonths.indexOf(sel.ym)
+                                                        if (idx < timespanState.availableMonths.size - 1) {
+                                                            onTimespanSelected(TimespanSelection.Month(timespanState.availableMonths[idx + 1]))
                                                         }
                                                     }
                                                     dragOffset > swipeThreshold -> {
-                                                        val idx = current.availableMonths.indexOf(sel.ym)
+                                                        val idx = timespanState.availableMonths.indexOf(sel.ym)
                                                         if (idx > 0) {
-                                                            onTimespanSelected(TimespanSelection.Month(current.availableMonths[idx - 1]))
+                                                            onTimespanSelected(TimespanSelection.Month(timespanState.availableMonths[idx - 1]))
                                                         }
                                                     }
                                                 }
@@ -204,15 +208,15 @@ fun HomeScreen(
                                             is TimespanSelection.Year -> {
                                                 when {
                                                     dragOffset < -swipeThreshold -> {
-                                                        val idx = current.availableYears.indexOf(sel.year)
-                                                        if (idx < current.availableYears.size - 1) {
-                                                            onTimespanSelected(TimespanSelection.Year(current.availableYears[idx + 1]))
+                                                        val idx = timespanState.availableYears.indexOf(sel.year)
+                                                        if (idx < timespanState.availableYears.size - 1) {
+                                                            onTimespanSelected(TimespanSelection.Year(timespanState.availableYears[idx + 1]))
                                                         }
                                                     }
                                                     dragOffset > swipeThreshold -> {
-                                                        val idx = current.availableYears.indexOf(sel.year)
+                                                        val idx = timespanState.availableYears.indexOf(sel.year)
                                                         if (idx > 0) {
-                                                            onTimespanSelected(TimespanSelection.Year(current.availableYears[idx - 1]))
+                                                            onTimespanSelected(TimespanSelection.Year(timespanState.availableYears[idx - 1]))
                                                         }
                                                     }
                                                 }
@@ -225,14 +229,14 @@ fun HomeScreen(
                     ) {
                         CircularIndicator(
                             currency = stringResource(Res.string.currency_nok),
-                            transactions = state.value.transactions,
-                            selectedTimespan = state.value.selectedTimespan
+                            transactions = transactionListState.transactions,
+                            selectedTimespan = timespanState.selectedTimespan
                         )
                     }
                 }
             }
         )
-        LoadingProgressIndicator(isLoading = state.value.isLoadingMore)
+        LoadingProgressIndicator(isLoading = transactionListState.isLoadingMore)
         Scaffold(
             snackbarHost = { SnackbarHost(snackbarHostState) }
         ) { padding ->
@@ -243,9 +247,9 @@ fun HomeScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 LazyTransactionList(
-                    isLoading = state.value.isLoading,
-                    isRefreshing = state.value.isRefreshing,
-                    transactions = state.value.transactions,
+                    isLoading = transactionListState.isLoading,
+                    isRefreshing = transactionListState.isRefreshing,
+                    transactions = transactionListState.transactions,
                     navigateToDetails = navigateToDetails,
                     onRefresh = onRefresh,
                     onDeleteTransaction = onDeleteTransaction

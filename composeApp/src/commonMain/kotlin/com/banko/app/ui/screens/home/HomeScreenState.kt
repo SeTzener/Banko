@@ -24,6 +24,26 @@ sealed class TimespanSelection {
     }
 }
 
+data class TransactionListState(
+    val transactions: List<ModelTransaction> = emptyList(),
+    val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
+    val isLoadingMore: Boolean = false,
+)
+
+data class TimespanState(
+    val selectedTimespan: TimespanSelection = TimespanSelection.Month(YearMonth(beginningOfCurrentMonth().year, beginningOfCurrentMonth().monthNumber)),
+    val availableMonths: List<YearMonth> = emptyList(),
+    val availableYears: List<Int> = emptyList(),
+    val isYearView: Boolean = false,
+    val indicatorDateState: LocalDateTime = beginningOfCurrentMonth(),
+)
+
+data class UiState(
+    val error: String? = null,
+    val isSyncing: Boolean = false,
+)
+
 data class HomeScreenState(
     val transactions: List<ModelTransaction> = emptyList(),
     val isLoading: Boolean = false,

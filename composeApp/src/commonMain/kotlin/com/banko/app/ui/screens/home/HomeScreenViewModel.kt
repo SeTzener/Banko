@@ -11,10 +11,12 @@ import kotlinx.coroutines.Job
 import kotlinx.datetime.Clock
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -28,6 +30,32 @@ class HomeScreenViewModel(
 ) : ViewModel() {
     private val _state = MutableStateFlow(HomeScreenState())
     val state: StateFlow<HomeScreenState> = _state.asStateFlow()
+
+    val transactionListState: StateFlow<TransactionListState> = _state.map { s ->
+        TransactionListState(
+            transactions = s.transactions,
+            isLoading = s.isLoading,
+            isRefreshing = s.isRefreshing,
+            isLoadingMore = s.isLoadingMore,
+        )
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, TransactionListState())
+
+    val timespanState: StateFlow<TimespanState> = _state.map { s ->
+        TimespanState(
+            selectedTimespan = s.selectedTimespan,
+            availableMonths = s.availableMonths,
+            availableYears = s.availableYears,
+            isYearView = s.isYearView,
+            indicatorDateState = s.indicatorDateState,
+        )
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, TimespanState())
+
+    val uiState: StateFlow<UiState> = _state.map { s ->
+        UiState(
+            error = s.error,
+            isSyncing = s.isSyncing,
+        )
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, UiState())
 
     private var transactionsJob: Job? = null
     private var syncJob: Job? = null
@@ -85,9 +113,7 @@ class HomeScreenViewModel(
                     )
                 }
             } catch (ex: Exception) {
-                _state.update {
-                    it.copy(error = ex.message)
-                }
+                _state.update { it.copy(error = ex.message) }
             }
         }
     }
