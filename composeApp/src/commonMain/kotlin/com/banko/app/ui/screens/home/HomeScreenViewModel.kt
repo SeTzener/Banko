@@ -42,10 +42,10 @@ class HomeScreenViewModel(
 
     val filteredTransactionListState: StateFlow<TransactionListState> = _state.map { s ->
         TransactionListState(
-            transactions = when (s.selectedTagId) {
-                null -> s.transactions
-                "uncategorized" -> s.transactions.filter { it.expenseTag == null }
-                else -> s.transactions.filter { it.expenseTag?.id == s.selectedTagId }
+            transactions = when (val filter = s.tagFilter) {
+                is TagFilter.None -> s.transactions
+                is TagFilter.Uncategorized -> s.transactions.filter { it.expenseTag == null }
+                is TagFilter.ById -> s.transactions.filter { it.expenseTag?.id == filter.id }
             },
             isLoading = s.isLoading,
             isRefreshing = s.isRefreshing,
@@ -70,8 +70,17 @@ class HomeScreenViewModel(
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, UiState())
 
-    val selectedTagId: StateFlow<String?> = _state.map { it.selectedTagId }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    val selectedCategoryId: StateFlow<String?> = _state.map { s ->
+        when (s.tagFilter) {
+            is TagFilter.None -> null
+            is TagFilter.Uncategorized -> null
+            is TagFilter.ById -> s.tagFilter.id
+        }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    val isUncategorizedSelected: StateFlow<Boolean> = _state.map { s ->
+        s.tagFilter is TagFilter.Uncategorized
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     private var transactionsJob: Job? = null
     private var syncJob: Job? = null
@@ -218,13 +227,18 @@ class HomeScreenViewModel(
     }
 
     private fun handleSelectTag(tagId: String?) {
-        val normalizedTagId = tagId ?: "uncategorized"
         _state.update {
-            if (it.selectedTagId == normalizedTagId) {
-                it.copy(selectedTagId = null)
+            val newFilter: TagFilter = if (tagId == null) {
+                if (it.tagFilter is TagFilter.Uncategorized) TagFilter.None
+                else TagFilter.Uncategorized
             } else {
-                it.copy(selectedTagId = normalizedTagId)
+                if (it.tagFilter is TagFilter.ById && (it.tagFilter as TagFilter.ById).id == tagId) {
+                    TagFilter.None
+                } else {
+                    TagFilter.ById(tagId)
+                }
             }
+            it.copy(tagFilter = newFilter)
         }
     }
 
@@ -237,7 +251,7 @@ class HomeScreenViewModel(
                         selectedTimespan = timespan,
                         indicatorDateState = LocalDateTime(timespan.ym.year, timespan.ym.month, 1, 0, 0),
                         isYearView = false,
-                        selectedTagId = null,
+                        tagFilter = TagFilter.None,
                     )
                 }
             }
@@ -247,7 +261,7 @@ class HomeScreenViewModel(
                         selectedTimespan = timespan,
                         indicatorDateState = LocalDateTime(timespan.year, 1, 1, 0, 0),
                         isYearView = true,
-                        selectedTagId = null,
+                        tagFilter = TagFilter.None,
                     )
                 }
             }

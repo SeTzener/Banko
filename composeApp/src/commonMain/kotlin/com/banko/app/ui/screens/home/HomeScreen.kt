@@ -102,7 +102,8 @@ fun HomeScreen(component: HomeComponent) {
     val filteredTransactionListState by viewModel.filteredTransactionListState.collectAsState()
     val timespanState by viewModel.timespanState.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
-    val selectedCategoryId by viewModel.selectedTagId.collectAsState()
+    val selectedCategoryId by viewModel.selectedCategoryId.collectAsState()
+    val isUncategorizedSelected by viewModel.isUncategorizedSelected.collectAsState()
 
     HomeScreen(
         transactionListState = transactionListState,
@@ -110,6 +111,7 @@ fun HomeScreen(component: HomeComponent) {
         timespanState = timespanState,
         uiState = uiState,
         selectedCategoryId = selectedCategoryId,
+        isUncategorizedSelected = isUncategorizedSelected,
         navigateToDetails = component::navigateToDetails,
         onTimespanSelected = { viewModel.handleEvent(TransactionsEvent.SelectTimespan(it)) },
         onRefresh = { viewModel.handleEvent(event = TransactionsEvent.Refresh) },
@@ -128,6 +130,7 @@ fun HomeScreen(
     timespanState: TimespanState,
     uiState: UiState,
     selectedCategoryId: String?,
+    isUncategorizedSelected: Boolean,
     navigateToDetails: (ModelTransaction) -> Unit,
     onTimespanSelected: (TimespanSelection) -> Unit,
     onRefresh: () -> Unit,
@@ -244,6 +247,7 @@ fun HomeScreen(
                             selectedTimespan = timespanState.selectedTimespan,
                             onCategoryClick = onCategoryClick,
                             selectedCategoryId = selectedCategoryId,
+                            isUncategorizedSelected = isUncategorizedSelected,
                         )
                     }
                 }

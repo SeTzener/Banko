@@ -351,12 +351,12 @@ class HomeScreenViewModelTest {
 
         vm.handleEvent(TransactionsEvent.SelectTag("tag-1"))
         advanceUntilIdle()
-        assertEquals("tag-1", vm.state.value.selectedTagId)
+        assertEquals(TagFilter.ById("tag-1"), vm.state.value.tagFilter)
 
         vm.handleEvent(TransactionsEvent.SelectTag("tag-1"))
         advanceUntilIdle()
 
-        assertNull(vm.state.value.selectedTagId)
+        assertEquals(TagFilter.None, vm.state.value.tagFilter)
     }
 
     @Test
@@ -372,7 +372,7 @@ class HomeScreenViewModelTest {
         vm.handleEvent(TransactionsEvent.SelectTag("tag-2"))
         advanceUntilIdle()
 
-        assertEquals("tag-2", vm.state.value.selectedTagId)
+        assertEquals(TagFilter.ById("tag-2"), vm.state.value.tagFilter)
     }
 
     @Test
@@ -385,7 +385,7 @@ class HomeScreenViewModelTest {
         vm.handleEvent(TransactionsEvent.SelectTag(null))
         advanceUntilIdle()
 
-        assertEquals("uncategorized", vm.state.value.selectedTagId)
+        assertEquals(TagFilter.Uncategorized, vm.state.value.tagFilter)
     }
 
     @Test
@@ -397,16 +397,16 @@ class HomeScreenViewModelTest {
 
         vm.handleEvent(TransactionsEvent.SelectTag(null))
         advanceUntilIdle()
-        assertEquals("uncategorized", vm.state.value.selectedTagId)
+        assertEquals(TagFilter.Uncategorized, vm.state.value.tagFilter)
 
         vm.handleEvent(TransactionsEvent.SelectTag(null))
         advanceUntilIdle()
 
-        assertNull(vm.state.value.selectedTagId)
+        assertEquals(TagFilter.None, vm.state.value.tagFilter)
     }
 
     @Test
-    fun `changing month timespan resets selectedTagId`() = runTest(testDispatcher) {
+    fun `changing month timespan resets tagFilter`() = runTest(testDispatcher) {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
 
         val vm = HomeScreenViewModel(repository)
@@ -414,16 +414,16 @@ class HomeScreenViewModelTest {
 
         vm.handleEvent(TransactionsEvent.SelectTag("tag-1"))
         advanceUntilIdle()
-        assertEquals("tag-1", vm.state.value.selectedTagId)
+        assertEquals(TagFilter.ById("tag-1"), vm.state.value.tagFilter)
 
         vm.handleEvent(TransactionsEvent.SelectTimespan(TimespanSelection.Month(YearMonth(2024, 6))))
         advanceUntilIdle()
 
-        assertNull(vm.state.value.selectedTagId)
+        assertEquals(TagFilter.None, vm.state.value.tagFilter)
     }
 
     @Test
-    fun `changing year timespan resets selectedTagId`() = runTest(testDispatcher) {
+    fun `changing year timespan resets tagFilter`() = runTest(testDispatcher) {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
 
         val vm = HomeScreenViewModel(repository)
@@ -431,12 +431,12 @@ class HomeScreenViewModelTest {
 
         vm.handleEvent(TransactionsEvent.SelectTag("tag-1"))
         advanceUntilIdle()
-        assertEquals("tag-1", vm.state.value.selectedTagId)
+        assertEquals(TagFilter.ById("tag-1"), vm.state.value.tagFilter)
 
         vm.handleEvent(TransactionsEvent.SelectTimespan(TimespanSelection.Year(2025)))
         advanceUntilIdle()
 
-        assertNull(vm.state.value.selectedTagId)
+        assertEquals(TagFilter.None, vm.state.value.tagFilter)
     }
 
     @Test

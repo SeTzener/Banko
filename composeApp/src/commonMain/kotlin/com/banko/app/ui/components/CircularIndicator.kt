@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import banko.composeapp.generated.resources.Res
+import banko.composeapp.generated.resources.expense_tag_Other
 import banko.composeapp.generated.resources.expense_tag_uncategorized
 import banko.composeapp.generated.resources.monthly_earnings
 import banko.composeapp.generated.resources.monthly_spendings
@@ -67,6 +68,7 @@ fun CircularIndicator(
     smallTextFontSize: TextUnit = MaterialTheme.typography.bodyMedium.fontSize,
     onCategoryClick: ((String?) -> Unit)? = null,
     selectedCategoryId: String? = null,
+    isUncategorizedSelected: Boolean = false,
 ) {
     val (transactionsInRange, isYearView) = when (selectedTimespan) {
         is TimespanSelection.Month -> {
@@ -92,10 +94,11 @@ fun CircularIndicator(
     val totalEarnings = transactionsInRange.filter {
         it.expenseTag?.isEarning == true
     }.sumOf { it.amount }.toInt()
+    val otherLabel = stringResource(Res.string.expense_tag_Other)
     val categories = remember(transactions, selectedTimespan) {
         when (selectedTimespan) {
-            is TimespanSelection.Month -> sortCategories(transactions, month = Month(selectedTimespan.ym.month))
-            is TimespanSelection.Year -> sortCategories(transactions, year = selectedTimespan.year)
+            is TimespanSelection.Month -> sortCategories(transactions, month = Month(selectedTimespan.ym.month), otherLabel = otherLabel)
+            is TimespanSelection.Year -> sortCategories(transactions, year = selectedTimespan.year, otherLabel = otherLabel)
         }
     }
     val totalAmount = categories.sumOf { it.amount }.toFloat()
@@ -187,6 +190,7 @@ fun CircularIndicator(
             categories = categories,
             onCategoryClick = onCategoryClick,
             selectedCategoryId = selectedCategoryId,
+            isUncategorizedSelected = isUncategorizedSelected,
         )
     }
 }
@@ -325,6 +329,7 @@ private fun CategoryGrid(
     itemsPerRow: Int = 5,
     onCategoryClick: ((String?) -> Unit)? = null,
     selectedCategoryId: String? = null,
+    isUncategorizedSelected: Boolean = false,
 ) {
     Column(
         modifier = Modifier
@@ -340,11 +345,8 @@ private fun CategoryGrid(
             ) {
                 rowCategories.forEach { category ->
                     val isOther = category.id == null
-                    val isSelected = if (isOther) {
-                        selectedCategoryId == stringResource(Res.string.expense_tag_uncategorized)
-                    } else {
-                        category.id == selectedCategoryId
-                    }
+                    val isSelected = if (isOther) isUncategorizedSelected
+                    else category.id == selectedCategoryId
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier
@@ -395,7 +397,7 @@ private fun CategoryGrid(
     }
 }
 
-private fun sortCategories(transactions: List<ModelTransaction>, month: kotlinx.datetime.Month): List<Category> {
+private fun sortCategories(transactions: List<ModelTransaction>, month: kotlinx.datetime.Month, otherLabel: String): List<Category> {
     val result =
         transactions.filter { it.bookingDate.month == month && it.expenseTag?.isEarning != true }
     return result.groupBy { it.expenseTag }.mapNotNull {
@@ -413,7 +415,7 @@ private fun sortCategories(transactions: List<ModelTransaction>, month: kotlinx.
         } else {
             Category(
                 id = null,
-                name = "Other",
+                name = otherLabel,
                 amount = roundedAmount,
                 color = Color.Gray
             )
@@ -421,7 +423,7 @@ private fun sortCategories(transactions: List<ModelTransaction>, month: kotlinx.
     }
 }
 
-private fun sortCategories(transactions: List<ModelTransaction>, year: Int): List<Category> {
+private fun sortCategories(transactions: List<ModelTransaction>, year: Int, otherLabel: String): List<Category> {
     val result =
         transactions.filter { it.bookingDate.year == year && it.expenseTag?.isEarning != true }
     return result.groupBy { it.expenseTag }.mapNotNull {
@@ -439,7 +441,7 @@ private fun sortCategories(transactions: List<ModelTransaction>, year: Int): Lis
         } else {
             Category(
                 id = null,
-                name = "Other",
+                name = otherLabel,
                 amount = roundedAmount,
                 color = Color.Gray
             )

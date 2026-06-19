@@ -7,6 +7,12 @@ import com.banko.app.utils.getLastDayOfMonth
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 
+sealed interface TagFilter {
+    data object None : TagFilter
+    data object Uncategorized : TagFilter
+    data class ById(val id: String) : TagFilter
+}
+
 data class YearMonth(val year: Int, val month: Int)
 
 sealed class TimespanSelection {
@@ -56,7 +62,7 @@ data class HomeScreenState(
     val isYearView: Boolean = false,
     val isSyncing: Boolean = false,
     val isLoadingMore: Boolean = false,
-    val selectedTagId: String? = null,
+    val tagFilter: TagFilter = TagFilter.None,
 )
 
 sealed class TransactionsEvent {
