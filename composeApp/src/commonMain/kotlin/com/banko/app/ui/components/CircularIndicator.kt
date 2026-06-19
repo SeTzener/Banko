@@ -46,6 +46,7 @@ import com.banko.app.ui.screens.home.TimespanSelection
 import com.banko.app.ui.theme.Grey_Nevada
 import kotlinx.datetime.Month
 import org.jetbrains.compose.resources.stringResource
+import kotlin.math.abs
 import kotlin.math.roundToLong
 
 @Composable
@@ -90,7 +91,7 @@ fun CircularIndicator(
             is TimespanSelection.Year -> sortCategories(transactions, year = selectedTimespan.year)
         }
     }
-    val totalAmount = categories.sumOf { it.amount.toInt() }.toFloat()
+    val totalAmount = categories.sumOf { it.amount }.toFloat()
     var animatedEarningsValue by remember { mutableIntStateOf(0) }
     var animatedSpendingsValue by remember { mutableIntStateOf(0) }
 
@@ -113,12 +114,22 @@ fun CircularIndicator(
         label = ""
     )
 
-    val animatedSweepAngles = categories.mapIndexed { index, category ->
-        animateFloatAsState(
-            targetValue = (category.amount.toInt() / totalAmount) * 240f,
-            animationSpec = tween(1000),
-            label = ""
-        ).value
+    val animatedSweepAngles = if (totalAmount == 0f) {
+        categories.map { 0f }
+    } else {
+        val rawAngles = categories.map { category ->
+            animateFloatAsState(
+                targetValue = (category.amount.toFloat() / totalAmount) * 240f,
+                animationSpec = tween(1000),
+                label = ""
+            ).value
+        }
+        rawAngles.toMutableList().also { angles ->
+            if (angles.isNotEmpty()) {
+                val sum = angles.sum()
+                angles[angles.lastIndex] += 240f - sum
+            }
+        }
     }
 
     val spendingsLabel = if (isYearView) stringResource(Res.string.yearly_spendings) else stringResource(Res.string.monthly_spendings)
@@ -306,10 +317,11 @@ private fun CategoryGrid(categories: List<Category>, itemsPerRow: Int = 5) {
 
 private fun sortCategories(transactions: List<ModelTransaction>, month: kotlinx.datetime.Month): List<Category> {
     val result =
-        transactions.filter { it.expenseTag != null && it.bookingDate.month == month && it.expenseTag.name != "Salary" }
-    return result.groupBy { it.expenseTag }.map {
+        transactions.filter { it.expenseTag != null && it.bookingDate.month == month && it.expenseTag.isEarning != true }
+    return result.groupBy { it.expenseTag }.mapNotNull {
         val sum = it.value.sumOf { it.amount }
-        val roundedAmount = (sum * 100).roundToLong() / 100.0
+        if (sum >= 0) return@mapNotNull null
+        val roundedAmount = (abs(sum) * 100).roundToLong() / 100.0
         Category(
             name = it.key!!.name,
             amount = roundedAmount,
@@ -320,10 +332,11 @@ private fun sortCategories(transactions: List<ModelTransaction>, month: kotlinx.
 
 private fun sortCategories(transactions: List<ModelTransaction>, year: Int): List<Category> {
     val result =
-        transactions.filter { it.expenseTag != null && it.bookingDate.year == year && it.expenseTag.name != "Salary" }
-    return result.groupBy { it.expenseTag }.map {
+        transactions.filter { it.expenseTag != null && it.bookingDate.year == year && it.expenseTag.isEarning != true }
+    return result.groupBy { it.expenseTag }.mapNotNull {
         val sum = it.value.sumOf { it.amount }
-        val roundedAmount = (sum * 100).roundToLong() / 100.0
+        if (sum >= 0) return@mapNotNull null
+        val roundedAmount = (abs(sum) * 100).roundToLong() / 100.0
         Category(
             name = it.key!!.name,
             amount = roundedAmount,
