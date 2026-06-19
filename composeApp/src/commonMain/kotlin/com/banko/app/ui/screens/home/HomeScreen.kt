@@ -135,7 +135,7 @@ fun HomeScreen(
     onDeleteTransaction: (String) -> Unit,
     onToggleView: () -> Unit,
     onLoadMore: () -> Unit,
-    onCategoryClick: (String) -> Unit,
+    onCategoryClick: (String?) -> Unit,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     var dragOffset by remember { mutableStateOf(0f) }

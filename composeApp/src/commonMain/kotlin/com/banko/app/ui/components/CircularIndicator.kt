@@ -64,7 +64,7 @@ fun CircularIndicator(
     indicatorStroke: Float = 60f,
     smallTextColor: Color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
     smallTextFontSize: TextUnit = MaterialTheme.typography.bodyMedium.fontSize,
-    onCategoryClick: ((String) -> Unit)? = null,
+    onCategoryClick: ((String?) -> Unit)? = null,
     selectedCategoryId: String? = null,
 ) {
     val (transactionsInRange, isYearView) = when (selectedTimespan) {
@@ -201,7 +201,7 @@ fun DrawScope.foregroundIndicator(
 ) {
     var currentStartAngle = startAngle
     categories.forEachIndexed { index, category ->
-        val isOther = category.id == "uncategorized"
+        val isOther = category.id == null
         val arcTopLeft = Offset(
             (size.width - componentSize.width) / 2f,
             (size.height - componentSize.height) / 2f
@@ -322,7 +322,7 @@ private fun EmbeddedElements(
 private fun CategoryGrid(
     categories: List<Category>,
     itemsPerRow: Int = 5,
-    onCategoryClick: ((String) -> Unit)? = null,
+    onCategoryClick: ((String?) -> Unit)? = null,
     selectedCategoryId: String? = null,
 ) {
     Column(
@@ -339,7 +339,7 @@ private fun CategoryGrid(
             ) {
                 rowCategories.forEach { category ->
                     val isSelected = category.id == selectedCategoryId
-                    val isOther = category.id == "uncategorized"
+                    val isOther = category.id == null
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier
@@ -411,7 +411,7 @@ private fun sortCategories(transactions: List<ModelTransaction>, month: kotlinx.
             )
         } else {
             Category(
-                id = "uncategorized",
+                id = null,
                 name = "Other",
                 amount = roundedAmount,
                 color = Color.Gray
@@ -437,7 +437,7 @@ private fun sortCategories(transactions: List<ModelTransaction>, year: Int): Lis
             )
         } else {
             Category(
-                id = "uncategorized",
+                id = null,
                 name = "Other",
                 amount = roundedAmount,
                 color = Color.Gray

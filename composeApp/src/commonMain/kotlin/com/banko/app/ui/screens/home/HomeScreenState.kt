@@ -66,5 +66,5 @@ sealed class TransactionsEvent {
     data class SelectTimespan(val timespan: TimespanSelection) : TransactionsEvent()
     data object ToggleTimespanView : TransactionsEvent()
     data object LoadMore : TransactionsEvent()
-    data class SelectTag(val tagId: String) : TransactionsEvent()
+    data class SelectTag(val tagId: String?) : TransactionsEvent()
 }

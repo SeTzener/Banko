@@ -217,12 +217,13 @@ class HomeScreenViewModel(
         }
     }
 
-    private fun handleSelectTag(tagId: String) {
+    private fun handleSelectTag(tagId: String?) {
+        val normalizedTagId = tagId ?: "uncategorized"
         _state.update {
-            if (it.selectedTagId == tagId) {
+            if (it.selectedTagId == normalizedTagId) {
                 it.copy(selectedTagId = null)
             } else {
-                it.copy(selectedTagId = tagId)
+                it.copy(selectedTagId = normalizedTagId)
             }
         }
     }
