@@ -4,6 +4,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -60,6 +63,8 @@ fun CircularIndicator(
     indicatorStroke: Float = 60f,
     smallTextColor: Color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
     smallTextFontSize: TextUnit = MaterialTheme.typography.bodyMedium.fontSize,
+    onCategoryClick: ((String) -> Unit)? = null,
+    selectedCategoryId: String? = null,
 ) {
     val (transactionsInRange, isYearView) = when (selectedTimespan) {
         is TimespanSelection.Month -> {
@@ -172,7 +177,11 @@ fun CircularIndicator(
                 smallTextFontSize = smallTextFontSize,
             )
         }
-        CategoryGrid(categories = categories)
+        CategoryGrid(
+            categories = categories,
+            onCategoryClick = onCategoryClick,
+            selectedCategoryId = selectedCategoryId,
+        )
     }
 }
 
@@ -271,7 +280,12 @@ private fun EmbeddedElements(
 }
 
 @Composable
-private fun CategoryGrid(categories: List<Category>, itemsPerRow: Int = 5) {
+private fun CategoryGrid(
+    categories: List<Category>,
+    itemsPerRow: Int = 5,
+    onCategoryClick: ((String) -> Unit)? = null,
+    selectedCategoryId: String? = null,
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth().offset(y = (-30).dp),
@@ -285,9 +299,17 @@ private fun CategoryGrid(categories: List<Category>, itemsPerRow: Int = 5) {
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 rowCategories.forEach { category ->
+                    val isSelected = category.id == selectedCategoryId
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(horizontal = 8.dp)
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .then(
+                                if (isSelected) Modifier.background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+                                else Modifier
+                            )
+                            .clickable { onCategoryClick?.invoke(category.id) }
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
                         Box(
                             modifier = Modifier
@@ -323,6 +345,7 @@ private fun sortCategories(transactions: List<ModelTransaction>, month: kotlinx.
         if (sum >= 0) return@mapNotNull null
         val roundedAmount = (abs(sum) * 100).roundToLong() / 100.0
         Category(
+            id = it.key!!.id,
             name = it.key!!.name,
             amount = roundedAmount,
             color = it.key!!.color
@@ -338,6 +361,7 @@ private fun sortCategories(transactions: List<ModelTransaction>, year: Int): Lis
         if (sum >= 0) return@mapNotNull null
         val roundedAmount = (abs(sum) * 100).roundToLong() / 100.0
         Category(
+            id = it.key!!.id,
             name = it.key!!.name,
             amount = roundedAmount,
             color = it.key!!.color
