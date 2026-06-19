@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import banko.composeapp.generated.resources.Res
+import banko.composeapp.generated.resources.expense_tag_uncategorized
 import banko.composeapp.generated.resources.monthly_earnings
 import banko.composeapp.generated.resources.monthly_spendings
 import banko.composeapp.generated.resources.yearly_earnings
@@ -338,19 +339,19 @@ private fun CategoryGrid(
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 rowCategories.forEach { category ->
-                    val isSelected = category.id == selectedCategoryId
                     val isOther = category.id == null
+                    val isSelected = if (isOther) {
+                        selectedCategoryId == stringResource(Res.string.expense_tag_uncategorized)
+                    } else {
+                        category.id == selectedCategoryId
+                    }
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
                             .then(
                                 if (isSelected) {
-                                    val bgColor = if (isOther)
-                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)
-                                    else
-                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                                    Modifier.background(bgColor)
+                                    Modifier.background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
                                 } else Modifier
                             )
                             .clickable { onCategoryClick?.invoke(category.id) }
