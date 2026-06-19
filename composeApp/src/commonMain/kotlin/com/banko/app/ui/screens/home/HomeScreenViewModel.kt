@@ -42,10 +42,10 @@ class HomeScreenViewModel(
 
     val filteredTransactionListState: StateFlow<TransactionListState> = _state.map { s ->
         TransactionListState(
-            transactions = if (s.selectedTagId != null) {
-                s.transactions.filter { it.expenseTag?.id == s.selectedTagId }
-            } else {
-                s.transactions
+            transactions = when (s.selectedTagId) {
+                null -> s.transactions
+                "uncategorized" -> s.transactions.filter { it.expenseTag == null }
+                else -> s.transactions.filter { it.expenseTag?.id == s.selectedTagId }
             },
             isLoading = s.isLoading,
             isRefreshing = s.isRefreshing,

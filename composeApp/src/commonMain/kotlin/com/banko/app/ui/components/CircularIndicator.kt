@@ -4,6 +4,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Arrangement
@@ -139,6 +140,8 @@ fun CircularIndicator(
 
     val spendingsLabel = if (isYearView) stringResource(Res.string.yearly_spendings) else stringResource(Res.string.monthly_spendings)
     val earningsLabel = if (isYearView) stringResource(Res.string.yearly_earnings) else stringResource(Res.string.monthly_earnings)
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val surfaceColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
 
     Column(
         verticalArrangement = Arrangement.Center,
@@ -160,6 +163,8 @@ fun CircularIndicator(
                         startAngle = 150f,
                         componentSize = componentSize,
                         indicatorStroke = indicatorStroke,
+                        primaryColor = primaryColor,
+                        surfaceColor = surfaceColor,
                     )
                 },
             verticalArrangement = Arrangement.Center,
@@ -191,24 +196,58 @@ fun DrawScope.foregroundIndicator(
     componentSize: Size,
     indicatorStroke: Float,
     startAngle: Float,
+    primaryColor: Color,
+    surfaceColor: Color,
 ) {
     var currentStartAngle = startAngle
     categories.forEachIndexed { index, category ->
-        drawArc(
-            size = componentSize,
-            color = category.color,
-            startAngle = currentStartAngle,
-            sweepAngle = animatedSweepAngles[index],
-            useCenter = false,
-            style = Stroke(
-                width = indicatorStroke,
-                cap = StrokeCap.Square
-            ),
-            topLeft = Offset(
-                (size.width - componentSize.width) / 2f,
-                (size.height - componentSize.height) / 2f
-            )
+        val isOther = category.id == "uncategorized"
+        val arcTopLeft = Offset(
+            (size.width - componentSize.width) / 2f,
+            (size.height - componentSize.height) / 2f
         )
+
+        if (isOther) {
+            drawArc(
+                color = surfaceColor,
+                startAngle = currentStartAngle,
+                sweepAngle = animatedSweepAngles[index],
+                useCenter = false,
+                size = componentSize,
+                style = Stroke(
+                    width = indicatorStroke,
+                    cap = StrokeCap.Square
+                ),
+                topLeft = arcTopLeft
+            )
+
+            drawArc(
+                color = primaryColor,
+                startAngle = currentStartAngle,
+                sweepAngle = animatedSweepAngles[index],
+                useCenter = false,
+                size = componentSize,
+                style = Stroke(
+                    width = indicatorStroke * 0.15f,
+                    cap = StrokeCap.Square
+                ),
+                topLeft = arcTopLeft
+            )
+        } else {
+            drawArc(
+                size = componentSize,
+                color = category.color,
+                startAngle = currentStartAngle,
+                sweepAngle = animatedSweepAngles[index],
+                useCenter = false,
+                style = Stroke(
+                    width = indicatorStroke,
+                    cap = StrokeCap.Square
+                ),
+                topLeft = arcTopLeft
+            )
+        }
+
         currentStartAngle += animatedSweepAngles[index]
     }
 }
@@ -300,25 +339,43 @@ private fun CategoryGrid(
             ) {
                 rowCategories.forEach { category ->
                     val isSelected = category.id == selectedCategoryId
+                    val isOther = category.id == "uncategorized"
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
                             .then(
-                                if (isSelected) Modifier.background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
-                                else Modifier
+                                if (isSelected) {
+                                    val bgColor = if (isOther)
+                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)
+                                    else
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                                    Modifier.background(bgColor)
+                                } else Modifier
                             )
                             .clickable { onCategoryClick?.invoke(category.id) }
                             .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(12.dp)
-                                .background(
-                                    color = category.color,
-                                    shape = MaterialTheme.shapes.small
-                                )
-                        )
+                        if (isOther) {
+                            Box(
+                                modifier = Modifier
+                                    .size(12.dp)
+                                    .border(
+                                        width = 1.dp,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        shape = MaterialTheme.shapes.small
+                                    )
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .size(12.dp)
+                                    .background(
+                                        color = category.color,
+                                        shape = MaterialTheme.shapes.small
+                                    )
+                            )
+                        }
                         Text(
                             modifier = Modifier.padding(top = 4.dp),
                             text = category.amount.toString(),
@@ -339,32 +396,52 @@ private fun CategoryGrid(
 
 private fun sortCategories(transactions: List<ModelTransaction>, month: kotlinx.datetime.Month): List<Category> {
     val result =
-        transactions.filter { it.expenseTag != null && it.bookingDate.month == month && it.expenseTag.isEarning != true }
+        transactions.filter { it.bookingDate.month == month && it.expenseTag?.isEarning != true }
     return result.groupBy { it.expenseTag }.mapNotNull {
         val sum = it.value.sumOf { it.amount }
         if (sum >= 0) return@mapNotNull null
         val roundedAmount = (abs(sum) * 100).roundToLong() / 100.0
-        Category(
-            id = it.key!!.id,
-            name = it.key!!.name,
-            amount = roundedAmount,
-            color = it.key!!.color
-        )
+        val tag = it.key
+        if (tag != null) {
+            Category(
+                id = tag.id,
+                name = tag.name,
+                amount = roundedAmount,
+                color = tag.color
+            )
+        } else {
+            Category(
+                id = "uncategorized",
+                name = "Other",
+                amount = roundedAmount,
+                color = Color.Gray
+            )
+        }
     }
 }
 
 private fun sortCategories(transactions: List<ModelTransaction>, year: Int): List<Category> {
     val result =
-        transactions.filter { it.expenseTag != null && it.bookingDate.year == year && it.expenseTag.isEarning != true }
+        transactions.filter { it.bookingDate.year == year && it.expenseTag?.isEarning != true }
     return result.groupBy { it.expenseTag }.mapNotNull {
         val sum = it.value.sumOf { it.amount }
         if (sum >= 0) return@mapNotNull null
         val roundedAmount = (abs(sum) * 100).roundToLong() / 100.0
-        Category(
-            id = it.key!!.id,
-            name = it.key!!.name,
-            amount = roundedAmount,
-            color = it.key!!.color
-        )
+        val tag = it.key
+        if (tag != null) {
+            Category(
+                id = tag.id,
+                name = tag.name,
+                amount = roundedAmount,
+                color = tag.color
+            )
+        } else {
+            Category(
+                id = "uncategorized",
+                name = "Other",
+                amount = roundedAmount,
+                color = Color.Gray
+            )
+        }
     }
 }
