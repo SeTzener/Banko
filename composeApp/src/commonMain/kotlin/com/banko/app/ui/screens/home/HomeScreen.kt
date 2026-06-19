@@ -99,35 +99,46 @@ import kotlin.math.roundToInt
 fun HomeScreen(component: HomeComponent) {
     val viewModel = koinViewModel<HomeScreenViewModel>()
     val transactionListState by viewModel.transactionListState.collectAsState()
+    val filteredTransactionListState by viewModel.filteredTransactionListState.collectAsState()
     val timespanState by viewModel.timespanState.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
+    val selectedCategoryId by viewModel.selectedCategoryId.collectAsState()
+    val isUncategorizedSelected by viewModel.isUncategorizedSelected.collectAsState()
 
     HomeScreen(
         transactionListState = transactionListState,
+        filteredTransactionListState = filteredTransactionListState,
         timespanState = timespanState,
         uiState = uiState,
+        selectedCategoryId = selectedCategoryId,
+        isUncategorizedSelected = isUncategorizedSelected,
         navigateToDetails = component::navigateToDetails,
         onTimespanSelected = { viewModel.handleEvent(TransactionsEvent.SelectTimespan(it)) },
         onRefresh = { viewModel.handleEvent(event = TransactionsEvent.Refresh) },
         clearError = { viewModel.handleEvent(TransactionsEvent.ErrorShown(it)) },
         onDeleteTransaction = { viewModel.handleEvent(TransactionsEvent.DeleteTransaction(it)) },
         onToggleView = { viewModel.handleEvent(TransactionsEvent.ToggleTimespanView) },
-        onLoadMore = { viewModel.handleEvent(TransactionsEvent.LoadMore) }
+        onLoadMore = { viewModel.handleEvent(TransactionsEvent.LoadMore) },
+        onCategoryClick = { viewModel.handleEvent(TransactionsEvent.SelectTag(it)) },
     )
 }
 
 @Composable
 fun HomeScreen(
     transactionListState: TransactionListState,
+    filteredTransactionListState: TransactionListState,
     timespanState: TimespanState,
     uiState: UiState,
+    selectedCategoryId: String?,
+    isUncategorizedSelected: Boolean,
     navigateToDetails: (ModelTransaction) -> Unit,
     onTimespanSelected: (TimespanSelection) -> Unit,
     onRefresh: () -> Unit,
     clearError: (String) -> Unit,
     onDeleteTransaction: (String) -> Unit,
     onToggleView: () -> Unit,
-    onLoadMore: () -> Unit
+    onLoadMore: () -> Unit,
+    onCategoryClick: (String?) -> Unit,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     var dragOffset by remember { mutableStateOf(0f) }
@@ -233,7 +244,10 @@ fun HomeScreen(
                         CircularIndicator(
                             currency = stringResource(Res.string.currency_nok),
                             transactions = transactionListState.transactions,
-                            selectedTimespan = timespanState.selectedTimespan
+                            selectedTimespan = timespanState.selectedTimespan,
+                            onCategoryClick = onCategoryClick,
+                            selectedCategoryId = selectedCategoryId,
+                            isUncategorizedSelected = isUncategorizedSelected,
                         )
                     }
                 }
@@ -250,9 +264,9 @@ fun HomeScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 LazyTransactionList(
-                    isLoading = transactionListState.isLoading,
-                    isRefreshing = transactionListState.isRefreshing,
-                    transactions = transactionListState.transactions,
+                    isLoading = filteredTransactionListState.isLoading,
+                    isRefreshing = filteredTransactionListState.isRefreshing,
+                    transactions = filteredTransactionListState.transactions,
                     navigateToDetails = navigateToDetails,
                     onRefresh = onRefresh,
                     onDeleteTransaction = onDeleteTransaction

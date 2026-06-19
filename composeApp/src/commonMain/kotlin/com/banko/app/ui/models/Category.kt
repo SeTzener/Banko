@@ -13,6 +13,7 @@ import com.banko.app.ui.theme.SteelBlue
 import com.banko.app.ui.theme.Teal
 
 data class Category(
+    val id: String?,
     val name: String,
     val amount: Double,
     val color: Color

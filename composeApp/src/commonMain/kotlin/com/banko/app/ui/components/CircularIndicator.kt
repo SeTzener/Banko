@@ -4,6 +4,9 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -35,6 +39,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import banko.composeapp.generated.resources.Res
+import banko.composeapp.generated.resources.expense_tag_Other
+import banko.composeapp.generated.resources.expense_tag_uncategorized
 import banko.composeapp.generated.resources.monthly_earnings
 import banko.composeapp.generated.resources.monthly_spendings
 import banko.composeapp.generated.resources.yearly_earnings
@@ -60,6 +66,9 @@ fun CircularIndicator(
     indicatorStroke: Float = 60f,
     smallTextColor: Color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
     smallTextFontSize: TextUnit = MaterialTheme.typography.bodyMedium.fontSize,
+    onCategoryClick: ((String?) -> Unit)? = null,
+    selectedCategoryId: String? = null,
+    isUncategorizedSelected: Boolean = false,
 ) {
     val (transactionsInRange, isYearView) = when (selectedTimespan) {
         is TimespanSelection.Month -> {
@@ -85,10 +94,11 @@ fun CircularIndicator(
     val totalEarnings = transactionsInRange.filter {
         it.expenseTag?.isEarning == true
     }.sumOf { it.amount }.toInt()
+    val otherLabel = stringResource(Res.string.expense_tag_Other)
     val categories = remember(transactions, selectedTimespan) {
         when (selectedTimespan) {
-            is TimespanSelection.Month -> sortCategories(transactions, month = Month(selectedTimespan.ym.month))
-            is TimespanSelection.Year -> sortCategories(transactions, year = selectedTimespan.year)
+            is TimespanSelection.Month -> sortCategories(transactions, month = Month(selectedTimespan.ym.month), otherLabel = otherLabel)
+            is TimespanSelection.Year -> sortCategories(transactions, year = selectedTimespan.year, otherLabel = otherLabel)
         }
     }
     val totalAmount = categories.sumOf { it.amount }.toFloat()
@@ -134,6 +144,8 @@ fun CircularIndicator(
 
     val spendingsLabel = if (isYearView) stringResource(Res.string.yearly_spendings) else stringResource(Res.string.monthly_spendings)
     val earningsLabel = if (isYearView) stringResource(Res.string.yearly_earnings) else stringResource(Res.string.monthly_earnings)
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val surfaceColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
 
     Column(
         verticalArrangement = Arrangement.Center,
@@ -155,6 +167,8 @@ fun CircularIndicator(
                         startAngle = 150f,
                         componentSize = componentSize,
                         indicatorStroke = indicatorStroke,
+                        primaryColor = primaryColor,
+                        surfaceColor = surfaceColor,
                     )
                 },
             verticalArrangement = Arrangement.Center,
@@ -172,7 +186,12 @@ fun CircularIndicator(
                 smallTextFontSize = smallTextFontSize,
             )
         }
-        CategoryGrid(categories = categories)
+        CategoryGrid(
+            categories = categories,
+            onCategoryClick = onCategoryClick,
+            selectedCategoryId = selectedCategoryId,
+            isUncategorizedSelected = isUncategorizedSelected,
+        )
     }
 }
 
@@ -182,24 +201,58 @@ fun DrawScope.foregroundIndicator(
     componentSize: Size,
     indicatorStroke: Float,
     startAngle: Float,
+    primaryColor: Color,
+    surfaceColor: Color,
 ) {
     var currentStartAngle = startAngle
     categories.forEachIndexed { index, category ->
-        drawArc(
-            size = componentSize,
-            color = category.color,
-            startAngle = currentStartAngle,
-            sweepAngle = animatedSweepAngles[index],
-            useCenter = false,
-            style = Stroke(
-                width = indicatorStroke,
-                cap = StrokeCap.Square
-            ),
-            topLeft = Offset(
-                (size.width - componentSize.width) / 2f,
-                (size.height - componentSize.height) / 2f
-            )
+        val isOther = category.id == null
+        val arcTopLeft = Offset(
+            (size.width - componentSize.width) / 2f,
+            (size.height - componentSize.height) / 2f
         )
+
+        if (isOther) {
+            drawArc(
+                color = surfaceColor,
+                startAngle = currentStartAngle,
+                sweepAngle = animatedSweepAngles[index],
+                useCenter = false,
+                size = componentSize,
+                style = Stroke(
+                    width = indicatorStroke,
+                    cap = StrokeCap.Square
+                ),
+                topLeft = arcTopLeft
+            )
+
+            drawArc(
+                color = primaryColor,
+                startAngle = currentStartAngle,
+                sweepAngle = animatedSweepAngles[index],
+                useCenter = false,
+                size = componentSize,
+                style = Stroke(
+                    width = indicatorStroke * 0.15f,
+                    cap = StrokeCap.Square
+                ),
+                topLeft = arcTopLeft
+            )
+        } else {
+            drawArc(
+                size = componentSize,
+                color = category.color,
+                startAngle = currentStartAngle,
+                sweepAngle = animatedSweepAngles[index],
+                useCenter = false,
+                style = Stroke(
+                    width = indicatorStroke,
+                    cap = StrokeCap.Square
+                ),
+                topLeft = arcTopLeft
+            )
+        }
+
         currentStartAngle += animatedSweepAngles[index]
     }
 }
@@ -271,7 +324,13 @@ private fun EmbeddedElements(
 }
 
 @Composable
-private fun CategoryGrid(categories: List<Category>, itemsPerRow: Int = 5) {
+private fun CategoryGrid(
+    categories: List<Category>,
+    itemsPerRow: Int = 5,
+    onCategoryClick: ((String?) -> Unit)? = null,
+    selectedCategoryId: String? = null,
+    isUncategorizedSelected: Boolean = false,
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth().offset(y = (-30).dp),
@@ -285,18 +344,41 @@ private fun CategoryGrid(categories: List<Category>, itemsPerRow: Int = 5) {
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 rowCategories.forEach { category ->
+                    val isOther = category.id == null
+                    val isSelected = if (isOther) isUncategorizedSelected
+                    else category.id == selectedCategoryId
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(horizontal = 8.dp)
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .then(
+                                if (isSelected) {
+                                    Modifier.background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+                                } else Modifier
+                            )
+                            .clickable { onCategoryClick?.invoke(category.id) }
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(12.dp)
-                                .background(
-                                    color = category.color,
-                                    shape = MaterialTheme.shapes.small
-                                )
-                        )
+                        if (isOther) {
+                            Box(
+                                modifier = Modifier
+                                    .size(12.dp)
+                                    .border(
+                                        width = 1.dp,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        shape = MaterialTheme.shapes.small
+                                    )
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .size(12.dp)
+                                    .background(
+                                        color = category.color,
+                                        shape = MaterialTheme.shapes.small
+                                    )
+                            )
+                        }
                         Text(
                             modifier = Modifier.padding(top = 4.dp),
                             text = category.amount.toString(),
@@ -315,32 +397,54 @@ private fun CategoryGrid(categories: List<Category>, itemsPerRow: Int = 5) {
     }
 }
 
-private fun sortCategories(transactions: List<ModelTransaction>, month: kotlinx.datetime.Month): List<Category> {
+private fun sortCategories(transactions: List<ModelTransaction>, month: kotlinx.datetime.Month, otherLabel: String): List<Category> {
     val result =
-        transactions.filter { it.expenseTag != null && it.bookingDate.month == month && it.expenseTag.isEarning != true }
+        transactions.filter { it.bookingDate.month == month && it.expenseTag?.isEarning != true }
     return result.groupBy { it.expenseTag }.mapNotNull {
         val sum = it.value.sumOf { it.amount }
         if (sum >= 0) return@mapNotNull null
         val roundedAmount = (abs(sum) * 100).roundToLong() / 100.0
-        Category(
-            name = it.key!!.name,
-            amount = roundedAmount,
-            color = it.key!!.color
-        )
+        val tag = it.key
+        if (tag != null) {
+            Category(
+                id = tag.id,
+                name = tag.name,
+                amount = roundedAmount,
+                color = tag.color
+            )
+        } else {
+            Category(
+                id = null,
+                name = otherLabel,
+                amount = roundedAmount,
+                color = Color.Gray
+            )
+        }
     }
 }
 
-private fun sortCategories(transactions: List<ModelTransaction>, year: Int): List<Category> {
+private fun sortCategories(transactions: List<ModelTransaction>, year: Int, otherLabel: String): List<Category> {
     val result =
-        transactions.filter { it.expenseTag != null && it.bookingDate.year == year && it.expenseTag.isEarning != true }
+        transactions.filter { it.bookingDate.year == year && it.expenseTag?.isEarning != true }
     return result.groupBy { it.expenseTag }.mapNotNull {
         val sum = it.value.sumOf { it.amount }
         if (sum >= 0) return@mapNotNull null
         val roundedAmount = (abs(sum) * 100).roundToLong() / 100.0
-        Category(
-            name = it.key!!.name,
-            amount = roundedAmount,
-            color = it.key!!.color
-        )
+        val tag = it.key
+        if (tag != null) {
+            Category(
+                id = tag.id,
+                name = tag.name,
+                amount = roundedAmount,
+                color = tag.color
+            )
+        } else {
+            Category(
+                id = null,
+                name = otherLabel,
+                amount = roundedAmount,
+                color = Color.Gray
+            )
+        }
     }
 }
