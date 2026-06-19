@@ -40,6 +40,19 @@ class HomeScreenViewModel(
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, TransactionListState())
 
+    val filteredTransactionListState: StateFlow<TransactionListState> = _state.map { s ->
+        TransactionListState(
+            transactions = if (s.selectedTagId != null) {
+                s.transactions.filter { it.expenseTag?.id == s.selectedTagId }
+            } else {
+                s.transactions
+            },
+            isLoading = s.isLoading,
+            isRefreshing = s.isRefreshing,
+            isLoadingMore = s.isLoadingMore,
+        )
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, TransactionListState())
+
     val timespanState: StateFlow<TimespanState> = _state.map { s ->
         TimespanState(
             selectedTimespan = s.selectedTimespan,
@@ -56,6 +69,9 @@ class HomeScreenViewModel(
             isSyncing = s.isSyncing,
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, UiState())
+
+    val selectedTagId: StateFlow<String?> = _state.map { it.selectedTagId }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     private var transactionsJob: Job? = null
     private var syncJob: Job? = null
@@ -80,6 +96,7 @@ class HomeScreenViewModel(
             is TransactionsEvent.SelectTimespan -> handleSelectTimespan(event.timespan)
             is TransactionsEvent.ToggleTimespanView -> handleToggleView()
             is TransactionsEvent.LoadMore -> handleLoadMore()
+            is TransactionsEvent.SelectTag -> handleSelectTag(event.tagId)
         }
     }
 
@@ -200,6 +217,16 @@ class HomeScreenViewModel(
         }
     }
 
+    private fun handleSelectTag(tagId: String) {
+        _state.update {
+            if (it.selectedTagId == tagId) {
+                it.copy(selectedTagId = null)
+            } else {
+                it.copy(selectedTagId = tagId)
+            }
+        }
+    }
+
     private fun handleSelectTimespan(timespan: TimespanSelection) {
         when (timespan) {
             is TimespanSelection.Month -> {
@@ -208,7 +235,8 @@ class HomeScreenViewModel(
                     it.copy(
                         selectedTimespan = timespan,
                         indicatorDateState = LocalDateTime(timespan.ym.year, timespan.ym.month, 1, 0, 0),
-                        isYearView = false
+                        isYearView = false,
+                        selectedTagId = null,
                     )
                 }
             }
@@ -217,7 +245,8 @@ class HomeScreenViewModel(
                     it.copy(
                         selectedTimespan = timespan,
                         indicatorDateState = LocalDateTime(timespan.year, 1, 1, 0, 0),
-                        isYearView = true
+                        isYearView = true,
+                        selectedTagId = null,
                     )
                 }
             }
