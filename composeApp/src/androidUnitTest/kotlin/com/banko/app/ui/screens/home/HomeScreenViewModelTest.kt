@@ -1,5 +1,6 @@
 package com.banko.app.ui.screens.home
 
+import com.banko.app.domain.model.ExpenseTag as DomainExpenseTag
 import com.banko.app.domain.model.Transaction as DomainTransaction
 import com.banko.app.data.repository.TransactionRepository
 import io.mockk.coEvery
@@ -339,5 +340,200 @@ class HomeScreenViewModelTest {
         assertEquals(combined.transactions, vm.transactionListState.value.transactions)
         assertEquals(combined.selectedTimespan, vm.timespanState.value.selectedTimespan)
         assertEquals(combined.error, vm.uiState.value.error)
+    }
+
+    @Test
+    fun `SelectTag with same tag deselects`() = runTest(testDispatcher) {
+        coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
+
+        val vm = HomeScreenViewModel(repository)
+        advanceUntilIdle()
+
+        vm.handleEvent(TransactionsEvent.SelectTag("tag-1"))
+        advanceUntilIdle()
+        assertEquals("tag-1", vm.state.value.selectedTagId)
+
+        vm.handleEvent(TransactionsEvent.SelectTag("tag-1"))
+        advanceUntilIdle()
+
+        assertNull(vm.state.value.selectedTagId)
+    }
+
+    @Test
+    fun `SelectTag with different tag replaces selection`() = runTest(testDispatcher) {
+        coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
+
+        val vm = HomeScreenViewModel(repository)
+        advanceUntilIdle()
+
+        vm.handleEvent(TransactionsEvent.SelectTag("tag-1"))
+        advanceUntilIdle()
+
+        vm.handleEvent(TransactionsEvent.SelectTag("tag-2"))
+        advanceUntilIdle()
+
+        assertEquals("tag-2", vm.state.value.selectedTagId)
+    }
+
+    @Test
+    fun `SelectTag with null selects uncategorized`() = runTest(testDispatcher) {
+        coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
+
+        val vm = HomeScreenViewModel(repository)
+        advanceUntilIdle()
+
+        vm.handleEvent(TransactionsEvent.SelectTag(null))
+        advanceUntilIdle()
+
+        assertEquals("uncategorized", vm.state.value.selectedTagId)
+    }
+
+    @Test
+    fun `toggle null tag deselects uncategorized`() = runTest(testDispatcher) {
+        coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
+
+        val vm = HomeScreenViewModel(repository)
+        advanceUntilIdle()
+
+        vm.handleEvent(TransactionsEvent.SelectTag(null))
+        advanceUntilIdle()
+        assertEquals("uncategorized", vm.state.value.selectedTagId)
+
+        vm.handleEvent(TransactionsEvent.SelectTag(null))
+        advanceUntilIdle()
+
+        assertNull(vm.state.value.selectedTagId)
+    }
+
+    @Test
+    fun `changing month timespan resets selectedTagId`() = runTest(testDispatcher) {
+        coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
+
+        val vm = HomeScreenViewModel(repository)
+        advanceUntilIdle()
+
+        vm.handleEvent(TransactionsEvent.SelectTag("tag-1"))
+        advanceUntilIdle()
+        assertEquals("tag-1", vm.state.value.selectedTagId)
+
+        vm.handleEvent(TransactionsEvent.SelectTimespan(TimespanSelection.Month(YearMonth(2024, 6))))
+        advanceUntilIdle()
+
+        assertNull(vm.state.value.selectedTagId)
+    }
+
+    @Test
+    fun `changing year timespan resets selectedTagId`() = runTest(testDispatcher) {
+        coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
+
+        val vm = HomeScreenViewModel(repository)
+        advanceUntilIdle()
+
+        vm.handleEvent(TransactionsEvent.SelectTag("tag-1"))
+        advanceUntilIdle()
+        assertEquals("tag-1", vm.state.value.selectedTagId)
+
+        vm.handleEvent(TransactionsEvent.SelectTimespan(TimespanSelection.Year(2025)))
+        advanceUntilIdle()
+
+        assertNull(vm.state.value.selectedTagId)
+    }
+
+    @Test
+    fun `filteredTransactionListState shows all when no tag selected`() = runTest(testDispatcher) {
+        val tag1 = DomainExpenseTag(id = "tag-1", name = "Food", color = 0xFF0000FF, isEarning = false, aka = emptyList())
+        val txWithTag = DomainTransaction(
+            id = "tx-1", bookingDate = LocalDateTime.parse("2024-01-15T10:30:00"),
+            valueDate = LocalDateTime.parse("2024-01-15T12:00:00"), amount = 50.0, currency = "EUR",
+            debtorAccount = null, remittanceInformationUnstructured = "Groceries",
+            remittanceInformationUnstructuredArray = emptyList(), bankTransactionCode = "PMNT",
+            internalTransactionId = "int-1", creditorName = null, creditorAccount = null,
+            debtorName = null, remittanceInformationStructuredArray = null, note = null,
+            expenseTag = tag1
+        )
+        val txNoTag = DomainTransaction(
+            id = "tx-2", bookingDate = LocalDateTime.parse("2024-01-16T10:30:00"),
+            valueDate = LocalDateTime.parse("2024-01-16T12:00:00"), amount = 30.0, currency = "EUR",
+            debtorAccount = null, remittanceInformationUnstructured = "Other",
+            remittanceInformationUnstructuredArray = emptyList(), bankTransactionCode = "PMNT",
+            internalTransactionId = "int-2", creditorName = null, creditorAccount = null,
+            debtorName = null, remittanceInformationStructuredArray = null, note = null,
+            expenseTag = null
+        )
+        coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(listOf(txWithTag, txNoTag))
+
+        val vm = HomeScreenViewModel(repository)
+        advanceUntilIdle()
+
+        assertEquals(2, vm.filteredTransactionListState.value.transactions.size)
+    }
+
+    @Test
+    fun `filteredTransactionListState filters by tag id`() = runTest(testDispatcher) {
+        val tag1 = DomainExpenseTag(id = "tag-1", name = "Food", color = 0xFF0000FF, isEarning = false, aka = emptyList())
+        val tag2 = DomainExpenseTag(id = "tag-2", name = "Transport", color = 0xFF00FF00, isEarning = false, aka = emptyList())
+        val txTag1 = DomainTransaction(
+            id = "tx-1", bookingDate = LocalDateTime.parse("2024-01-15T10:30:00"),
+            valueDate = LocalDateTime.parse("2024-01-15T12:00:00"), amount = 50.0, currency = "EUR",
+            debtorAccount = null, remittanceInformationUnstructured = "Groceries",
+            remittanceInformationUnstructuredArray = emptyList(), bankTransactionCode = "PMNT",
+            internalTransactionId = "int-1", creditorName = null, creditorAccount = null,
+            debtorName = null, remittanceInformationStructuredArray = null, note = null,
+            expenseTag = tag1
+        )
+        val txTag2 = DomainTransaction(
+            id = "tx-2", bookingDate = LocalDateTime.parse("2024-01-16T10:30:00"),
+            valueDate = LocalDateTime.parse("2024-01-16T12:00:00"), amount = 30.0, currency = "EUR",
+            debtorAccount = null, remittanceInformationUnstructured = "Bus",
+            remittanceInformationUnstructuredArray = emptyList(), bankTransactionCode = "PMNT",
+            internalTransactionId = "int-2", creditorName = null, creditorAccount = null,
+            debtorName = null, remittanceInformationStructuredArray = null, note = null,
+            expenseTag = tag2
+        )
+        coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(listOf(txTag1, txTag2))
+
+        val vm = HomeScreenViewModel(repository)
+        advanceUntilIdle()
+
+        vm.handleEvent(TransactionsEvent.SelectTag("tag-1"))
+        advanceUntilIdle()
+
+        val filtered = vm.filteredTransactionListState.value
+        assertEquals(1, filtered.transactions.size)
+        assertEquals("tx-1", filtered.transactions.first().id)
+    }
+
+    @Test
+    fun `filteredTransactionListState filters by uncategorized`() = runTest(testDispatcher) {
+        val tag1 = DomainExpenseTag(id = "tag-1", name = "Food", color = 0xFF0000FF, isEarning = false, aka = emptyList())
+        val txWithTag = DomainTransaction(
+            id = "tx-1", bookingDate = LocalDateTime.parse("2024-01-15T10:30:00"),
+            valueDate = LocalDateTime.parse("2024-01-15T12:00:00"), amount = 50.0, currency = "EUR",
+            debtorAccount = null, remittanceInformationUnstructured = "Groceries",
+            remittanceInformationUnstructuredArray = emptyList(), bankTransactionCode = "PMNT",
+            internalTransactionId = "int-1", creditorName = null, creditorAccount = null,
+            debtorName = null, remittanceInformationStructuredArray = null, note = null,
+            expenseTag = tag1
+        )
+        val txNoTag = DomainTransaction(
+            id = "tx-2", bookingDate = LocalDateTime.parse("2024-01-16T10:30:00"),
+            valueDate = LocalDateTime.parse("2024-01-16T12:00:00"), amount = 30.0, currency = "EUR",
+            debtorAccount = null, remittanceInformationUnstructured = "Other",
+            remittanceInformationUnstructuredArray = emptyList(), bankTransactionCode = "PMNT",
+            internalTransactionId = "int-2", creditorName = null, creditorAccount = null,
+            debtorName = null, remittanceInformationStructuredArray = null, note = null,
+            expenseTag = null
+        )
+        coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(listOf(txWithTag, txNoTag))
+
+        val vm = HomeScreenViewModel(repository)
+        advanceUntilIdle()
+
+        vm.handleEvent(TransactionsEvent.SelectTag(null))
+        advanceUntilIdle()
+
+        val filtered = vm.filteredTransactionListState.value
+        assertEquals(1, filtered.transactions.size)
+        assertEquals("tx-2", filtered.transactions.first().id)
     }
 }
