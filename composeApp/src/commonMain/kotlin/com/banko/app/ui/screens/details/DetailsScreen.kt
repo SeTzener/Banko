@@ -1,12 +1,22 @@
 package com.banko.app.ui.screens.details
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -83,11 +93,14 @@ fun DetailsScreen(component: DetailsComponent) {
         getExpenseTags = { viewModel.getExpenseTags() },
         assignExpenseTag = { id: String, tagId: String? -> viewModel.assignExpenseTag(id, tagId) },
         deleteTransaction = { id: String -> viewModel.deleteTransaction(id) },
-        goBack = { component.goBack() }
+        goBack = { component.goBack() },
+        error = screenState.error,
+        rawError = screenState.rawError,
+        clearError = { viewModel.clearError() }
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun DetailsScreen(
     transactions: Transaction,
@@ -96,7 +109,10 @@ fun DetailsScreen(
     assignExpenseTag: (String, String?) -> Unit,
     getExpenseTags: () -> Unit,
     deleteTransaction: (String) -> Unit,
-    goBack: () -> Unit
+    goBack: () -> Unit,
+    error: String? = null,
+    rawError: String? = null,
+    clearError: () -> Unit = {},
 ) {
     var transaction by remember { mutableStateOf(transactions) }
     val transactionNote = remember { mutableStateOf(transaction.note ?: "") }
@@ -109,6 +125,19 @@ fun DetailsScreen(
     val tagMenuExpanded = remember { mutableStateOf(false) }
     val noteMenuExpanded = remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // TODO: Remove this error detail dialog (temporary debugging aid)
+    var showErrorDetailDialog by remember { mutableStateOf(false) }
+    var dialogFullError by remember { mutableStateOf("") }
+
+    LaunchedEffect(error) {
+        error?.let {
+            dialogFullError = rawError ?: it
+            snackbarHostState.showSnackbar(it)
+            clearError()
+        }
+    }
 
     if (isEditNote.value) {
         ModalBottomSheet(
@@ -142,9 +171,28 @@ fun DetailsScreen(
         )
     }
 
-    Column(
-        modifier = Modifier.fillMaxSize()
-    ) {
+    // TODO: Remove this custom Snackbar with long-press (temporary debugging aid)
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.surface,
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState) { data ->
+                Box(
+                    modifier = Modifier.combinedClickable(
+                        onClick = { },
+                        onLongClick = {
+                            dialogFullError = rawError ?: data.visuals.message
+                            showErrorDetailDialog = true
+                        }
+                    )
+                ) {
+                    Snackbar(snackbarData = data)
+                }
+            }
+        }
+    ) { _ ->
+        Column(
+            modifier = Modifier.fillMaxSize()
+        ) {
         Row {
             Text(
                 modifier = Modifier.padding(16.dp).weight(1f),
@@ -614,4 +662,26 @@ fun DetailsScreen(
             }
         }
     }
+
+    // TODO: Remove this error detail dialog (temporary debugging aid)
+    if (showErrorDetailDialog) {
+        AlertDialog(
+            onDismissRequest = { showErrorDetailDialog = false },
+            title = { Text("Error Details") },
+            text = {
+                SelectionContainer {
+                    Text(
+                        text = dialogFullError,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showErrorDetailDialog = false }) {
+                    Text("Close")
+                }
+            }
+        )
+    }
+}
 }

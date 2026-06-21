@@ -50,10 +50,10 @@ fun SettingsScreen(component: SettingsComponent) {
                     loadNewTags = { viewModel.loadExpenseTags() },
                     onTagUpdate = { viewModel.updateExpenseTag(it) },
                     onTagCreate = { name, color, isEarning -> viewModel.createExpenseTag(name, color, isEarning) },
-                    onTagDelete = { viewModel.deleteExpenseTag(it) }
-                    ) {
-                    currentBottomSheet = BottomSheetType.NONE
-                }
+                    onTagDelete = { viewModel.deleteExpenseTag(it) },
+                    clearError = { viewModel.clearError() },
+                    onClose = { currentBottomSheet = BottomSheetType.NONE }
+                )
 
                 BottomSheetType.NONE -> {} // Do nothing
             }

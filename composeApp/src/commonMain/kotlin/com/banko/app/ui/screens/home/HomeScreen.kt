@@ -17,6 +17,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -41,10 +43,13 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -123,6 +128,7 @@ fun HomeScreen(component: HomeComponent) {
     )
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
     transactionListState: TransactionListState,
@@ -141,12 +147,18 @@ fun HomeScreen(
     onCategoryClick: (String?) -> Unit,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
+
+    // TODO: Remove this error detail dialog (temporary debugging aid)
+    var showErrorDetailDialog by remember { mutableStateOf(false) }
+    var dialogFullError by remember { mutableStateOf("") }
+
     var dragOffset by remember { mutableStateOf(0f) }
     val swipeThreshold = 50f
     val currentTimespanState by rememberUpdatedState(timespanState)
 
     LaunchedEffect(uiState.error) {
         uiState.error?.let { error ->
+            dialogFullError = uiState.rawError ?: error
             snackbarHostState.showSnackbar(error)
             clearError(error)
         }
@@ -254,8 +266,23 @@ fun HomeScreen(
             }
         )
         LoadingProgressIndicator(isLoading = transactionListState.isLoadingMore)
+        // TODO: Remove this custom Snackbar with long-press (temporary debugging aid)
         Scaffold(
-            snackbarHost = { SnackbarHost(snackbarHostState) }
+            snackbarHost = {
+                SnackbarHost(hostState = snackbarHostState) { data ->
+                    Box(
+                        modifier = Modifier.combinedClickable(
+                            onClick = { },
+                            onLongClick = {
+                                dialogFullError = uiState.rawError ?: data.visuals.message
+                                showErrorDetailDialog = true
+                            }
+                        )
+                    ) {
+                        Snackbar(snackbarData = data)
+                    }
+                }
+            }
         ) { padding ->
             Column(
                 modifier = Modifier
@@ -272,6 +299,27 @@ fun HomeScreen(
                     onDeleteTransaction = onDeleteTransaction
                 )
             }
+        }
+
+        // TODO: Remove this error detail dialog (temporary debugging aid)
+        if (showErrorDetailDialog) {
+            AlertDialog(
+                onDismissRequest = { showErrorDetailDialog = false },
+                title = { Text("Error Details") },
+                text = {
+                    SelectionContainer {
+                        Text(
+                            text = dialogFullError,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showErrorDetailDialog = false }) {
+                        Text("Close")
+                    }
+                }
+            )
         }
     }
 }

@@ -1,12 +1,18 @@
 package com.banko.app.ui.screens.settings.bottomsheets
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import kotlinx.coroutines.delay
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -15,12 +21,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -43,6 +52,7 @@ import com.banko.app.ui.screens.settings.bottomsheets.dialogs.ExpenseTagDeleteDi
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ExpenseTagsBottomSheetContent(
     screenState: SettingsScreenState,
@@ -50,11 +60,22 @@ fun ExpenseTagsBottomSheetContent(
     onTagUpdate: (ExpenseTag) -> Unit,
     onTagCreate: (name: String, color: Color, isEarning: Boolean) -> Unit,
     onTagDelete: (expanseTagId: String) -> Unit,
-    onClose: () -> Unit
+    clearError: () -> Unit = {},
+    onClose: () -> Unit,
 ) {
 
     LaunchedEffect(Unit) {
         loadNewTags()
+    }
+
+    // TODO: Remove this error detail dialog (temporary debugging aid)
+    var showErrorDetailDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(screenState.error) {
+        screenState.error?.let {
+            delay(3000)
+            clearError()
+        }
     }
 
     val isNewTag = remember { mutableStateOf(false) }
@@ -102,6 +123,47 @@ fun ExpenseTagsBottomSheetContent(
                     TagItem(tag = tag, onTagUpdate = onTagUpdate, onTagDelete = onTagDelete)
                 }
             }
+        }
+
+        screenState.error?.let { errorText ->
+            // TODO: Remove the combinedClickable wrapper to disable long-press (temporary)
+            Box(
+                modifier = Modifier
+                    .combinedClickable(
+                        onClick = { },
+                        onLongClick = {
+                            showErrorDetailDialog = true
+                        }
+                    )
+                    .padding(start = 12.dp, bottom = 8.dp)
+            ) {
+                Text(
+                    text = errorText,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        }
+
+        // TODO: Remove this error detail dialog (temporary debugging aid)
+        if (showErrorDetailDialog) {
+            AlertDialog(
+                onDismissRequest = { showErrorDetailDialog = false },
+                title = { Text("Error Details") },
+                text = {
+                    SelectionContainer {
+                        Text(
+                            text = screenState.rawError ?: screenState.error ?: "",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showErrorDetailDialog = false }) {
+                        Text("Close")
+                    }
+                }
+            )
         }
 
         Button(
