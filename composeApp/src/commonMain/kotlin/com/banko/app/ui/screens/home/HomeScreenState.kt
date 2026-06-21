@@ -47,6 +47,7 @@ data class TimespanState(
 
 data class UiState(
     val error: String? = null,
+    val rawError: String? = null,
     val isSyncing: Boolean = false,
 )
 
@@ -55,6 +56,7 @@ data class HomeScreenState(
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
     val error: String? = null,
+    val rawError: String? = null,
     val indicatorDateState: LocalDateTime = beginningOfCurrentMonth(),
     val selectedTimespan: TimespanSelection = TimespanSelection.Month(YearMonth(beginningOfCurrentMonth().year, beginningOfCurrentMonth().monthNumber)),
     val availableMonths: List<YearMonth> = emptyList(),
