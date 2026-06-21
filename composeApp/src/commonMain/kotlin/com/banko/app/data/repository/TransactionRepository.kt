@@ -38,8 +38,11 @@ class TransactionRepository(
 
     suspend fun fetchAndStoreTransactionsForDateRange(fromDate: LocalDate, toDate: LocalDate) {
         val result = remote.fetchTransactionsForDateRange(fromDate, toDate)
-        if (result is Result.Success) {
-            result.value.transactions.forEach { local.upsertTransaction(it) }
+        when (result) {
+            is Result.Error -> throw RuntimeException("Failed to fetch transactions: $result")
+            is Result.Success -> {
+                result.value.transactions.forEach { local.upsertTransaction(it) }
+            }
         }
     }
 
@@ -48,8 +51,9 @@ class TransactionRepository(
 
     suspend fun deleteTransaction(transactionId: String) {
         val apiResult = remote.deleteTransaction(transactionId)
-        if (apiResult is Result.Success) {
-            local.deleteTransaction(transactionId)
+        when (apiResult) {
+            is Result.Error -> throw RuntimeException("Failed to delete transaction: $apiResult")
+            is Result.Success -> local.deleteTransaction(transactionId)
         }
     }
 }

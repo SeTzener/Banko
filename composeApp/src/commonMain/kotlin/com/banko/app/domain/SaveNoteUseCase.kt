@@ -9,13 +9,10 @@ class SaveNoteUseCase(
     private val transactionRepository: DatabaseTransactionRepository
 ) {
     suspend operator fun invoke(id: String, note: String) {
-        try {
-            val apiResult = apiTransactionsRepository.saveNote(id = id, text = note)
-            if (apiResult is Result.Success)  {
-                transactionRepository.saveNote(id, note)
-            }
-        } catch (ex: Exception){
-            println(ex)
+        val apiResult = apiTransactionsRepository.saveNote(id = id, text = note)
+        when (apiResult) {
+            is Result.Error -> throw RuntimeException("Failed to save note: $apiResult")
+            is Result.Success -> transactionRepository.saveNote(id, note)
         }
     }
 }
