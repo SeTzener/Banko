@@ -8,6 +8,7 @@ import com.banko.app.domain.AssignExpenseTagToTransactionUseCase
 import com.banko.app.domain.GetAllExpenseTagUseCase
 import com.banko.app.domain.SaveNoteUseCase
 import com.banko.app.data.repository.TransactionRepository
+import com.banko.app.ui.utils.toUserFacingErrorMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -41,12 +42,15 @@ class DetailsScreenViewModel(
             try {
                 apiTagRepository.assignExpenseTag(id, expenseTagId)
                 updateTransactionUseCase.invoke(transactionId = id, expenseTagId = expenseTagId)
+                _screenState.update { it.copy(error = null) }
             } catch (e: Exception) {
                 if (previousTagId != expenseTagId) {
                     previousTagId?.let { oldTagId ->
                         updateTransactionUseCase.invoke(id, oldTagId)
                     }
                 }
+                val ufe = toUserFacingErrorMessage(e.message)
+                _screenState.update { it.copy(error = ufe.userMessage, rawError = ufe.fullError) }
             }
         }
     }
@@ -55,10 +59,10 @@ class DetailsScreenViewModel(
         viewModelScope.launch {
             try {
                 saveNoteUseCase.invoke(id = id, note = text)
+                _screenState.update { it.copy(error = null) }
             } catch (ex: Exception) {
-                screenState.value.copy(
-                    error = ex.message
-                )
+                val ufe = toUserFacingErrorMessage(ex.message)
+                _screenState.update { it.copy(error = ufe.userMessage, rawError = ufe.fullError) }
             }
         }
     }
@@ -67,11 +71,15 @@ class DetailsScreenViewModel(
         viewModelScope.launch {
             try {
                 transactionRepository.deleteTransaction(transactionId)
+                _screenState.update { it.copy(error = null) }
             } catch (ex: Exception) {
-                screenState.value.copy(
-                    error = ex.message
-                )
+                val ufe = toUserFacingErrorMessage(ex.message)
+                _screenState.update { it.copy(error = ufe.userMessage, rawError = ufe.fullError) }
             }
         }
+    }
+
+    fun clearError() {
+        _screenState.update { it.copy(error = null, rawError = null) }
     }
 }

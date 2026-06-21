@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.banko.app.data.repository.TransactionRepository
 import com.banko.app.ui.models.toUi
+import com.banko.app.ui.utils.toUserFacingErrorMessage
 import com.banko.app.utils.beginningOfCurrentMonth
 import com.banko.app.utils.computeYearEndDate
 import com.banko.app.utils.getLastDayOfMonth
@@ -66,6 +67,7 @@ class HomeScreenViewModel(
     val uiState: StateFlow<UiState> = _state.map { s ->
         UiState(
             error = s.error,
+            rawError = s.rawError,
             isSyncing = s.isSyncing,
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, UiState())
@@ -117,15 +119,16 @@ class HomeScreenViewModel(
                 repository.fetchAndStoreTransactionsForDateRange(sel.fromDate, sel.toDate)
                 lastSyncTimestamps["${sel.fromDate}-${sel.toDate}"] = Clock.System.now().toEpochMilliseconds()
                 loadTransactionsForCurrentSelection()
-            } catch (_: Exception) {
-                _state.update { it.copy(isRefreshing = false) }
+            } catch (e: Exception) {
+                val ufe = toUserFacingErrorMessage(e.message)
+                _state.update { it.copy(isRefreshing = false, error = ufe.userMessage, rawError = ufe.fullError) }
             }
         }
     }
 
     private fun clearError(error: String) {
         if (_state.value.error == error) {
-            _state.update { it.copy(error = null) }
+            _state.update { it.copy(error = null, rawError = null) }
         }
     }
 
@@ -139,7 +142,8 @@ class HomeScreenViewModel(
                     )
                 }
             } catch (ex: Exception) {
-                _state.update { it.copy(error = ex.message) }
+                val ufe = toUserFacingErrorMessage(ex.message)
+                _state.update { it.copy(error = ufe.userMessage, rawError = ufe.fullError) }
             }
         }
     }
@@ -178,7 +182,10 @@ class HomeScreenViewModel(
             val refreshedMonths = generateMonthRange(refreshedOldestDate)
             val refreshedYears = refreshedMonths.map { it.year }.distinct().sortedDescending()
             _state.update { it.copy(availableMonths = refreshedMonths, availableYears = refreshedYears) }
-        } catch (_: Exception) { }
+        } catch (e: Exception) {
+            val ufe = toUserFacingErrorMessage(e.message)
+            _state.update { it.copy(error = ufe.userMessage, rawError = ufe.fullError) }
+        }
     }
 
     private fun loadTransactionsForCurrentSelection() {
@@ -221,8 +228,9 @@ class HomeScreenViewModel(
                 val years = months.map { it.year }.distinct().sortedDescending()
                 _state.update { it.copy(availableMonths = months, availableYears = years) }
             }
-        } catch (_: Exception) {
-            // silent background sync failure
+        } catch (e: Exception) {
+            val ufe = toUserFacingErrorMessage(e.message)
+            _state.update { it.copy(error = ufe.userMessage, rawError = ufe.fullError) }
         }
     }
 
@@ -316,8 +324,9 @@ class HomeScreenViewModel(
                         isLoadingMore = false
                     )
                 }
-            } catch (_: Exception) {
-                _state.update { it.copy(isLoadingMore = false) }
+            } catch (e: Exception) {
+                val ufe = toUserFacingErrorMessage(e.message)
+                _state.update { it.copy(isLoadingMore = false, error = ufe.userMessage, rawError = ufe.fullError) }
             }
         }
     }
