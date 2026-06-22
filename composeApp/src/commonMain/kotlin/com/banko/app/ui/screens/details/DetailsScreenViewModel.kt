@@ -8,7 +8,8 @@ import com.banko.app.domain.AssignExpenseTagToTransactionUseCase
 import com.banko.app.domain.GetAllExpenseTagUseCase
 import com.banko.app.domain.SaveNoteUseCase
 import com.banko.app.data.repository.TransactionRepository
-import com.banko.app.ui.utils.toUserFacingErrorMessage
+import com.banko.app.ui.utils.ErrorState
+import com.banko.app.ui.utils.classifyError
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -49,8 +50,7 @@ class DetailsScreenViewModel(
                         updateTransactionUseCase.invoke(id, oldTagId)
                     }
                 }
-                val ufe = toUserFacingErrorMessage(e.message)
-                _screenState.update { it.copy(error = ufe.userMessage, rawError = ufe.fullError) }
+                _screenState.update { it.copy(error = ErrorState(classifyError(e), e.message)) }
             }
         }
     }
@@ -61,8 +61,7 @@ class DetailsScreenViewModel(
                 saveNoteUseCase.invoke(id = id, note = text)
                 _screenState.update { it.copy(error = null) }
             } catch (ex: Exception) {
-                val ufe = toUserFacingErrorMessage(ex.message)
-                _screenState.update { it.copy(error = ufe.userMessage, rawError = ufe.fullError) }
+                _screenState.update { it.copy(error = ErrorState(classifyError(ex), ex.message)) }
             }
         }
     }
@@ -73,13 +72,12 @@ class DetailsScreenViewModel(
                 transactionRepository.deleteTransaction(transactionId)
                 _screenState.update { it.copy(error = null) }
             } catch (ex: Exception) {
-                val ufe = toUserFacingErrorMessage(ex.message)
-                _screenState.update { it.copy(error = ufe.userMessage, rawError = ufe.fullError) }
+                _screenState.update { it.copy(error = ErrorState(classifyError(ex), ex.message)) }
             }
         }
     }
 
     fun clearError() {
-        _screenState.update { it.copy(error = null, rawError = null) }
+        _screenState.update { it.copy(error = null) }
     }
 }

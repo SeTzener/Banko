@@ -1,21 +1,14 @@
 package com.banko.app.ui.screens.details
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Snackbar
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Button
@@ -67,9 +60,12 @@ import banko.composeapp.generated.resources.ic_quill
 import banko.composeapp.generated.resources.ic_save
 import banko.composeapp.generated.resources.ic_tag
 import banko.composeapp.generated.resources.ic_tag_filled
+import com.banko.app.ui.components.ErrorSnackbarHost
 import com.banko.app.ui.models.ExpenseTag
 import com.banko.app.ui.models.Transaction
 import com.banko.app.ui.screens.details.DropDownMenus.ExpenseTagDropdown
+import com.banko.app.ui.utils.ErrorState
+import com.banko.app.ui.utils.toUserMessage
 import com.banko.app.ui.screens.details.DropDownMenus.MoreOptionsDropDown
 import com.banko.app.ui.screens.details.DropDownMenus.NoteDropDown
 import com.banko.app.ui.screens.details.bottomsheets.EditNoteBottomSheet
@@ -94,13 +90,12 @@ fun DetailsScreen(component: DetailsComponent) {
         assignExpenseTag = { id: String, tagId: String? -> viewModel.assignExpenseTag(id, tagId) },
         deleteTransaction = { id: String -> viewModel.deleteTransaction(id) },
         goBack = { component.goBack() },
-        error = screenState.error,
-        rawError = screenState.rawError,
+        errorState = screenState.error,
         clearError = { viewModel.clearError() }
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailsScreen(
     transactions: Transaction,
@@ -110,8 +105,7 @@ fun DetailsScreen(
     getExpenseTags: () -> Unit,
     deleteTransaction: (String) -> Unit,
     goBack: () -> Unit,
-    error: String? = null,
-    rawError: String? = null,
+    errorState: ErrorState? = null,
     clearError: () -> Unit = {},
 ) {
     var transaction by remember { mutableStateOf(transactions) }
@@ -127,13 +121,10 @@ fun DetailsScreen(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // TODO: Remove this error detail dialog (temporary debugging aid)
-    var showErrorDetailDialog by remember { mutableStateOf(false) }
-    var dialogFullError by remember { mutableStateOf("") }
+    val errorMessage = errorState?.let { it.type.toUserMessage() }
 
-    LaunchedEffect(error) {
-        error?.let {
-            dialogFullError = rawError ?: it
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let {
             snackbarHostState.showSnackbar(it)
             clearError()
         }
@@ -171,23 +162,14 @@ fun DetailsScreen(
         )
     }
 
-    // TODO: Remove this custom Snackbar with long-press (temporary debugging aid)
+    // TODO: Remove ErrorSnackbarHost and revert to SnackbarHost (temporary)
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
         snackbarHost = {
-            SnackbarHost(hostState = snackbarHostState) { data ->
-                Box(
-                    modifier = Modifier.combinedClickable(
-                        onClick = { },
-                        onLongClick = {
-                            dialogFullError = rawError ?: data.visuals.message
-                            showErrorDetailDialog = true
-                        }
-                    )
-                ) {
-                    Snackbar(snackbarData = data)
-                }
-            }
+            ErrorSnackbarHost(
+                hostState = snackbarHostState,
+                rawError = errorState?.fullMessage,
+            )
         }
     ) { _ ->
         Column(
@@ -663,25 +645,6 @@ fun DetailsScreen(
         }
     }
 
-    // TODO: Remove this error detail dialog (temporary debugging aid)
-    if (showErrorDetailDialog) {
-        AlertDialog(
-            onDismissRequest = { showErrorDetailDialog = false },
-            title = { Text("Error Details") },
-            text = {
-                SelectionContainer {
-                    Text(
-                        text = dialogFullError,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showErrorDetailDialog = false }) {
-                    Text("Close")
-                }
-            }
-        )
-    }
+
 }
 }

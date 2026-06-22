@@ -11,8 +11,6 @@ import androidx.compose.foundation.layout.padding
 import kotlinx.coroutines.delay
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -21,7 +19,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
@@ -44,11 +41,13 @@ import banko.composeapp.generated.resources.ic_delete
 import banko.composeapp.generated.resources.ic_edit
 import banko.composeapp.generated.resources.ic_save
 import banko.composeapp.generated.resources.ic_tag_filled
+import com.banko.app.ui.components.dialogs.ErrorDetailDialog
 import com.banko.app.ui.models.ExpenseTag
 import com.banko.app.ui.screens.settings.SettingsScreenState
 import com.banko.app.ui.screens.settings.bottomsheets.dialogs.ExpenseTagAddNewDialog
 import com.banko.app.ui.screens.settings.bottomsheets.dialogs.ExpenseTagColorpickerDialog
 import com.banko.app.ui.screens.settings.bottomsheets.dialogs.ExpenseTagDeleteDialog
+import com.banko.app.ui.utils.toUserMessage
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -67,9 +66,6 @@ fun ExpenseTagsBottomSheetContent(
     LaunchedEffect(Unit) {
         loadNewTags()
     }
-
-    // TODO: Remove this error detail dialog (temporary debugging aid)
-    var showErrorDetailDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(screenState.error) {
         screenState.error?.let {
@@ -125,45 +121,31 @@ fun ExpenseTagsBottomSheetContent(
             }
         }
 
-        screenState.error?.let { errorText ->
+        screenState.error?.let { errorState ->
+            var showDetail by remember { mutableStateOf(false) }
+
             // TODO: Remove the combinedClickable wrapper to disable long-press (temporary)
             Box(
                 modifier = Modifier
                     .combinedClickable(
                         onClick = { },
-                        onLongClick = {
-                            showErrorDetailDialog = true
-                        }
+                        onLongClick = { showDetail = true }
                     )
                     .padding(start = 12.dp, bottom = 8.dp)
             ) {
                 Text(
-                    text = errorText,
+                    text = errorState.type.toUserMessage(),
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall
                 )
             }
-        }
 
-        // TODO: Remove this error detail dialog (temporary debugging aid)
-        if (showErrorDetailDialog) {
-            AlertDialog(
-                onDismissRequest = { showErrorDetailDialog = false },
-                title = { Text("Error Details") },
-                text = {
-                    SelectionContainer {
-                        Text(
-                            text = screenState.rawError ?: screenState.error ?: "",
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                },
-                confirmButton = {
-                    TextButton(onClick = { showErrorDetailDialog = false }) {
-                        Text("Close")
-                    }
-                }
-            )
+            if (showDetail) {
+                ErrorDetailDialog(
+                    fullError = errorState.fullMessage,
+                    onDismiss = { showDetail = false },
+                )
+            }
         }
 
         Button(

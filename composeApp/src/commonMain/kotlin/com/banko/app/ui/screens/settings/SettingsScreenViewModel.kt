@@ -9,7 +9,8 @@ import com.banko.app.DatabaseExpenseTagRepository
 import com.banko.app.database.Entities.toModelItem
 import com.banko.app.ui.models.ExpenseTag
 import com.banko.app.ui.models.toDao
-import com.banko.app.ui.utils.toUserFacingErrorMessage
+import com.banko.app.ui.utils.ErrorState
+import com.banko.app.ui.utils.classifyError
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -44,8 +45,7 @@ class SettingsScreenViewModel(
                 }
                 _screenState.update { it.copy(error = null) }
             } catch (e: Exception) {
-                val ufe = toUserFacingErrorMessage(e.message)
-                _screenState.update { it.copy(error = ufe.userMessage, rawError = ufe.fullError) }
+                _screenState.update { it.copy(error = ErrorState(classifyError(e), e.message)) }
             }
         }
     }
@@ -57,8 +57,7 @@ class SettingsScreenViewModel(
                 dbRepository.upsertExpenseTag(result.toDao())
                 _screenState.update { it.copy(error = null) }
             } catch (e: Exception) {
-                val ufe = toUserFacingErrorMessage(e.message)
-                _screenState.update { it.copy(error = ufe.userMessage, rawError = ufe.fullError) }
+                _screenState.update { it.copy(error = ErrorState(classifyError(e), e.message)) }
             }
         }
     }
@@ -71,8 +70,7 @@ class SettingsScreenViewModel(
                 dbRepository.upsertExpenseTag(result.toDao())
                 _screenState.update { it.copy(error = null) }
             } catch (e: Exception) {
-                val ufe = toUserFacingErrorMessage(e.message)
-                _screenState.update { it.copy(error = ufe.userMessage, rawError = ufe.fullError) }
+                _screenState.update { it.copy(error = ErrorState(classifyError(e), e.message)) }
             }
         }
     }
@@ -84,13 +82,12 @@ class SettingsScreenViewModel(
                 dbRepository.deleteExpenseTag(expenseTagId)
                 _screenState.update { it.copy(error = null) }
             } catch (e: Exception) {
-                val ufe = toUserFacingErrorMessage(e.message)
-                _screenState.update { it.copy(error = ufe.userMessage, rawError = ufe.fullError) }
+                _screenState.update { it.copy(error = ErrorState(classifyError(e), e.message)) }
             }
         }
     }
 
     fun clearError() {
-        _screenState.update { it.copy(error = null, rawError = null) }
+        _screenState.update { it.copy(error = null) }
     }
 }

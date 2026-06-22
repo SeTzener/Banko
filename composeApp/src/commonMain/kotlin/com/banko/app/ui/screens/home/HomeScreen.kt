@@ -17,8 +17,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -43,13 +41,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Snackbar
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -88,10 +82,12 @@ import banko.composeapp.generated.resources.details
 import banko.composeapp.generated.resources.ic_delete
 import com.banko.app.ModelTransaction
 import com.banko.app.ui.components.CircularIndicator
+import com.banko.app.ui.components.ErrorSnackbarHost
 import com.banko.app.ui.components.ExpandableCard
 import com.banko.app.ui.components.ExpenseTag
 import com.banko.app.ui.models.Transaction
 import com.banko.app.ui.components.dialogs.TransactionDeleteDialog
+import com.banko.app.ui.utils.toUserMessage
 import kotlinx.datetime.Month
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -120,7 +116,7 @@ fun HomeScreen(component: HomeComponent) {
         navigateToDetails = component::navigateToDetails,
         onTimespanSelected = { viewModel.handleEvent(TransactionsEvent.SelectTimespan(it)) },
         onRefresh = { viewModel.handleEvent(event = TransactionsEvent.Refresh) },
-        clearError = { viewModel.handleEvent(TransactionsEvent.ErrorShown(it)) },
+        clearError = { viewModel.clearError() },
         onDeleteTransaction = { viewModel.handleEvent(TransactionsEvent.DeleteTransaction(it)) },
         onToggleView = { viewModel.handleEvent(TransactionsEvent.ToggleTimespanView) },
         onLoadMore = { viewModel.handleEvent(TransactionsEvent.LoadMore) },
@@ -128,7 +124,6 @@ fun HomeScreen(component: HomeComponent) {
     )
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
     transactionListState: TransactionListState,
@@ -140,7 +135,7 @@ fun HomeScreen(
     navigateToDetails: (ModelTransaction) -> Unit,
     onTimespanSelected: (TimespanSelection) -> Unit,
     onRefresh: () -> Unit,
-    clearError: (String) -> Unit,
+    clearError: () -> Unit,
     onDeleteTransaction: (String) -> Unit,
     onToggleView: () -> Unit,
     onLoadMore: () -> Unit,
@@ -148,19 +143,16 @@ fun HomeScreen(
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // TODO: Remove this error detail dialog (temporary debugging aid)
-    var showErrorDetailDialog by remember { mutableStateOf(false) }
-    var dialogFullError by remember { mutableStateOf("") }
-
     var dragOffset by remember { mutableStateOf(0f) }
     val swipeThreshold = 50f
     val currentTimespanState by rememberUpdatedState(timespanState)
 
-    LaunchedEffect(uiState.error) {
-        uiState.error?.let { error ->
-            dialogFullError = uiState.rawError ?: error
-            snackbarHostState.showSnackbar(error)
-            clearError(error)
+    val errorMessage = uiState.error?.let { it.type.toUserMessage() }
+
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            clearError()
         }
     }
 
@@ -266,22 +258,13 @@ fun HomeScreen(
             }
         )
         LoadingProgressIndicator(isLoading = transactionListState.isLoadingMore)
-        // TODO: Remove this custom Snackbar with long-press (temporary debugging aid)
+        // TODO: Remove ErrorSnackbarHost and revert to SnackbarHost (temporary)
         Scaffold(
             snackbarHost = {
-                SnackbarHost(hostState = snackbarHostState) { data ->
-                    Box(
-                        modifier = Modifier.combinedClickable(
-                            onClick = { },
-                            onLongClick = {
-                                dialogFullError = uiState.rawError ?: data.visuals.message
-                                showErrorDetailDialog = true
-                            }
-                        )
-                    ) {
-                        Snackbar(snackbarData = data)
-                    }
-                }
+                ErrorSnackbarHost(
+                    hostState = snackbarHostState,
+                    rawError = uiState.error?.fullMessage,
+                )
             }
         ) { padding ->
             Column(
@@ -299,27 +282,6 @@ fun HomeScreen(
                     onDeleteTransaction = onDeleteTransaction
                 )
             }
-        }
-
-        // TODO: Remove this error detail dialog (temporary debugging aid)
-        if (showErrorDetailDialog) {
-            AlertDialog(
-                onDismissRequest = { showErrorDetailDialog = false },
-                title = { Text("Error Details") },
-                text = {
-                    SelectionContainer {
-                        Text(
-                            text = dialogFullError,
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                },
-                confirmButton = {
-                    TextButton(onClick = { showErrorDetailDialog = false }) {
-                        Text("Close")
-                    }
-                }
-            )
         }
     }
 }

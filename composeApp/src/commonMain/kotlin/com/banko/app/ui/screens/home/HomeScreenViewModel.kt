@@ -4,7 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.banko.app.data.repository.TransactionRepository
 import com.banko.app.ui.models.toUi
-import com.banko.app.ui.utils.toUserFacingErrorMessage
+import com.banko.app.ui.utils.ErrorState
+import com.banko.app.ui.utils.classifyError
 import com.banko.app.utils.beginningOfCurrentMonth
 import com.banko.app.utils.computeYearEndDate
 import com.banko.app.utils.getLastDayOfMonth
@@ -67,7 +68,6 @@ class HomeScreenViewModel(
     val uiState: StateFlow<UiState> = _state.map { s ->
         UiState(
             error = s.error,
-            rawError = s.rawError,
             isSyncing = s.isSyncing,
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, UiState())
@@ -102,7 +102,6 @@ class HomeScreenViewModel(
     fun handleEvent(event: TransactionsEvent) {
         when (event) {
             is TransactionsEvent.Refresh -> refreshData()
-            is TransactionsEvent.ErrorShown -> clearError(event.error)
             is TransactionsEvent.DeleteTransaction -> handleDeleteTransaction(event.transactionId)
             is TransactionsEvent.SelectTimespan -> handleSelectTimespan(event.timespan)
             is TransactionsEvent.ToggleTimespanView -> handleToggleView()
@@ -120,16 +119,13 @@ class HomeScreenViewModel(
                 lastSyncTimestamps["${sel.fromDate}-${sel.toDate}"] = Clock.System.now().toEpochMilliseconds()
                 loadTransactionsForCurrentSelection()
             } catch (e: Exception) {
-                val ufe = toUserFacingErrorMessage(e.message)
-                _state.update { it.copy(isRefreshing = false, error = ufe.userMessage, rawError = ufe.fullError) }
+                _state.update { it.copy(isRefreshing = false, error = ErrorState(classifyError(e), e.message)) }
             }
         }
     }
 
-    private fun clearError(error: String) {
-        if (_state.value.error == error) {
-            _state.update { it.copy(error = null, rawError = null) }
-        }
+    fun clearError() {
+        _state.update { it.copy(error = null) }
     }
 
     private fun handleDeleteTransaction(transactionId: String) {
@@ -142,8 +138,7 @@ class HomeScreenViewModel(
                     )
                 }
             } catch (ex: Exception) {
-                val ufe = toUserFacingErrorMessage(ex.message)
-                _state.update { it.copy(error = ufe.userMessage, rawError = ufe.fullError) }
+                _state.update { it.copy(error = ErrorState(classifyError(ex), ex.message)) }
             }
         }
     }
@@ -183,8 +178,7 @@ class HomeScreenViewModel(
             val refreshedYears = refreshedMonths.map { it.year }.distinct().sortedDescending()
             _state.update { it.copy(availableMonths = refreshedMonths, availableYears = refreshedYears) }
         } catch (e: Exception) {
-            val ufe = toUserFacingErrorMessage(e.message)
-            _state.update { it.copy(error = ufe.userMessage, rawError = ufe.fullError) }
+            _state.update { it.copy(error = ErrorState(classifyError(e), e.message)) }
         }
     }
 
@@ -229,8 +223,7 @@ class HomeScreenViewModel(
                 _state.update { it.copy(availableMonths = months, availableYears = years) }
             }
         } catch (e: Exception) {
-            val ufe = toUserFacingErrorMessage(e.message)
-            _state.update { it.copy(error = ufe.userMessage, rawError = ufe.fullError) }
+            _state.update { it.copy(error = ErrorState(classifyError(e), e.message)) }
         }
     }
 
@@ -325,8 +318,7 @@ class HomeScreenViewModel(
                     )
                 }
             } catch (e: Exception) {
-                val ufe = toUserFacingErrorMessage(e.message)
-                _state.update { it.copy(isLoadingMore = false, error = ufe.userMessage, rawError = ufe.fullError) }
+                _state.update { it.copy(isLoadingMore = false, error = ErrorState(classifyError(e), e.message)) }
             }
         }
     }

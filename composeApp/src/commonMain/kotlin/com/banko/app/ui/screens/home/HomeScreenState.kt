@@ -1,6 +1,7 @@
 package com.banko.app.ui.screens.home
 
 import com.banko.app.ModelTransaction
+import com.banko.app.ui.utils.ErrorState
 import com.banko.app.utils.beginningOfCurrentMonth
 import com.banko.app.utils.computeYearEndDate
 import com.banko.app.utils.getLastDayOfMonth
@@ -46,8 +47,7 @@ data class TimespanState(
 )
 
 data class UiState(
-    val error: String? = null,
-    val rawError: String? = null,
+    val error: ErrorState? = null,
     val isSyncing: Boolean = false,
 )
 
@@ -55,8 +55,7 @@ data class HomeScreenState(
     val transactions: List<ModelTransaction> = emptyList(),
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
-    val error: String? = null,
-    val rawError: String? = null,
+    val error: ErrorState? = null,
     val indicatorDateState: LocalDateTime = beginningOfCurrentMonth(),
     val selectedTimespan: TimespanSelection = TimespanSelection.Month(YearMonth(beginningOfCurrentMonth().year, beginningOfCurrentMonth().monthNumber)),
     val availableMonths: List<YearMonth> = emptyList(),
@@ -69,7 +68,6 @@ data class HomeScreenState(
 
 sealed class TransactionsEvent {
     data object Refresh : TransactionsEvent()
-    data class ErrorShown(val error: String) : TransactionsEvent()
     data class DeleteTransaction(val transactionId: String) : TransactionsEvent()
     data class SelectTimespan(val timespan: TimespanSelection) : TransactionsEvent()
     data object ToggleTimespanView : TransactionsEvent()
