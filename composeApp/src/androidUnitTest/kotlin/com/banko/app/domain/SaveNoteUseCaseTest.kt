@@ -8,6 +8,8 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class SaveNoteUseCaseTest {
 
@@ -41,7 +43,9 @@ class SaveNoteUseCaseTest {
 
         coEvery { apiTransactionsRepository.saveNote(id, note) } returns Result.Error.HttpError(500, "Server error")
 
-        useCase(id, note)
+        val exception = runCatching { useCase(id, note) }.exceptionOrNull()
+        assertNotNull(exception)
+        assertTrue(exception is RuntimeException)
 
         coVerify {
             apiTransactionsRepository.saveNote(id, note)
@@ -52,13 +56,15 @@ class SaveNoteUseCaseTest {
     }
 
     @Test
-    fun `should handle exception from API gracefully`() = runBlocking {
+    fun `should propagate exception from API`() = runBlocking {
         val id = "tx-1"
         val note = "Test note"
 
         coEvery { apiTransactionsRepository.saveNote(id, note) } throws RuntimeException("Network error")
 
-        useCase(id, note)
+        val exception = runCatching { useCase(id, note) }.exceptionOrNull()
+        assertNotNull(exception)
+        assertTrue(exception is RuntimeException)
 
         coVerify {
             apiTransactionsRepository.saveNote(id, note)

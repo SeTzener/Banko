@@ -24,6 +24,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 @RunWith(RobolectricTestRunner::class)
@@ -105,7 +106,11 @@ class TransactionRepositoryTest {
             remote.fetchTransactionsForDateRange(LocalDate(2024, 6, 1), LocalDate(2024, 6, 30))
         } returns Result.Error.HttpError(500, "Server error")
 
-        repo.fetchAndStoreTransactionsForDateRange(LocalDate(2024, 6, 1), LocalDate(2024, 6, 30))
+        val exception = runCatching {
+            repo.fetchAndStoreTransactionsForDateRange(LocalDate(2024, 6, 1), LocalDate(2024, 6, 30))
+        }.exceptionOrNull()
+        assertNotNull(exception)
+        assertTrue(exception is RuntimeException)
 
         val stored = repo.getTransactions(10).first()
         assertTrue(stored.isEmpty())
@@ -183,7 +188,9 @@ class TransactionRepositoryTest {
         )
         coEvery { remote.deleteTransaction("tx-keep") } returns Result.Error.HttpError(500, "Server error")
 
-        repo.deleteTransaction("tx-keep")
+        val exception = runCatching { repo.deleteTransaction("tx-keep") }.exceptionOrNull()
+        assertNotNull(exception)
+        assertTrue(exception is RuntimeException)
 
         val stored = repo.getTransactions(10).first()
         assertEquals(1, stored.size)
