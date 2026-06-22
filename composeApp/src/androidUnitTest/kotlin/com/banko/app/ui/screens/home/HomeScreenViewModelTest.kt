@@ -3,6 +3,7 @@ package com.banko.app.ui.screens.home
 import com.banko.app.domain.model.ExpenseTag as DomainExpenseTag
 import com.banko.app.domain.model.Transaction as DomainTransaction
 import com.banko.app.data.repository.TransactionRepository
+import com.banko.app.ui.utils.ErrorType
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -226,17 +227,19 @@ class HomeScreenViewModelTest {
     }
 
     @Test
-    fun `should clear error when error shown event fires`() = runTest(testDispatcher) {
+    fun `should clear error when clearError is called`() = runTest(testDispatcher) {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
+        coEvery { repository.deleteTransaction(any()) } throws RuntimeException("Delete failed")
 
         val vm = HomeScreenViewModel(repository)
         advanceUntilIdle()
 
-        vm.state.value.copy(error = "Test error")
-
-        vm.handleEvent(TransactionsEvent.ErrorShown("Test error"))
+        vm.handleEvent(TransactionsEvent.DeleteTransaction("tx-1"))
         advanceUntilIdle()
+        assertNotNull(vm.state.value.error)
 
+        vm.clearError()
+        advanceUntilIdle()
         assertNull(vm.state.value.error)
     }
 
@@ -267,8 +270,11 @@ class HomeScreenViewModelTest {
         vm.handleEvent(TransactionsEvent.DeleteTransaction("tx-1"))
         advanceUntilIdle()
 
-        assertNotNull(vm.uiState.value.error)
-        assertEquals("Delete failed", vm.uiState.value.error)
+        val error = vm.uiState.value.error
+        assertNotNull(error)
+        assertEquals(ErrorType.GENERIC, error.type)
+        assertNotNull(error.fullMessage)
+        assertTrue(error.fullMessage!!.contains("Delete failed"))
     }
 
     @Test
