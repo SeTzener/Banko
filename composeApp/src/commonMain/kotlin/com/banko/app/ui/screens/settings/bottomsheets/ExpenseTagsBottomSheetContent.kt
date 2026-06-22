@@ -1,10 +1,14 @@
 package com.banko.app.ui.screens.settings.bottomsheets
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import kotlinx.coroutines.delay
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Button
@@ -19,8 +23,10 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -35,14 +41,17 @@ import banko.composeapp.generated.resources.ic_delete
 import banko.composeapp.generated.resources.ic_edit
 import banko.composeapp.generated.resources.ic_save
 import banko.composeapp.generated.resources.ic_tag_filled
+import com.banko.app.ui.components.dialogs.ErrorDetailDialog
 import com.banko.app.ui.models.ExpenseTag
 import com.banko.app.ui.screens.settings.SettingsScreenState
 import com.banko.app.ui.screens.settings.bottomsheets.dialogs.ExpenseTagAddNewDialog
 import com.banko.app.ui.screens.settings.bottomsheets.dialogs.ExpenseTagColorpickerDialog
 import com.banko.app.ui.screens.settings.bottomsheets.dialogs.ExpenseTagDeleteDialog
+import com.banko.app.ui.utils.toUserMessage
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ExpenseTagsBottomSheetContent(
     screenState: SettingsScreenState,
@@ -50,11 +59,19 @@ fun ExpenseTagsBottomSheetContent(
     onTagUpdate: (ExpenseTag) -> Unit,
     onTagCreate: (name: String, color: Color, isEarning: Boolean) -> Unit,
     onTagDelete: (expanseTagId: String) -> Unit,
-    onClose: () -> Unit
+    clearError: () -> Unit = {},
+    onClose: () -> Unit,
 ) {
 
     LaunchedEffect(Unit) {
         loadNewTags()
+    }
+
+    LaunchedEffect(screenState.error) {
+        screenState.error?.let {
+            delay(3000)
+            clearError()
+        }
     }
 
     val isNewTag = remember { mutableStateOf(false) }
@@ -101,6 +118,33 @@ fun ExpenseTagsBottomSheetContent(
                 itemsIndexed(screenState.expenseTags) { index, tag ->
                     TagItem(tag = tag, onTagUpdate = onTagUpdate, onTagDelete = onTagDelete)
                 }
+            }
+        }
+
+        screenState.error?.let { errorState ->
+            var showDetail by remember { mutableStateOf(false) }
+
+            // TODO: Remove the combinedClickable wrapper to disable long-press (temporary)
+            Box(
+                modifier = Modifier
+                    .combinedClickable(
+                        onClick = { },
+                        onLongClick = { showDetail = true }
+                    )
+                    .padding(start = 12.dp, bottom = 8.dp)
+            ) {
+                Text(
+                    text = errorState.type.toUserMessage(),
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+
+            if (showDetail) {
+                ErrorDetailDialog(
+                    fullError = errorState.fullMessage,
+                    onDismiss = { showDetail = false },
+                )
             }
         }
 

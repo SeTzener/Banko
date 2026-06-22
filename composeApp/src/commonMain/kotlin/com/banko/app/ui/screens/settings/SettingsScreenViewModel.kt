@@ -9,6 +9,8 @@ import com.banko.app.DatabaseExpenseTagRepository
 import com.banko.app.database.Entities.toModelItem
 import com.banko.app.ui.models.ExpenseTag
 import com.banko.app.ui.models.toDao
+import com.banko.app.ui.utils.ErrorState
+import com.banko.app.ui.utils.classifyError
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -41,7 +43,10 @@ class SettingsScreenViewModel(
                 result.forEach {
                     dbRepository.upsertExpenseTag(it.toDao())
                 }
-            } catch (_: Exception) { }
+                _screenState.update { it.copy(error = null) }
+            } catch (e: Exception) {
+                _screenState.update { it.copy(error = ErrorState(classifyError(e), e.message)) }
+            }
         }
     }
 
@@ -50,7 +55,10 @@ class SettingsScreenViewModel(
             try {
                 val result = apiRepository.updateExpenseTag(expenseTag)
                 dbRepository.upsertExpenseTag(result.toDao())
-            } catch (_: Exception) { }
+                _screenState.update { it.copy(error = null) }
+            } catch (e: Exception) {
+                _screenState.update { it.copy(error = ErrorState(classifyError(e), e.message)) }
+            }
         }
     }
 
@@ -60,7 +68,10 @@ class SettingsScreenViewModel(
                 val result =
                     apiRepository.createExpenseTag(name, color.toArgb().toLong(), isEarning)
                 dbRepository.upsertExpenseTag(result.toDao())
-            } catch (_: Exception) { }
+                _screenState.update { it.copy(error = null) }
+            } catch (e: Exception) {
+                _screenState.update { it.copy(error = ErrorState(classifyError(e), e.message)) }
+            }
         }
     }
 
@@ -69,7 +80,14 @@ class SettingsScreenViewModel(
             try {
                 apiRepository.deleteExpenseTag(expenseTagId)
                 dbRepository.deleteExpenseTag(expenseTagId)
-            } catch (_: Exception) { }
+                _screenState.update { it.copy(error = null) }
+            } catch (e: Exception) {
+                _screenState.update { it.copy(error = ErrorState(classifyError(e), e.message)) }
+            }
         }
+    }
+
+    fun clearError() {
+        _screenState.update { it.copy(error = null) }
     }
 }

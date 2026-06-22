@@ -7,6 +7,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -57,9 +60,12 @@ import banko.composeapp.generated.resources.ic_quill
 import banko.composeapp.generated.resources.ic_save
 import banko.composeapp.generated.resources.ic_tag
 import banko.composeapp.generated.resources.ic_tag_filled
+import com.banko.app.ui.components.ErrorSnackbarHost
 import com.banko.app.ui.models.ExpenseTag
 import com.banko.app.ui.models.Transaction
 import com.banko.app.ui.screens.details.DropDownMenus.ExpenseTagDropdown
+import com.banko.app.ui.utils.ErrorState
+import com.banko.app.ui.utils.toUserMessage
 import com.banko.app.ui.screens.details.DropDownMenus.MoreOptionsDropDown
 import com.banko.app.ui.screens.details.DropDownMenus.NoteDropDown
 import com.banko.app.ui.screens.details.bottomsheets.EditNoteBottomSheet
@@ -83,7 +89,9 @@ fun DetailsScreen(component: DetailsComponent) {
         getExpenseTags = { viewModel.getExpenseTags() },
         assignExpenseTag = { id: String, tagId: String? -> viewModel.assignExpenseTag(id, tagId) },
         deleteTransaction = { id: String -> viewModel.deleteTransaction(id) },
-        goBack = { component.goBack() }
+        goBack = { component.goBack() },
+        errorState = screenState.error,
+        clearError = { viewModel.clearError() }
     )
 }
 
@@ -96,7 +104,9 @@ fun DetailsScreen(
     assignExpenseTag: (String, String?) -> Unit,
     getExpenseTags: () -> Unit,
     deleteTransaction: (String) -> Unit,
-    goBack: () -> Unit
+    goBack: () -> Unit,
+    errorState: ErrorState? = null,
+    clearError: () -> Unit = {},
 ) {
     var transaction by remember { mutableStateOf(transactions) }
     val transactionNote = remember { mutableStateOf(transaction.note ?: "") }
@@ -109,6 +119,16 @@ fun DetailsScreen(
     val tagMenuExpanded = remember { mutableStateOf(false) }
     val noteMenuExpanded = remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    val errorMessage = errorState?.let { it.type.toUserMessage() }
+
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            clearError()
+        }
+    }
 
     if (isEditNote.value) {
         ModalBottomSheet(
@@ -142,9 +162,19 @@ fun DetailsScreen(
         )
     }
 
-    Column(
-        modifier = Modifier.fillMaxSize()
-    ) {
+    // TODO: Remove ErrorSnackbarHost and revert to SnackbarHost (temporary)
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.surface,
+        snackbarHost = {
+            ErrorSnackbarHost(
+                hostState = snackbarHostState,
+                rawError = errorState?.fullMessage,
+            )
+        }
+    ) { _ ->
+        Column(
+            modifier = Modifier.fillMaxSize()
+        ) {
         Row {
             Text(
                 modifier = Modifier.padding(16.dp).weight(1f),
@@ -614,4 +644,7 @@ fun DetailsScreen(
             }
         }
     }
+
+
+}
 }

@@ -8,6 +8,8 @@ import com.banko.app.domain.AssignExpenseTagToTransactionUseCase
 import com.banko.app.domain.GetAllExpenseTagUseCase
 import com.banko.app.domain.SaveNoteUseCase
 import com.banko.app.data.repository.TransactionRepository
+import com.banko.app.ui.utils.ErrorState
+import com.banko.app.ui.utils.classifyError
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -41,12 +43,14 @@ class DetailsScreenViewModel(
             try {
                 apiTagRepository.assignExpenseTag(id, expenseTagId)
                 updateTransactionUseCase.invoke(transactionId = id, expenseTagId = expenseTagId)
+                _screenState.update { it.copy(error = null) }
             } catch (e: Exception) {
                 if (previousTagId != expenseTagId) {
                     previousTagId?.let { oldTagId ->
                         updateTransactionUseCase.invoke(id, oldTagId)
                     }
                 }
+                _screenState.update { it.copy(error = ErrorState(classifyError(e), e.message)) }
             }
         }
     }
@@ -55,10 +59,9 @@ class DetailsScreenViewModel(
         viewModelScope.launch {
             try {
                 saveNoteUseCase.invoke(id = id, note = text)
+                _screenState.update { it.copy(error = null) }
             } catch (ex: Exception) {
-                screenState.value.copy(
-                    error = ex.message
-                )
+                _screenState.update { it.copy(error = ErrorState(classifyError(ex), ex.message)) }
             }
         }
     }
@@ -67,11 +70,14 @@ class DetailsScreenViewModel(
         viewModelScope.launch {
             try {
                 transactionRepository.deleteTransaction(transactionId)
+                _screenState.update { it.copy(error = null) }
             } catch (ex: Exception) {
-                screenState.value.copy(
-                    error = ex.message
-                )
+                _screenState.update { it.copy(error = ErrorState(classifyError(ex), ex.message)) }
             }
         }
+    }
+
+    fun clearError() {
+        _screenState.update { it.copy(error = null) }
     }
 }

@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.banko.app.data.repository.TransactionRepository
 import com.banko.app.ui.models.toUi
+import com.banko.app.ui.utils.ErrorState
+import com.banko.app.ui.utils.classifyError
 import com.banko.app.utils.beginningOfCurrentMonth
 import com.banko.app.utils.computeYearEndDate
 import com.banko.app.utils.getLastDayOfMonth
@@ -100,7 +102,6 @@ class HomeScreenViewModel(
     fun handleEvent(event: TransactionsEvent) {
         when (event) {
             is TransactionsEvent.Refresh -> refreshData()
-            is TransactionsEvent.ErrorShown -> clearError(event.error)
             is TransactionsEvent.DeleteTransaction -> handleDeleteTransaction(event.transactionId)
             is TransactionsEvent.SelectTimespan -> handleSelectTimespan(event.timespan)
             is TransactionsEvent.ToggleTimespanView -> handleToggleView()
@@ -117,16 +118,14 @@ class HomeScreenViewModel(
                 repository.fetchAndStoreTransactionsForDateRange(sel.fromDate, sel.toDate)
                 lastSyncTimestamps["${sel.fromDate}-${sel.toDate}"] = Clock.System.now().toEpochMilliseconds()
                 loadTransactionsForCurrentSelection()
-            } catch (_: Exception) {
-                _state.update { it.copy(isRefreshing = false) }
+            } catch (e: Exception) {
+                _state.update { it.copy(isRefreshing = false, error = ErrorState(classifyError(e), e.message)) }
             }
         }
     }
 
-    private fun clearError(error: String) {
-        if (_state.value.error == error) {
-            _state.update { it.copy(error = null) }
-        }
+    fun clearError() {
+        _state.update { it.copy(error = null) }
     }
 
     private fun handleDeleteTransaction(transactionId: String) {
@@ -139,7 +138,7 @@ class HomeScreenViewModel(
                     )
                 }
             } catch (ex: Exception) {
-                _state.update { it.copy(error = ex.message) }
+                _state.update { it.copy(error = ErrorState(classifyError(ex), ex.message)) }
             }
         }
     }
@@ -178,7 +177,9 @@ class HomeScreenViewModel(
             val refreshedMonths = generateMonthRange(refreshedOldestDate)
             val refreshedYears = refreshedMonths.map { it.year }.distinct().sortedDescending()
             _state.update { it.copy(availableMonths = refreshedMonths, availableYears = refreshedYears) }
-        } catch (_: Exception) { }
+        } catch (e: Exception) {
+            _state.update { it.copy(error = ErrorState(classifyError(e), e.message)) }
+        }
     }
 
     private fun loadTransactionsForCurrentSelection() {
@@ -221,8 +222,8 @@ class HomeScreenViewModel(
                 val years = months.map { it.year }.distinct().sortedDescending()
                 _state.update { it.copy(availableMonths = months, availableYears = years) }
             }
-        } catch (_: Exception) {
-            // silent background sync failure
+        } catch (e: Exception) {
+            _state.update { it.copy(error = ErrorState(classifyError(e), e.message)) }
         }
     }
 
@@ -316,8 +317,8 @@ class HomeScreenViewModel(
                         isLoadingMore = false
                     )
                 }
-            } catch (_: Exception) {
-                _state.update { it.copy(isLoadingMore = false) }
+            } catch (e: Exception) {
+                _state.update { it.copy(isLoadingMore = false, error = ErrorState(classifyError(e), e.message)) }
             }
         }
     }
