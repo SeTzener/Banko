@@ -43,6 +43,7 @@ import banko.composeapp.generated.resources.register_full_name
 import banko.composeapp.generated.resources.register_has_account
 import banko.composeapp.generated.resources.register_login_link
 import banko.composeapp.generated.resources.register_title
+
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.annotation.KoinExperimentalAPI
