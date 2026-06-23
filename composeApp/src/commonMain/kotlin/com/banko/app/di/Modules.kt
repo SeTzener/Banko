@@ -3,6 +3,7 @@ package com.banko.app.di
 import com.banko.app.ApiExpenseTagRepository
 import com.banko.app.ApiTransactionRepository
 import com.banko.app.DatabaseTransactionRepository
+import com.banko.app.api.auth.TokenStorage
 import com.banko.app.api.services.BankoApiService
 import com.banko.app.database.BankoDatabase
 import com.banko.app.database.CreateDatabase
@@ -27,6 +28,7 @@ val  sharedModule = module {
     single<BankoDatabase> { CreateDatabase(get()).getDatabase() }
     singleOf(::ExpenseTagRepository)
     single { BankoApiService() }
+    single { TokenStorage() }
     singleOf(::DatabaseTransactionRepository)
     singleOf(::ApiTransactionRepository)
     singleOf(::ApiExpenseTagRepository)

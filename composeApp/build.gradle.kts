@@ -41,6 +41,7 @@ kotlin {
         iosMain.dependencies {
             implementation(libs.ktor.client.ios)
             implementation(libs.koin.core)
+            implementation(libs.multiplatform.settings.no.arg)
         }
 
         commonMain.dependencies {
@@ -74,6 +75,7 @@ kotlin {
             api(libs.datastore)
             api(libs.datastore.preferences)
             api(libs.koin.core)
+            implementation(libs.multiplatform.settings.no.arg)
         }
 
         androidMain.dependencies {
@@ -83,6 +85,7 @@ kotlin {
             implementation(libs.koin.android)
             implementation(libs.koin.android.compose)
             implementation(libs.ktor.client.android)
+            implementation(libs.multiplatform.settings.no.arg)
         }
 
         commonTest.dependencies {
