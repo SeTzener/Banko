@@ -1,0 +1,60 @@
+package com.banko.app.api.auth
+
+import com.banko.app.api.dto.bankoApi.AuthResponse
+import com.banko.app.api.services.BankoApiService
+import com.banko.app.api.utils.Result
+
+class AuthRepository(
+    private val apiService: BankoApiService,
+    private val tokenStorage: TokenStorage
+) {
+    val isLoggedIn: Boolean
+        get() = tokenStorage.accessToken != null
+
+    suspend fun login(email: String, password: String): Result<AuthResponse> {
+        return when (val result = apiService.login(email, password)) {
+            is Result.Success -> {
+                tokenStorage.accessToken = result.value.accessToken
+                tokenStorage.refreshToken = result.value.refreshToken
+                result
+            }
+            is Result.Error -> result
+        }
+    }
+
+    suspend fun register(
+        email: String,
+        password: String,
+        fullName: String?,
+        consentGiven: Boolean
+    ): Result<AuthResponse> {
+        return when (val result = apiService.register(email, password, fullName, consentGiven)) {
+            is Result.Success -> {
+                tokenStorage.accessToken = result.value.accessToken
+                tokenStorage.refreshToken = result.value.refreshToken
+                result
+            }
+            is Result.Error -> result
+        }
+    }
+
+    suspend fun refreshToken(): Result<AuthResponse> {
+        val currentRefresh = tokenStorage.refreshToken
+            ?: return Result.Error.UnexpectedError(IllegalStateException("No refresh token"))
+        return when (val result = apiService.refreshToken(currentRefresh)) {
+            is Result.Success -> {
+                tokenStorage.accessToken = result.value.accessToken
+                tokenStorage.refreshToken = result.value.refreshToken
+                result
+            }
+            is Result.Error -> {
+                tokenStorage.clear()
+                result
+            }
+        }
+    }
+
+    fun logout() {
+        tokenStorage.clear()
+    }
+}

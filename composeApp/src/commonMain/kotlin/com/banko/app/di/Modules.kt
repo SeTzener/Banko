@@ -3,6 +3,8 @@ package com.banko.app.di
 import com.banko.app.ApiExpenseTagRepository
 import com.banko.app.ApiTransactionRepository
 import com.banko.app.DatabaseTransactionRepository
+import com.banko.app.api.auth.AuthRepository
+import com.banko.app.api.auth.SessionManager
 import com.banko.app.api.auth.TokenStorage
 import com.banko.app.api.services.BankoApiService
 import com.banko.app.database.BankoDatabase
@@ -27,8 +29,10 @@ expect val platformModule: Module
 val  sharedModule = module {
     single<BankoDatabase> { CreateDatabase(get()).getDatabase() }
     singleOf(::ExpenseTagRepository)
-    single { BankoApiService() }
     single { TokenStorage() }
+    single { BankoApiService(tokenStorage = get()) }
+    single { AuthRepository(get(), get()) }
+    single { SessionManager(get()) }
     singleOf(::DatabaseTransactionRepository)
     singleOf(::ApiTransactionRepository)
     singleOf(::ApiExpenseTagRepository)

@@ -1,6 +1,7 @@
 package com.banko.app.api.services
 
 import com.banko.app.api.HttpClientProvider
+import com.banko.app.api.auth.TokenStorage
 import com.banko.app.api.dto.bankoApi.AuthResponse
 import com.banko.app.api.dto.bankoApi.ExpenseTag
 import com.banko.app.api.dto.bankoApi.ExpenseTags
@@ -15,6 +16,9 @@ import com.banko.app.api.utils.putSafe
 import com.banko.app.api.utils.deleteSafe
 import com.banko.app.api.utils.Result
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.auth.Auth
+import io.ktor.client.plugins.auth.providers.BearerTokens
+import io.ktor.client.plugins.auth.providers.bearer
 import io.ktor.client.request.parameter
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
@@ -24,8 +28,24 @@ import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 class BankoApiService(
-    private val client: HttpClient = HttpClient(HttpClientProvider())
+    client: HttpClient = HttpClient(HttpClientProvider()),
+    private val tokenStorage: TokenStorage? = null
 ) {
+    private val client = tokenStorage?.let { ts ->
+        HttpClient {
+            HttpClientProvider()()
+            install(Auth) {
+                bearer {
+                    loadTokens {
+                        val access = ts.accessToken ?: return@loadTokens null
+                        val refresh = ts.refreshToken ?: ""
+                        BearerTokens(access, refresh)
+                    }
+                }
+            }
+        }
+    } ?: client
+
     private val baseUrl = "https://www.bankoapi.space"
 
     suspend fun getTransactions(
