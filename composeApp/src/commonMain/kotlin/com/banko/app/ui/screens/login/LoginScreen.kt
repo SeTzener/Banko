@@ -1,0 +1,95 @@
+package com.banko.app.ui.screens.login
+
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import banko.composeapp.generated.resources.Res
+import banko.composeapp.generated.resources.auth_error_login_failed
+import banko.composeapp.generated.resources.login_button
+import banko.composeapp.generated.resources.login_email
+import banko.composeapp.generated.resources.login_no_account
+import banko.composeapp.generated.resources.login_password
+import banko.composeapp.generated.resources.login_register_link
+import banko.composeapp.generated.resources.login_title
+import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.annotation.KoinExperimentalAPI
+
+@OptIn(KoinExperimentalAPI::class)
+@Composable
+fun LoginScreen(component: LoginComponent) {
+    val viewModel = koinViewModel<LoginViewModel>()
+    val state by viewModel.state.collectAsState()
+
+    Column(
+        modifier = Modifier.fillMaxSize().padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Spacer(Modifier.height(48.dp))
+        Text(
+            text = stringResource(Res.string.login_title),
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        Spacer(Modifier.height(32.dp))
+        OutlinedTextField(
+            value = state.email,
+            onValueChange = viewModel::onEmailChanged,
+            label = { Text(stringResource(Res.string.login_email)) },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !state.isLoading,
+        )
+        Spacer(Modifier.height(12.dp))
+        OutlinedTextField(
+            value = state.password,
+            onValueChange = viewModel::onPasswordChanged,
+            label = { Text(stringResource(Res.string.login_password)) },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !state.isLoading,
+        )
+        state.error?.let {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = stringResource(Res.string.auth_error_login_failed),
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+        Spacer(Modifier.height(24.dp))
+        Button(
+            onClick = viewModel::login,
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !state.isLoading,
+        ) {
+            if (state.isLoading) {
+                CircularProgressIndicator(modifier = Modifier.height(20.dp))
+            } else {
+                Text(stringResource(Res.string.login_button))
+            }
+        }
+        Spacer(Modifier.height(16.dp))
+        TextButton(onClick = component.onNavigateToRegister) {
+            Text(stringResource(Res.string.login_no_account))
+            Spacer(Modifier.width(4.dp))
+            Text(stringResource(Res.string.login_register_link), color = MaterialTheme.colorScheme.primary)
+        }
+    }
+}

@@ -6,6 +6,7 @@ import com.arkivanov.decompose.router.stack.StackNavigation
 import com.arkivanov.decompose.router.stack.childStack
 import com.arkivanov.decompose.router.stack.pop
 import com.arkivanov.decompose.router.stack.pushNew
+import com.banko.app.api.auth.SessionManager
 import com.banko.app.ui.models.Transaction
 import com.banko.app.ui.screens.details.DetailsComponent
 import com.banko.app.ui.screens.home.HomeComponent
@@ -14,6 +15,7 @@ import kotlinx.serialization.Serializable
 
 class RootComponent(
     componentContext: ComponentContext,
+    val sessionManager: SessionManager,
 ) : ComponentContext by componentContext {
 
     val navigation = StackNavigation<Configuration>()

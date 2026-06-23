@@ -72,4 +72,20 @@
     <string name="error_details_title">Error Details</string>
     <string name="error_details_close">Close</string>
     <string name="error_details_no_message">No additional error details available.</string>
+    <string name="login_title">Login</string>
+    <string name="login_email">Email</string>
+    <string name="login_password">Password</string>
+    <string name="login_button">Login</string>
+    <string name="login_no_account">Don\'t have an account?</string>
+    <string name="login_register_link">Register</string>
+    <string name="register_title">Create Account</string>
+    <string name="register_full_name">Full Name</string>
+    <string name="register_consent">I agree to the privacy policy</string>
+    <string name="register_button">Create Account</string>
+    <string name="register_has_account">Already have an account?</string>
+    <string name="register_login_link">Login</string>
+    <string name="auth_error_invalid_email">Please enter a valid email address.</string>
+    <string name="auth_error_invalid_password">Password must be at least 8 characters.</string>
+    <string name="auth_error_login_failed">Login failed. Please check your credentials.</string>
+    <string name="auth_error_registration_failed">Registration failed. Please try again.</string>
 </resources>

@@ -18,6 +18,8 @@ import com.banko.app.domain.GetAllExpenseTagUseCase
 import com.banko.app.domain.SaveNoteUseCase
 import com.banko.app.ui.screens.details.DetailsScreenViewModel
 import com.banko.app.ui.screens.home.HomeScreenViewModel
+import com.banko.app.ui.screens.login.LoginViewModel
+import com.banko.app.ui.screens.register.RegisterViewModel
 import com.banko.app.ui.screens.settings.SettingsScreenViewModel
 import org.koin.compose.viewmodel.dsl.viewModelOf
 import org.koin.core.module.Module
@@ -46,6 +48,8 @@ val  sharedModule = module {
     singleOf(::SaveNoteUseCase)
 
     // View Models
+    viewModelOf(::LoginViewModel)
+    viewModelOf(::RegisterViewModel)
     viewModelOf(::SettingsScreenViewModel)
     viewModelOf(::HomeScreenViewModel)
     viewModelOf(::DetailsScreenViewModel)
