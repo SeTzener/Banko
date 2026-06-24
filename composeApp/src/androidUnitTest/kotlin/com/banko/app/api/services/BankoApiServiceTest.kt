@@ -1,9 +1,15 @@
 package com.banko.app.api.services
 
+import com.banko.app.api.dto.bankoApi.AuthResponse
 import com.banko.app.api.dto.bankoApi.ExpenseTag
 import com.banko.app.api.dto.bankoApi.ExpenseTags
+import com.banko.app.api.dto.bankoApi.LoginRequest
+import com.banko.app.api.dto.bankoApi.RefreshRequest
+import com.banko.app.api.dto.bankoApi.RegisterRequest
 import com.banko.app.api.dto.bankoApi.Transactions
 import com.banko.app.api.dto.bankoApi.UpsertExpenseTag
+import com.banko.app.api.dto.bankoApi.UserExportData
+import com.banko.app.api.dto.bankoApi.UserProfileResponse
 import com.banko.app.api.utils.Result
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -384,6 +390,228 @@ class BankoApiServiceTest {
 
             assertTrue(result is Result.Error.HttpError)
             assertEquals(404, (result as Result.Error.HttpError).code)
+        }
+    }
+
+    @Test
+    fun `should login with email and password`() {
+        runBlocking {
+            val engine = MockEngine { request ->
+                assertEquals("/Users/login", request.url.encodedPath)
+                assertEquals(HttpMethod.Post, request.method)
+                respond(
+                    content = """{"accountId":"acc-1","accessToken":"tok","refreshToken":"ref","expiresIn":900}""",
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                    status = HttpStatusCode.OK
+                )
+            }
+            val service = BankoApiService(httpClient(engine))
+
+            val result = service.login("user@test.com", "password")
+
+            assertIs<Result.Success<AuthResponse>>(result)
+            assertEquals("acc-1", result.value.accountId)
+            assertEquals("tok", result.value.accessToken)
+        }
+    }
+
+    @Test
+    fun `should return error when login fails`() {
+        runBlocking {
+            val engine = MockEngine { _ ->
+                respond(
+                    content = """{"message":"WrongCredentials"}""",
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                    status = HttpStatusCode.Unauthorized
+                )
+            }
+            val service = BankoApiService(httpClient(engine))
+
+            val result = service.login("bad@test.com", "wrong")
+
+            assertTrue(result is Result.Error.HttpError)
+            assertEquals(401, (result as Result.Error.HttpError).code)
+        }
+    }
+
+    @Test
+    fun `should register new user`() {
+        runBlocking {
+            val engine = MockEngine { request ->
+                assertEquals("/Users", request.url.encodedPath)
+                assertEquals(HttpMethod.Post, request.method)
+                respond(
+                    content = """{"accountId":"acc-2","accessToken":"tok2","refreshToken":"ref2","expiresIn":900}""",
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                    status = HttpStatusCode.OK
+                )
+            }
+            val service = BankoApiService(httpClient(engine))
+
+            val result = service.register("new@test.com", "password12345", "New User", true)
+
+            assertIs<Result.Success<AuthResponse>>(result)
+            assertEquals("acc-2", result.value.accountId)
+        }
+    }
+
+    @Test
+    fun `should refresh token`() {
+        runBlocking {
+            val engine = MockEngine { request ->
+                assertEquals("/Users/refresh", request.url.encodedPath)
+                assertEquals(HttpMethod.Post, request.method)
+                respond(
+                    content = """{"accountId":"acc-1","accessToken":"new-tok","refreshToken":"new-ref","expiresIn":900}""",
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                    status = HttpStatusCode.OK
+                )
+            }
+            val service = BankoApiService(httpClient(engine))
+
+            val result = service.refreshToken("old-refresh")
+
+            assertIs<Result.Success<AuthResponse>>(result)
+            assertEquals("new-tok", result.value.accessToken)
+        }
+    }
+
+    @Test
+    fun `should get profile`() {
+        runBlocking {
+            val engine = MockEngine { request ->
+                assertEquals("/Users/me", request.url.encodedPath)
+                assertEquals(HttpMethod.Get, request.method)
+                respond(
+                    content = """{"accountId":"acc-1","email":"user@test.com","fullName":"Test","consentGiven":true,"createdAt":"2024-01-01T00:00:00Z","updatedAt":"2024-01-01T00:00:00Z"}""",
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                    status = HttpStatusCode.OK
+                )
+            }
+            val service = BankoApiService(httpClient(engine))
+
+            val result = service.getProfile()
+
+            assertIs<Result.Success<UserProfileResponse>>(result)
+            assertEquals("user@test.com", result.value.email)
+            assertEquals("Test", result.value.fullName)
+        }
+    }
+
+    @Test
+    fun `should return error when getProfile fails`() {
+        runBlocking {
+            val engine = MockEngine { _ ->
+                respond(
+                    content = "Not found",
+                    status = HttpStatusCode.NotFound
+                )
+            }
+            val service = BankoApiService(httpClient(engine))
+
+            val result = service.getProfile()
+
+            assertTrue(result is Result.Error.HttpError)
+            assertEquals(404, (result as Result.Error.HttpError).code)
+        }
+    }
+
+    @Test
+    fun `should update profile`() {
+        runBlocking {
+            val engine = MockEngine { request ->
+                assertEquals("/Users/me", request.url.encodedPath)
+                assertEquals(HttpMethod.Put, request.method)
+                respond(
+                    content = """{"accountId":"acc-1","email":"user@test.com","fullName":"Updated","consentGiven":true,"createdAt":"2024-01-01T00:00:00Z","updatedAt":"2024-01-02T00:00:00Z"}""",
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                    status = HttpStatusCode.OK
+                )
+            }
+            val service = BankoApiService(httpClient(engine))
+
+            val result = service.updateProfile(com.banko.app.api.dto.bankoApi.UpdateProfileRequest(fullName = "Updated"))
+
+            assertIs<Result.Success<UserProfileResponse>>(result)
+            assertEquals("Updated", result.value.fullName)
+        }
+    }
+
+    @Test
+    fun `should change password`() {
+        runBlocking {
+            val engine = MockEngine { request ->
+                assertEquals("/Users/me/password", request.url.encodedPath)
+                assertEquals(HttpMethod.Put, request.method)
+                respond(
+                    content = "",
+                    status = HttpStatusCode.OK
+                )
+            }
+            val service = BankoApiService(httpClient(engine))
+
+            val result = service.changePassword("old", "newpassword12345")
+
+            assertIs<Result.Success<Unit>>(result)
+        }
+    }
+
+    @Test
+    fun `should accept consent`() {
+        runBlocking {
+            val engine = MockEngine { request ->
+                assertEquals("/Users/me/consent", request.url.encodedPath)
+                assertEquals(HttpMethod.Put, request.method)
+                respond(
+                    content = "",
+                    status = HttpStatusCode.OK
+                )
+            }
+            val service = BankoApiService(httpClient(engine))
+
+            val result = service.acceptConsent("policy-1")
+
+            assertIs<Result.Success<Unit>>(result)
+        }
+    }
+
+    @Test
+    fun `should export data`() {
+        runBlocking {
+            val engine = MockEngine { request ->
+                assertEquals("/Users/me/export", request.url.encodedPath)
+                assertEquals(HttpMethod.Get, request.method)
+                respond(
+                    content = """{"accountId":"acc-1","email":"user@test.com","consentGiven":true,"createdAt":"2024-01-01T00:00:00Z","updatedAt":"2024-01-01T00:00:00Z","consentLogs":[{"policyVersion":"1.0","policyTitle":"Policy v1","accepted":true,"recordedAt":"2024-01-01T00:00:00Z"}]}""",
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                    status = HttpStatusCode.OK
+                )
+            }
+            val service = BankoApiService(httpClient(engine))
+
+            val result = service.exportData()
+
+            assertIs<Result.Success<UserExportData>>(result)
+            assertEquals(1, result.value.consentLogs.size)
+        }
+    }
+
+    @Test
+    fun `should delete account`() {
+        runBlocking {
+            val engine = MockEngine { request ->
+                assertEquals("/Users/me", request.url.encodedPath)
+                assertEquals(HttpMethod.Delete, request.method)
+                respond(
+                    content = "",
+                    status = HttpStatusCode.OK
+                )
+            }
+            val service = BankoApiService(httpClient(engine))
+
+            val result = service.deleteAccount()
+
+            assertIs<Result.Success<Unit>>(result)
         }
     }
 }
