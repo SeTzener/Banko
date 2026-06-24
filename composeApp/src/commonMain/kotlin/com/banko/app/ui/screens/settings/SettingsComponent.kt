@@ -6,4 +6,5 @@ import org.koin.compose.viewmodel.koinViewModel
 
 class SettingsComponent(
     componentContext: ComponentContext,
+    val onNavigateToProfile: () -> Unit = {},
 ): ComponentContext by componentContext

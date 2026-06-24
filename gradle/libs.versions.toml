@@ -27,6 +27,7 @@ ktor = "3.0.2"
 ksp = "2.1.0-1.0.29"
 material = "1.7.0"
 mockk = "1.13.14"
+multiplatformSettings = "1.2.0"
 robolectric = "4.14.1"
 room = "2.7.0-alpha12"
 serialization = "1.7.3"
@@ -80,6 +81,10 @@ ktor-client-mock = { group = "io.ktor", name = "ktor-client-mock", version.ref =
 # Navigation
 decompose = { group = "com.arkivanov.decompose", name = "decompose", version.ref = "decompose" }
 decompose-extensions = { group = "com.arkivanov.decompose", name = "extensions-compose-jetbrains", version.ref = "decompose" }
+
+# Multiplatform Settings
+multiplatform-settings-core = { module = "com.russhwolf:multiplatform-settings", version.ref = "multiplatformSettings" }
+multiplatform-settings-no-arg = { module = "com.russhwolf:multiplatform-settings-no-arg", version.ref = "multiplatformSettings" }
 
 # Room
 room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }

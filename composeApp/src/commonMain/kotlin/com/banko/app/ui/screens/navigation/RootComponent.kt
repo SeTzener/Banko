@@ -6,14 +6,17 @@ import com.arkivanov.decompose.router.stack.StackNavigation
 import com.arkivanov.decompose.router.stack.childStack
 import com.arkivanov.decompose.router.stack.pop
 import com.arkivanov.decompose.router.stack.pushNew
+import com.banko.app.api.auth.SessionManager
 import com.banko.app.ui.models.Transaction
 import com.banko.app.ui.screens.details.DetailsComponent
 import com.banko.app.ui.screens.home.HomeComponent
+import com.banko.app.ui.screens.profile.ProfileComponent
 import com.banko.app.ui.screens.settings.SettingsComponent
 import kotlinx.serialization.Serializable
 
 class RootComponent(
     componentContext: ComponentContext,
+    val sessionManager: SessionManager,
 ) : ComponentContext by componentContext {
 
     val navigation = StackNavigation<Configuration>()
@@ -49,7 +52,14 @@ class RootComponent(
             )
             is Configuration.Settings -> Child.Settings(
                 SettingsComponent(
-                    componentContext = context
+                    componentContext = context,
+                    onNavigateToProfile = { navigation.pushNew(Configuration.Profile) },
+                )
+            )
+            is Configuration.Profile -> Child.Profile(
+                ProfileComponent(
+                    componentContext = context,
+                    onGoBack = { navigation.pop() },
                 )
             )
         }
@@ -59,6 +69,7 @@ class RootComponent(
         data class Home(val component: HomeComponent) : Child()
         data class Details(val component: DetailsComponent) : Child()
         data class Settings(val component: SettingsComponent) : Child()
+        data class Profile(val component: ProfileComponent) : Child()
     }
 
     @Serializable
@@ -72,5 +83,8 @@ class RootComponent(
 
         @Serializable
         data object Settings : Configuration()
+
+        @Serializable
+        data object Profile : Configuration()
     }
 }

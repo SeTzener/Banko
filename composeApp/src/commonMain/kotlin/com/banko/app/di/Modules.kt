@@ -3,6 +3,9 @@ package com.banko.app.di
 import com.banko.app.ApiExpenseTagRepository
 import com.banko.app.ApiTransactionRepository
 import com.banko.app.DatabaseTransactionRepository
+import com.banko.app.api.auth.AuthRepository
+import com.banko.app.api.auth.SessionManager
+import com.banko.app.api.auth.TokenStorage
 import com.banko.app.api.services.BankoApiService
 import com.banko.app.database.BankoDatabase
 import com.banko.app.database.CreateDatabase
@@ -15,6 +18,9 @@ import com.banko.app.domain.GetAllExpenseTagUseCase
 import com.banko.app.domain.SaveNoteUseCase
 import com.banko.app.ui.screens.details.DetailsScreenViewModel
 import com.banko.app.ui.screens.home.HomeScreenViewModel
+import com.banko.app.ui.screens.login.LoginViewModel
+import com.banko.app.ui.screens.profile.ProfileViewModel
+import com.banko.app.ui.screens.register.RegisterViewModel
 import com.banko.app.ui.screens.settings.SettingsScreenViewModel
 import org.koin.compose.viewmodel.dsl.viewModelOf
 import org.koin.core.module.Module
@@ -26,7 +32,10 @@ expect val platformModule: Module
 val  sharedModule = module {
     single<BankoDatabase> { CreateDatabase(get()).getDatabase() }
     singleOf(::ExpenseTagRepository)
-    single { BankoApiService() }
+    single { TokenStorage() }
+    single { BankoApiService(tokenStorage = get()) }
+    single { AuthRepository(get(), get()) }
+    single { SessionManager(get()) }
     singleOf(::DatabaseTransactionRepository)
     singleOf(::ApiTransactionRepository)
     singleOf(::ApiExpenseTagRepository)
@@ -40,6 +49,9 @@ val  sharedModule = module {
     singleOf(::SaveNoteUseCase)
 
     // View Models
+    viewModelOf(::LoginViewModel)
+    viewModelOf(::RegisterViewModel)
+    viewModelOf(::ProfileViewModel)
     viewModelOf(::SettingsScreenViewModel)
     viewModelOf(::HomeScreenViewModel)
     viewModelOf(::DetailsScreenViewModel)
