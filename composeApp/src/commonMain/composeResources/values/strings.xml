@@ -76,7 +76,7 @@
     <string name="login_email">Email</string>
     <string name="login_password">Password</string>
     <string name="login_button">Login</string>
-    <string name="login_no_account">Don\'t have an account?</string>
+    <string name="login_no_account">Don't have an account?</string>
     <string name="login_register_link">Register</string>
     <string name="register_title">Create Account</string>
     <string name="register_full_name">Full Name</string>
@@ -88,4 +88,10 @@
     <string name="auth_error_invalid_password">Password must be at least 8 characters.</string>
     <string name="auth_error_login_failed">Login failed. Please check your credentials.</string>
     <string name="auth_error_registration_failed">Registration failed. Please try again.</string>
+    <string name="profile">Profile</string>
+    <string name="profile_logout">Log out</string>
+    <string name="profile_account_id">Account ID</string>
+    <string name="profile_logout_confirm">Are you sure you want to log out?</string>
+    <string name="profile_logout_confirm_yes">Log out</string>
+    <string name="profile_logout_confirm_cancel">Cancel</string>
 </resources>

@@ -46,6 +46,7 @@ kotlin {
 
         commonMain.dependencies {
             implementation(libs.compose.material)
+            implementation(compose.materialIconsExtended)
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)
