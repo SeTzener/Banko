@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -23,6 +25,7 @@ import banko.composeapp.generated.resources.Res
 import banko.composeapp.generated.resources.expense_tags
 import banko.composeapp.generated.resources.expense_tags_title
 import banko.composeapp.generated.resources.ic_expense_tags
+import banko.composeapp.generated.resources.profile
 import banko.composeapp.generated.resources.settings
 import com.banko.app.ui.components.SettingsCard
 import com.banko.app.ui.screens.settings.bottomsheets.ExpenseTagsBottomSheetContent
@@ -61,7 +64,7 @@ fun SettingsScreen(component: SettingsComponent) {
     }
 
     Column(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
     ) {
         Text(
             modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -77,6 +80,22 @@ fun SettingsScreen(component: SettingsComponent) {
             Row {
                 Text(
                     modifier = Modifier.padding(bottom = 16.dp),
+                    text = stringResource(Res.string.profile),
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.titleSmall
+                )
+            }
+            Row {
+                SettingsCard(
+                    icon = Res.drawable.ic_expense_tags,
+                    title = Res.string.profile,
+                    description = Res.string.profile,
+                    onClick = component.onNavigateToProfile,
+                )
+            }
+            Row {
+                Text(
+                    modifier = Modifier.padding(top = 24.dp, bottom = 16.dp),
                     text = stringResource(Res.string.expense_tags_title),
                     color = MaterialTheme.colorScheme.primary,
                     style = MaterialTheme.typography.titleSmall

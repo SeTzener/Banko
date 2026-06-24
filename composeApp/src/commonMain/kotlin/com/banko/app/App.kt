@@ -25,6 +25,7 @@ import com.banko.app.ui.screens.auth.AuthScreen
 import com.banko.app.ui.screens.details.DetailsScreen
 import com.banko.app.ui.screens.details.DetailsScreenViewModel
 import com.banko.app.ui.screens.home.HomeScreen
+import com.banko.app.ui.screens.profile.ProfileScreen
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import com.banko.app.ui.screens.navigation.RootComponent
 import com.banko.app.ui.screens.navigation.bottomNavItems
@@ -41,19 +42,17 @@ import com.banko.app.ui.theme.Light_Surface
 fun App(root: RootComponent, authComponent: AuthComponent) {
     val authState by root.sessionManager.authState.collectAsState()
 
-    when (authState) {
-        AuthState.Loading -> {
-            BankoTheme {
+    BankoTheme {
+        when (authState) {
+            AuthState.Loading -> {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     CircularProgressIndicator()
                 }
             }
-        }
-        AuthState.Unauthenticated -> {
-            AuthScreen(component = authComponent)
-        }
-        AuthState.Authenticated -> {
-            BankoTheme {
+            AuthState.Unauthenticated -> {
+                AuthScreen(component = authComponent)
+            }
+            AuthState.Authenticated -> {
                 val childStack = root.childStack.subscribeAsState()
                 Scaffold(
                     bottomBar = {
@@ -94,6 +93,7 @@ fun App(root: RootComponent, authComponent: AuthComponent) {
                                     component = instance.component,
                                 )
                                 is RootComponent.Child.Settings -> SettingsScreen(instance.component)
+                                is RootComponent.Child.Profile -> ProfileScreen(instance.component)
                             }
                         }
                     }
