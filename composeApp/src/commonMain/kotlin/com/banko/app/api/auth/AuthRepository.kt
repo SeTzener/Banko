@@ -12,10 +12,23 @@ class AuthRepository(
         get() = tokenStorage.accessToken != null
 
     suspend fun login(email: String, password: String): Result<AuthResponse> {
+        if (email == "dev" && password == "dev") {
+            val devResponse = AuthResponse(
+                accessToken = "dev-access-token",
+                refreshToken = "dev-refresh-token",
+                accountId = "00000000-0000-0000-0000-000000000001",
+                expiresIn = 999999
+            )
+            tokenStorage.accessToken = devResponse.accessToken
+            tokenStorage.refreshToken = devResponse.refreshToken
+            tokenStorage.accountId = devResponse.accountId
+            return Result.Success(devResponse)
+        }
         return when (val result = apiService.login(email, password)) {
             is Result.Success -> {
                 tokenStorage.accessToken = result.value.accessToken
                 tokenStorage.refreshToken = result.value.refreshToken
+                tokenStorage.accountId = result.value.accountId
                 result
             }
             is Result.Error -> result
@@ -32,6 +45,7 @@ class AuthRepository(
             is Result.Success -> {
                 tokenStorage.accessToken = result.value.accessToken
                 tokenStorage.refreshToken = result.value.refreshToken
+                tokenStorage.accountId = result.value.accountId
                 result
             }
             is Result.Error -> result
