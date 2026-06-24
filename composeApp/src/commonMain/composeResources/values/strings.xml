@@ -94,4 +94,12 @@
     <string name="profile_logout_confirm">Are you sure you want to log out?</string>
     <string name="profile_logout_confirm_yes">Log out</string>
     <string name="profile_logout_confirm_cancel">Cancel</string>
+    <string name="profile_export_data">Export My Data</string>
+    <string name="profile_export_title">My Data</string>
+    <string name="profile_export_close">Close</string>
+    <string name="profile_delete_account">Delete Account</string>
+    <string name="profile_delete_account_confirm">Are you sure you want to delete your account? This cannot be undone.</string>
+    <string name="profile_delete_account_confirm_yes">Delete</string>
+    <string name="profile_delete_account_confirm_cancel">Cancel</string>
+    <string name="profile_re_accept_consent">Re-accept Privacy Policy</string>
 </resources>
