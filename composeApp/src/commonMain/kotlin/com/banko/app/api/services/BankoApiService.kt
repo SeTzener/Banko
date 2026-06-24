@@ -2,14 +2,19 @@ package com.banko.app.api.services
 
 import com.banko.app.api.HttpClientProvider
 import com.banko.app.api.auth.TokenStorage
+import com.banko.app.api.dto.bankoApi.AcceptConsentRequest
 import com.banko.app.api.dto.bankoApi.AuthResponse
+import com.banko.app.api.dto.bankoApi.ChangePasswordRequest
 import com.banko.app.api.dto.bankoApi.ExpenseTag
 import com.banko.app.api.dto.bankoApi.ExpenseTags
 import com.banko.app.api.dto.bankoApi.LoginRequest
 import com.banko.app.api.dto.bankoApi.RefreshRequest
 import com.banko.app.api.dto.bankoApi.RegisterRequest
 import com.banko.app.api.dto.bankoApi.Transactions
+import com.banko.app.api.dto.bankoApi.UpdateProfileRequest
 import com.banko.app.api.dto.bankoApi.UpsertExpenseTag
+import com.banko.app.api.dto.bankoApi.UserExportData
+import com.banko.app.api.dto.bankoApi.UserProfileResponse
 import com.banko.app.api.utils.getSafe
 import com.banko.app.api.utils.postSafe
 import com.banko.app.api.utils.putSafe
@@ -174,6 +179,45 @@ class BankoApiService(
         return client.postSafe("$baseUrl/Users/refresh") {
             contentType(ContentType.Application.Json)
             setBody(RefreshRequest(refreshToken = refreshToken))
+        }
+    }
+
+    suspend fun getProfile(): Result<UserProfileResponse> {
+        return client.getSafe("$baseUrl/Users/me") {
+            contentType(ContentType.Application.Json)
+        }
+    }
+
+    suspend fun updateProfile(request: UpdateProfileRequest): Result<UserProfileResponse> {
+        return client.putSafe("$baseUrl/Users/me") {
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }
+    }
+
+    suspend fun changePassword(currentPassword: String, newPassword: String): Result<Unit> {
+        return client.putSafe("$baseUrl/Users/me/password") {
+            contentType(ContentType.Application.Json)
+            setBody(ChangePasswordRequest(currentPassword = currentPassword, newPassword = newPassword))
+        }
+    }
+
+    suspend fun acceptConsent(policyVersionId: String): Result<Unit> {
+        return client.putSafe("$baseUrl/Users/me/consent") {
+            contentType(ContentType.Application.Json)
+            setBody(AcceptConsentRequest(policyVersionId = policyVersionId))
+        }
+    }
+
+    suspend fun exportData(): Result<UserExportData> {
+        return client.getSafe("$baseUrl/Users/me/export") {
+            contentType(ContentType.Application.Json)
+        }
+    }
+
+    suspend fun deleteAccount(): Result<Unit> {
+        return client.deleteSafe("$baseUrl/Users/me") {
+            contentType(ContentType.Application.Json)
         }
     }
 }
