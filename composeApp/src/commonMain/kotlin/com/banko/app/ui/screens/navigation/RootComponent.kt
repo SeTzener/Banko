@@ -3,9 +3,9 @@ package com.banko.app.ui.screens.navigation
 import com.arkivanov.decompose.ComponentContext
 import com.arkivanov.decompose.ExperimentalDecomposeApi
 import com.arkivanov.decompose.router.stack.StackNavigation
+import com.arkivanov.decompose.router.stack.bringToFront
 import com.arkivanov.decompose.router.stack.childStack
 import com.arkivanov.decompose.router.stack.pop
-import com.arkivanov.decompose.router.stack.pushNew
 import com.banko.app.api.auth.SessionManager
 import com.banko.app.ui.models.Transaction
 import com.banko.app.ui.screens.details.DetailsComponent
@@ -38,7 +38,7 @@ class RootComponent(
                 HomeComponent(
                     componentContext = context,
                     onNavigateToDetails = { transaction ->
-                        navigation.pushNew(Configuration.Details(transaction))
+                        navigation.bringToFront(Configuration.Details(transaction))
                     }
                 )
             )
@@ -53,7 +53,7 @@ class RootComponent(
             is Configuration.Settings -> Child.Settings(
                 SettingsComponent(
                     componentContext = context,
-                    onNavigateToProfile = { navigation.pushNew(Configuration.Profile) },
+                    onNavigateToProfile = { navigation.bringToFront(Configuration.Profile) },
                 )
             )
             is Configuration.Profile -> Child.Profile(

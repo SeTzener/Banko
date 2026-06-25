@@ -22,6 +22,7 @@ class AuthRepository(
             tokenStorage.accessToken = devResponse.accessToken
             tokenStorage.refreshToken = devResponse.refreshToken
             tokenStorage.accountId = devResponse.accountId
+            apiService.clearAuthCache()
             return Result.Success(devResponse)
         }
         return when (val result = apiService.login(email, password)) {
@@ -29,6 +30,7 @@ class AuthRepository(
                 tokenStorage.accessToken = result.value.accessToken
                 tokenStorage.refreshToken = result.value.refreshToken
                 tokenStorage.accountId = result.value.accountId
+                apiService.clearAuthCache()
                 result
             }
             is Result.Error -> result
@@ -46,6 +48,7 @@ class AuthRepository(
                 tokenStorage.accessToken = result.value.accessToken
                 tokenStorage.refreshToken = result.value.refreshToken
                 tokenStorage.accountId = result.value.accountId
+                apiService.clearAuthCache()
                 result
             }
             is Result.Error -> result
@@ -59,6 +62,7 @@ class AuthRepository(
             is Result.Success -> {
                 tokenStorage.accessToken = result.value.accessToken
                 tokenStorage.refreshToken = result.value.refreshToken
+                apiService.clearAuthCache()
                 result
             }
             is Result.Error -> {
