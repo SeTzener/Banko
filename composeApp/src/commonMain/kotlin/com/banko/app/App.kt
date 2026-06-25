@@ -18,6 +18,7 @@ import com.arkivanov.decompose.extensions.compose.jetbrains.stack.animation.slid
 import com.arkivanov.decompose.extensions.compose.jetbrains.stack.animation.stackAnimation
 import com.arkivanov.decompose.extensions.compose.jetbrains.subscribeAsState
 import com.arkivanov.decompose.router.stack.popTo
+import com.arkivanov.decompose.router.stack.bringToFront
 import com.arkivanov.decompose.router.stack.pushNew
 import com.banko.app.api.auth.AuthState
 import com.banko.app.ui.screens.auth.AuthComponent
@@ -68,7 +69,7 @@ fun App(root: RootComponent, authComponent: AuthComponent) {
                                     onClick = {
                                         if (childStack.value.active.configuration != item.route) {
                                             if (item.route != RootComponent.Configuration.Home) {
-                                                root.navigation.pushNew(item.route)
+                                                root.navigation.bringToFront(item.route)
                                             } else {
                                                 root.navigation.popTo(index = 0)
                                             }
