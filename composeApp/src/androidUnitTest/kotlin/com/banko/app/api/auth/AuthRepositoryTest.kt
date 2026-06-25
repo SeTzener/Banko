@@ -22,7 +22,10 @@ class AuthRepositoryTest {
     private val apiService = mockk<BankoApiService>()
     private val tokenStorage = mockk<TokenStorage>(relaxed = true)
 
-    private fun createRepository(): AuthRepository = AuthRepository(apiService, tokenStorage)
+    private fun createRepository(): AuthRepository {
+        every { apiService.clearAuthCache() } just runs
+        return AuthRepository(apiService, tokenStorage)
+    }
 
     @Test
     fun `login success stores tokens`() {

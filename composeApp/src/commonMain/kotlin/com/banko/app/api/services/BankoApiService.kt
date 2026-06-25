@@ -21,10 +21,15 @@ import com.banko.app.api.utils.putSafe
 import com.banko.app.api.utils.deleteSafe
 import com.banko.app.api.utils.Result
 import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.auth.Auth
+import io.ktor.client.plugins.auth.authProvider
+import io.ktor.client.plugins.auth.providers.BearerAuthProvider
 import io.ktor.client.plugins.auth.providers.BearerTokens
 import io.ktor.client.plugins.auth.providers.bearer
 import io.ktor.client.request.parameter
+import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
@@ -46,10 +51,31 @@ class BankoApiService(
                         val refresh = ts.refreshToken ?: ""
                         BearerTokens(access, refresh)
                     }
+                    refreshTokens {
+                        val currentRefreshToken = ts.refreshToken
+                            ?: return@refreshTokens null
+                        try {
+                            val response = client.post("$baseUrl/Users/refresh") {
+                                contentType(ContentType.Application.Json)
+                                setBody(RefreshRequest(refreshToken = currentRefreshToken))
+                                markAsRefreshTokenRequest()
+                            }
+                            val authResponse = response.body<AuthResponse>()
+                            ts.accessToken = authResponse.accessToken
+                            ts.refreshToken = authResponse.refreshToken
+                            BearerTokens(authResponse.accessToken, authResponse.refreshToken)
+                        } catch (e: ClientRequestException) {
+                            null
+                        }
+                    }
                 }
             }
         }
     } ?: client
+
+    fun clearAuthCache() {
+        client.authProvider<BearerAuthProvider>()?.clearToken()
+    }
 
     private val baseUrl = "https://www.bankoapi.space"
 
