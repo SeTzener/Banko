@@ -64,6 +64,7 @@ import com.banko.app.ui.components.ErrorSnackbarHost
 import com.banko.app.ui.models.ExpenseTag
 import com.banko.app.ui.models.Transaction
 import com.banko.app.ui.screens.details.DropDownMenus.ExpenseTagDropdown
+import com.banko.app.domain.model.currencyDisplayForCode
 import com.banko.app.ui.utils.ErrorState
 import com.banko.app.ui.utils.toUserMessage
 import com.banko.app.ui.screens.details.DropDownMenus.MoreOptionsDropDown
@@ -196,7 +197,7 @@ fun DetailsScreen(
                     )
                     Text(
                         modifier = Modifier.align(Alignment.Bottom),
-                        text = transaction.currency,
+                        text = currencyDisplayForCode(transaction.currency),
                         color = MaterialTheme.colorScheme.primary,
                         style = MaterialTheme.typography.bodyMedium
                     )

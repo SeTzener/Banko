@@ -2,7 +2,11 @@ package com.banko.app.ui.screens.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.banko.app.data.repository.CurrencyRepository
 import com.banko.app.data.repository.TransactionRepository
+import com.banko.app.domain.CurrencyPreferences
+import com.banko.app.domain.model.isCurrencySupported
+import kotlin.math.roundToLong
 import com.banko.app.ui.models.toUi
 import com.banko.app.ui.utils.ErrorState
 import com.banko.app.ui.utils.classifyError
@@ -16,6 +20,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.launchIn
@@ -28,7 +33,9 @@ import kotlinx.datetime.LocalDateTime
 private const val SYNC_COOLDOWN_MS = 300_000L
 
 class HomeScreenViewModel(
-    private val repository: TransactionRepository
+    private val repository: TransactionRepository,
+    private val currencyRepository: CurrencyRepository,
+    private val currencyPreferences: CurrencyPreferences,
 ) : ViewModel() {
     private val _state = MutableStateFlow(HomeScreenState())
     val state: StateFlow<HomeScreenState> = _state.asStateFlow()
@@ -71,6 +78,9 @@ class HomeScreenViewModel(
             isSyncing = s.isSyncing,
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, UiState())
+
+    val selectedCurrency: StateFlow<String> = currencyPreferences.selectedCurrency
+        .stateIn(viewModelScope, SharingStarted.Eagerly, CurrencyPreferences.DEFAULT_CURRENCY)
 
     val selectedCategoryId: StateFlow<String?> = _state.map { s ->
         when (s.tagFilter) {
@@ -147,14 +157,12 @@ class HomeScreenViewModel(
         viewModelScope.launch {
             delay(200)
 
-            // Show cached DB data immediately
             val oldestDate = repository.getOldestTransactions()
             val months = generateMonthRange(oldestDate)
             val years = months.map { it.year }.distinct().sortedDescending()
             _state.update { it.copy(availableMonths = months, availableYears = years) }
             loadTransactionsForCurrentSelection()
 
-            // Sync in background — never block screen init
             if (months.size < 24) {
                 viewModelScope.launch {
                     delay(500)
@@ -187,14 +195,56 @@ class HomeScreenViewModel(
         transactionsJob?.cancel()
 
         val sel = state.selectedTimespan
-        transactionsJob = repository.getTransactionsForDateRange(sel.fromDate, sel.toDate)
-            .map { list -> list.map { it.toUi() } }
+        transactionsJob = combine(
+            repository.getTransactionsForDateRange(sel.fromDate, sel.toDate),
+            currencyPreferences.selectedCurrency,
+        ) { domainTransactions, selectedCurrency ->
+            val uiTransactions = domainTransactions.map { it.toUi() }
+            convertTransactions(uiTransactions, selectedCurrency, sel.fromDate, sel.toDate)
+        }
             .onEach { transactions ->
                 _state.update {
                     it.copy(transactions = transactions, isLoading = false, isRefreshing = false)
                 }
             }
             .launchIn(viewModelScope)
+    }
+
+    private suspend fun convertTransactions(
+        transactions: List<com.banko.app.ui.models.Transaction>,
+        selectedCurrency: String,
+        fromDate: LocalDate,
+        toDate: LocalDate,
+    ): List<com.banko.app.ui.models.Transaction> {
+        val currencyPairs = transactions
+            .map { it.currency }
+            .filter { it != selectedCurrency && isCurrencySupported(it) }
+            .distinct()
+
+        val ratesByCurrency = mutableMapOf<String, Map<LocalDate, Double>>()
+        for (originalCurrency in currencyPairs) {
+            val rates = currencyRepository.getRatesForDateRange(
+                fromCurrency = originalCurrency,
+                toCurrency = selectedCurrency,
+                startDate = fromDate,
+                endDate = toDate,
+            )
+            ratesByCurrency[originalCurrency] = rates
+        }
+
+        return transactions.map { tx ->
+            if (tx.currency == selectedCurrency || !isCurrencySupported(tx.currency)) {
+                tx
+            } else {
+                val rates = ratesByCurrency[tx.currency] ?: emptyMap()
+                val rate = rates[tx.bookingDate.date]
+                if (rate != null) {
+                    tx.copy(amount = (tx.amount * rate * 100.0).roundToLong() / 100.0, currency = selectedCurrency)
+                } else {
+                    tx
+                }
+            }
+        }
     }
 
     private fun scheduleBackgroundSync() {
