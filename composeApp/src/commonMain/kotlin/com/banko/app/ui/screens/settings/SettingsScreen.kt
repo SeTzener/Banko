@@ -1,15 +1,24 @@
 package com.banko.app.ui.screens.settings
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -22,13 +31,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import banko.composeapp.generated.resources.Res
+import banko.composeapp.generated.resources.currency
 import banko.composeapp.generated.resources.expense_tags
 import banko.composeapp.generated.resources.expense_tags_title
+import banko.composeapp.generated.resources.general
+import banko.composeapp.generated.resources.ic_arrow_right
 import banko.composeapp.generated.resources.ic_expense_tags
 import banko.composeapp.generated.resources.profile
 import banko.composeapp.generated.resources.settings
+import com.banko.app.domain.model.currencyDisplayForCode
 import com.banko.app.ui.components.SettingsCard
 import com.banko.app.ui.screens.settings.bottomsheets.ExpenseTagsBottomSheetContent
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.annotation.KoinExperimentalAPI
@@ -38,28 +52,24 @@ import org.koin.core.annotation.KoinExperimentalAPI
 fun SettingsScreen(component: SettingsComponent) {
     val viewModel = koinViewModel<SettingsScreenViewModel>()
     val screenState by viewModel.screenState.collectAsState()
-    // Bottom sheet
     var currentBottomSheet by remember { mutableStateOf(BottomSheetType.NONE) }
+    var currencyDropdownExpanded by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    if (currentBottomSheet != BottomSheetType.NONE) {
+    if (currentBottomSheet == BottomSheetType.EXPENSE_TAGS) {
         ModalBottomSheet(
             onDismissRequest = { currentBottomSheet = BottomSheetType.NONE },
             sheetState = sheetState
         ) {
-            when (currentBottomSheet) {
-                BottomSheetType.EXPENSE_TAGS -> ExpenseTagsBottomSheetContent(
-                    screenState = screenState,
-                    loadNewTags = { viewModel.loadExpenseTags() },
-                    onTagUpdate = { viewModel.updateExpenseTag(it) },
-                    onTagCreate = { name, color, isEarning -> viewModel.createExpenseTag(name, color, isEarning) },
-                    onTagDelete = { viewModel.deleteExpenseTag(it) },
-                    clearError = { viewModel.clearError() },
-                    onClose = { currentBottomSheet = BottomSheetType.NONE }
-                )
-
-                BottomSheetType.NONE -> {} // Do nothing
-            }
+            ExpenseTagsBottomSheetContent(
+                screenState = screenState,
+                loadNewTags = { viewModel.loadExpenseTags() },
+                onTagUpdate = { viewModel.updateExpenseTag(it) },
+                onTagCreate = { name, color, isEarning -> viewModel.createExpenseTag(name, color, isEarning) },
+                onTagDelete = { viewModel.deleteExpenseTag(it) },
+                clearError = { viewModel.clearError() },
+                onClose = { currentBottomSheet = BottomSheetType.NONE }
+            )
         }
     }
 
@@ -92,6 +102,76 @@ fun SettingsScreen(component: SettingsComponent) {
                     description = Res.string.profile,
                     onClick = component.onNavigateToProfile,
                 )
+            }
+            Row {
+                Text(
+                    modifier = Modifier.padding(top = 24.dp, bottom = 16.dp),
+                    text = stringResource(Res.string.general),
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.titleSmall
+                )
+            }
+            Card(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { currencyDropdownExpanded = true }
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(Res.string.currency),
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = currencyDisplayForCode(screenState.selectedCurrency.code),
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                            Icon(
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .padding(start = 4.dp),
+                                painter = painterResource(Res.drawable.ic_arrow_right),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+                    Box {
+                        DropdownMenu(
+                            expanded = currencyDropdownExpanded,
+                            onDismissRequest = { currencyDropdownExpanded = false }
+                        ) {
+                            screenState.availableCurrencies.forEach { currency ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = "${currency.symbol}  ${currency.code} — ${currency.name}",
+                                            color = MaterialTheme.colorScheme.primary,
+                                        )
+                                    },
+                                    onClick = {
+                                        viewModel.setCurrency(currency.code)
+                                        currencyDropdownExpanded = false
+                                    },
+                                    leadingIcon = {
+                                        RadioButton(
+                                            selected = currency.code == screenState.selectedCurrency.code,
+                                            onClick = null,
+                                        )
+                                    },
+                                )
+                            }
+                        }
+                    }
+                }
             }
             Row {
                 Text(
