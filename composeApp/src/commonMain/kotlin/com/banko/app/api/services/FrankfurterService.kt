@@ -12,7 +12,7 @@ class FrankfurterService(
         HttpClientProvider()()
     }
 ) {
-    private val baseUrl = "https://api.frankfurter.app"
+    private val baseUrl = "https://api.frankfurter.dev/v1"
 
     suspend fun getTimeSeriesRates(
         fromCurrency: String,

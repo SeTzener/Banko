@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -36,6 +37,7 @@ import banko.composeapp.generated.resources.expense_tags
 import banko.composeapp.generated.resources.expense_tags_title
 import banko.composeapp.generated.resources.general
 import banko.composeapp.generated.resources.ic_arrow_right
+import banko.composeapp.generated.resources.ic_currency
 import banko.composeapp.generated.resources.ic_expense_tags
 import banko.composeapp.generated.resources.profile
 import banko.composeapp.generated.resources.settings
@@ -114,19 +116,33 @@ fun SettingsScreen(component: SettingsComponent) {
             Card(
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column {
-                    Row(
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { currencyDropdownExpanded = true }
+                        .padding(top = 12.dp, bottom = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { currencyDropdownExpanded = true }
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                            .padding(start = 24.dp, top = 12.dp, bottom = 12.dp, end = 24.dp)
                     ) {
-                        Text(
-                            text = stringResource(Res.string.currency),
-                            color = MaterialTheme.colorScheme.primary,
+                        Icon(
+                            modifier = Modifier.size(24.dp),
+                            painter = painterResource(Res.drawable.ic_currency),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
                         )
+                    }
+                    Text(
+                        modifier = Modifier.weight(1f),
+                        text = stringResource(Res.string.currency),
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Box(
+                        modifier = Modifier
+                            .padding(start = 24.dp, top = 12.dp, bottom = 12.dp, end = 16.dp)
+                    ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -143,9 +159,8 @@ fun SettingsScreen(component: SettingsComponent) {
                                 tint = MaterialTheme.colorScheme.primary,
                             )
                         }
-                    }
-                    Box {
                         DropdownMenu(
+                            modifier = Modifier.heightIn(max = 280.dp),
                             expanded = currencyDropdownExpanded,
                             onDismissRequest = { currencyDropdownExpanded = false }
                         ) {

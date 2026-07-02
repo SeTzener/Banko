@@ -14,14 +14,14 @@ interface ExchangeRateDao {
 
     @Query(
         """
-        SELECT rate FROM exchange_rates 
+        SELECT * FROM exchange_rates 
         WHERE fromCurrency = :fromCurrency 
         AND toCurrency = :toCurrency 
         AND date = :date 
         LIMIT 1
         """
     )
-    suspend fun getRate(fromCurrency: String, toCurrency: String, date: String): Double?
+    suspend fun getRate(fromCurrency: String, toCurrency: String, date: String): ExchangeRate?
 
     @Query(
         """

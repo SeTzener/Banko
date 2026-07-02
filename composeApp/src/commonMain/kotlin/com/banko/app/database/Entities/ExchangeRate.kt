@@ -10,5 +10,5 @@ data class ExchangeRate(
     val fromCurrency: String,
     val toCurrency: String,
     val date: String,
-    val rate: Double,
+    val rate: Double?,
 )

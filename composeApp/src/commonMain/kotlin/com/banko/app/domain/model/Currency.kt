@@ -6,7 +6,12 @@ data class CurrencyInfo(
     val symbol: String,
 ) {
     val displayLabel: String
-        get() = if (code in setOf("NOK", "SEK", "DKK", "ISK")) code else symbol
+        get() = when (code) {
+            in setOf("NOK", "SEK", "DKK", "ISK") -> code
+            in setOf("USD", "CAD", "AUD", "NZD") -> code
+            in setOf("CHF") -> code
+            else -> symbol
+        }
 }
 
 fun currencyDisplayForCode(code: String): String {

@@ -3,6 +3,7 @@ package com.banko.app.ui.screens.settings
 import androidx.compose.ui.graphics.Color
 import com.banko.app.api.repositories.ExpenseTagRepository
 import com.banko.app.database.Entities.ExpenseTag as DaoExpenseTag
+import com.banko.app.domain.CurrencyPreferences
 import com.banko.app.database.repository.ExpenseTagRepository as DatabaseExpenseTagRepository
 import com.banko.app.ui.models.ExpenseTag
 import io.mockk.coEvery
@@ -28,6 +29,7 @@ class SettingsScreenViewModelTest {
 
     private val dbRepository = mockk<DatabaseExpenseTagRepository>(relaxed = true)
     private val apiRepository = mockk<ExpenseTagRepository>(relaxed = true)
+    private val currencyPreferences = mockk<CurrencyPreferences>(relaxed = true)
     private val testDispatcher: TestDispatcher = StandardTestDispatcher()
 
     @Before
@@ -45,7 +47,8 @@ class SettingsScreenViewModelTest {
     fun `should load expense tags from db on init`() = runTest(testDispatcher) {
         val vm = SettingsScreenViewModel(
             dbRepository = dbRepository,
-            apiRepository = apiRepository
+            apiRepository = apiRepository,
+            currencyPreferences = currencyPreferences
         )
         advanceUntilIdle()
 
@@ -58,11 +61,13 @@ class SettingsScreenViewModelTest {
         val apiTags = listOf(
             ExpenseTag(id = "1", name = "Food", color = Color.Red, isEarning = false, aka = emptyList())
         )
+        every { currencyPreferences.selectedCurrency } returns flowOf("NOK")
         coEvery { apiRepository.getExpenseTags() } returns apiTags
 
         val vm = SettingsScreenViewModel(
             dbRepository = dbRepository,
-            apiRepository = apiRepository
+            apiRepository = apiRepository,
+            currencyPreferences = currencyPreferences
         )
         advanceUntilIdle()
 
@@ -82,7 +87,8 @@ class SettingsScreenViewModelTest {
 
         val vm = SettingsScreenViewModel(
             dbRepository = dbRepository,
-            apiRepository = apiRepository
+            apiRepository = apiRepository,
+            currencyPreferences = currencyPreferences
         )
         advanceUntilIdle()
 
@@ -101,7 +107,8 @@ class SettingsScreenViewModelTest {
 
         val vm = SettingsScreenViewModel(
             dbRepository = dbRepository,
-            apiRepository = apiRepository
+            apiRepository = apiRepository,
+            currencyPreferences = currencyPreferences
         )
         advanceUntilIdle()
 
@@ -120,7 +127,8 @@ class SettingsScreenViewModelTest {
 
         val vm = SettingsScreenViewModel(
             dbRepository = dbRepository,
-            apiRepository = apiRepository
+            apiRepository = apiRepository,
+            currencyPreferences = currencyPreferences
         )
         advanceUntilIdle()
 
@@ -139,7 +147,8 @@ class SettingsScreenViewModelTest {
 
         val vm = SettingsScreenViewModel(
             dbRepository = dbRepository,
-            apiRepository = apiRepository
+            apiRepository = apiRepository,
+            currencyPreferences = currencyPreferences
         )
         advanceUntilIdle()
 
@@ -153,7 +162,8 @@ class SettingsScreenViewModelTest {
     fun `should delete expense tag via API then remove locally`() = runTest(testDispatcher) {
         val vm = SettingsScreenViewModel(
             dbRepository = dbRepository,
-            apiRepository = apiRepository
+            apiRepository = apiRepository,
+            currencyPreferences = currencyPreferences
         )
         advanceUntilIdle()
 
