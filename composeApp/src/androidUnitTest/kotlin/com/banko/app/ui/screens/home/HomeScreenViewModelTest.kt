@@ -2,7 +2,9 @@ package com.banko.app.ui.screens.home
 
 import com.banko.app.domain.model.ExpenseTag as DomainExpenseTag
 import com.banko.app.domain.model.Transaction as DomainTransaction
+import com.banko.app.data.repository.CurrencyRepository
 import com.banko.app.data.repository.TransactionRepository
+import com.banko.app.domain.CurrencyPreferences
 import com.banko.app.ui.utils.ErrorType
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -32,12 +34,15 @@ import kotlin.test.assertTrue
 class HomeScreenViewModelTest {
 
     private val repository = mockk<TransactionRepository>(relaxed = true)
+    private val currencyRepository = mockk<CurrencyRepository>(relaxed = true)
+    private val currencyPreferences = mockk<CurrencyPreferences>(relaxed = true)
     private val testDispatcher: TestDispatcher = StandardTestDispatcher()
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         coEvery { repository.getOldestTransactions() } returns LocalDateTime(2024, 1, 1, 0, 0)
+        coEvery { currencyPreferences.selectedCurrency } returns flowOf("NOK")
     }
 
     @After
@@ -49,7 +54,7 @@ class HomeScreenViewModelTest {
     fun `should load cached db data on init`() = runTest(testDispatcher) {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
 
-        val vm = HomeScreenViewModel(repository)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
         advanceUntilIdle()
 
         coVerify { repository.getOldestTransactions() }
@@ -61,7 +66,7 @@ class HomeScreenViewModelTest {
     fun `should have correct default selected timespan on init`() = runTest(testDispatcher) {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
 
-        val vm = HomeScreenViewModel(repository)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
         advanceUntilIdle()
 
         val timespan = vm.state.value.selectedTimespan
@@ -75,7 +80,7 @@ class HomeScreenViewModelTest {
     fun `should query oldest transactions on init`() = runTest(testDispatcher) {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
 
-        val vm = HomeScreenViewModel(repository)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
         advanceUntilIdle()
 
         coVerify { repository.getOldestTransactions() }
@@ -88,7 +93,7 @@ class HomeScreenViewModelTest {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
         coEvery { repository.fetchAndStoreTransactionsForDateRange(any(), any()) } returns Unit
 
-        val vm = HomeScreenViewModel(repository)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
         advanceUntilIdle()
 
         vm.handleEvent(TransactionsEvent.Refresh)
@@ -101,7 +106,7 @@ class HomeScreenViewModelTest {
     fun `should set isRefreshing during refresh`() = runTest(testDispatcher) {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
 
-        val vm = HomeScreenViewModel(repository)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
         advanceUntilIdle()
 
         vm.handleEvent(TransactionsEvent.Refresh)
@@ -133,7 +138,7 @@ class HomeScreenViewModelTest {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(listOf(domainTx))
         coEvery { repository.deleteTransaction("tx-1") } returns Unit
 
-        val vm = HomeScreenViewModel(repository)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
         advanceUntilIdle()
 
         assertEquals(1, vm.state.value.transactions.size)
@@ -150,7 +155,7 @@ class HomeScreenViewModelTest {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
         coEvery { repository.deleteTransaction(any()) } throws RuntimeException("Delete failed")
 
-        val vm = HomeScreenViewModel(repository)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
         advanceUntilIdle()
 
         vm.handleEvent(TransactionsEvent.DeleteTransaction("tx-1"))
@@ -163,7 +168,7 @@ class HomeScreenViewModelTest {
     fun `should select month timespan and reload transactions`() = runTest(testDispatcher) {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
 
-        val vm = HomeScreenViewModel(repository)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
         advanceUntilIdle()
 
         val monthSel = TimespanSelection.Month(YearMonth(2024, 6))
@@ -180,7 +185,7 @@ class HomeScreenViewModelTest {
     fun `should select year timespan and reload transactions`() = runTest(testDispatcher) {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
 
-        val vm = HomeScreenViewModel(repository)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
         advanceUntilIdle()
 
         vm.handleEvent(TransactionsEvent.SelectTimespan(TimespanSelection.Year(2025)))
@@ -196,7 +201,7 @@ class HomeScreenViewModelTest {
     fun `should toggle from month to year and back`() = runTest(testDispatcher) {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
 
-        val vm = HomeScreenViewModel(repository)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
         advanceUntilIdle()
 
         assertEquals(false, vm.state.value.isYearView)
@@ -216,7 +221,7 @@ class HomeScreenViewModelTest {
     fun `should load more data for older month`() = runTest(testDispatcher) {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
 
-        val vm = HomeScreenViewModel(repository)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
         advanceUntilIdle()
 
         vm.handleEvent(TransactionsEvent.LoadMore)
@@ -231,7 +236,7 @@ class HomeScreenViewModelTest {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
         coEvery { repository.deleteTransaction(any()) } throws RuntimeException("Delete failed")
 
-        val vm = HomeScreenViewModel(repository)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
         advanceUntilIdle()
 
         vm.handleEvent(TransactionsEvent.DeleteTransaction("tx-1"))
@@ -247,7 +252,7 @@ class HomeScreenViewModelTest {
     fun `timespanState mirrors timespan changes`() = runTest(testDispatcher) {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
 
-        val vm = HomeScreenViewModel(repository)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
         advanceUntilIdle()
 
         val monthSel = TimespanSelection.Month(YearMonth(2024, 6))
@@ -264,7 +269,7 @@ class HomeScreenViewModelTest {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
         coEvery { repository.deleteTransaction(any()) } throws RuntimeException("Delete failed")
 
-        val vm = HomeScreenViewModel(repository)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
         advanceUntilIdle()
 
         vm.handleEvent(TransactionsEvent.DeleteTransaction("tx-1"))
@@ -300,7 +305,7 @@ class HomeScreenViewModelTest {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(listOf(domainTx))
         coEvery { repository.deleteTransaction("tx-1") } returns Unit
 
-        val vm = HomeScreenViewModel(repository)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
         advanceUntilIdle()
 
         assertEquals(1, vm.transactionListState.value.transactions.size)
@@ -315,7 +320,7 @@ class HomeScreenViewModelTest {
     fun `sub-state flows do not emit when unrelated fields change`() = runTest(testDispatcher) {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
 
-        val vm = HomeScreenViewModel(repository)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
         advanceUntilIdle()
 
         val tsEmissions = mutableListOf<TimespanState>()
@@ -339,7 +344,7 @@ class HomeScreenViewModelTest {
     fun `sub-state initial values match combined state defaults`() = runTest(testDispatcher) {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
 
-        val vm = HomeScreenViewModel(repository)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
         advanceUntilIdle()
 
         val combined = vm.state.value
@@ -352,7 +357,7 @@ class HomeScreenViewModelTest {
     fun `SelectTag with same tag deselects`() = runTest(testDispatcher) {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
 
-        val vm = HomeScreenViewModel(repository)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
         advanceUntilIdle()
 
         vm.handleEvent(TransactionsEvent.SelectTag("tag-1"))
@@ -369,7 +374,7 @@ class HomeScreenViewModelTest {
     fun `SelectTag with different tag replaces selection`() = runTest(testDispatcher) {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
 
-        val vm = HomeScreenViewModel(repository)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
         advanceUntilIdle()
 
         vm.handleEvent(TransactionsEvent.SelectTag("tag-1"))
@@ -385,7 +390,7 @@ class HomeScreenViewModelTest {
     fun `SelectTag with null selects uncategorized`() = runTest(testDispatcher) {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
 
-        val vm = HomeScreenViewModel(repository)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
         advanceUntilIdle()
 
         vm.handleEvent(TransactionsEvent.SelectTag(null))
@@ -398,7 +403,7 @@ class HomeScreenViewModelTest {
     fun `toggle null tag deselects uncategorized`() = runTest(testDispatcher) {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
 
-        val vm = HomeScreenViewModel(repository)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
         advanceUntilIdle()
 
         vm.handleEvent(TransactionsEvent.SelectTag(null))
@@ -415,7 +420,7 @@ class HomeScreenViewModelTest {
     fun `changing month timespan resets tagFilter`() = runTest(testDispatcher) {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
 
-        val vm = HomeScreenViewModel(repository)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
         advanceUntilIdle()
 
         vm.handleEvent(TransactionsEvent.SelectTag("tag-1"))
@@ -432,7 +437,7 @@ class HomeScreenViewModelTest {
     fun `changing year timespan resets tagFilter`() = runTest(testDispatcher) {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
 
-        val vm = HomeScreenViewModel(repository)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
         advanceUntilIdle()
 
         vm.handleEvent(TransactionsEvent.SelectTag("tag-1"))
@@ -468,7 +473,7 @@ class HomeScreenViewModelTest {
         )
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(listOf(txWithTag, txNoTag))
 
-        val vm = HomeScreenViewModel(repository)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
         advanceUntilIdle()
 
         assertEquals(2, vm.filteredTransactionListState.value.transactions.size)
@@ -498,7 +503,7 @@ class HomeScreenViewModelTest {
         )
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(listOf(txTag1, txTag2))
 
-        val vm = HomeScreenViewModel(repository)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
         advanceUntilIdle()
 
         vm.handleEvent(TransactionsEvent.SelectTag("tag-1"))
@@ -532,7 +537,7 @@ class HomeScreenViewModelTest {
         )
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(listOf(txWithTag, txNoTag))
 
-        val vm = HomeScreenViewModel(repository)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
         advanceUntilIdle()
 
         vm.handleEvent(TransactionsEvent.SelectTag(null))

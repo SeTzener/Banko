@@ -7,24 +7,32 @@ import androidx.lifecycle.viewModelScope
 import com.banko.app.ApiExpenseTagRepository
 import com.banko.app.DatabaseExpenseTagRepository
 import com.banko.app.database.Entities.toModelItem
+import com.banko.app.domain.CurrencyPreferences
+import com.banko.app.domain.model.CurrencyInfo
+import com.banko.app.domain.model.getSupportedCurrencies
 import com.banko.app.ui.models.ExpenseTag
 import com.banko.app.ui.models.toDao
 import com.banko.app.ui.utils.ErrorState
 import com.banko.app.ui.utils.classifyError
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class SettingsScreenViewModel(
     private val dbRepository: DatabaseExpenseTagRepository,
-    private val apiRepository: ApiExpenseTagRepository
+    private val apiRepository: ApiExpenseTagRepository,
+    private val currencyPreferences: CurrencyPreferences,
 ) : ViewModel() {
     private val _screenState = MutableStateFlow(SettingsScreenState())
     val screenState: StateFlow<SettingsScreenState> = _screenState
 
     init {
         getExpenseTags()
+        loadCurrencyPreferences()
     }
 
     private fun getExpenseTags() {
@@ -33,6 +41,27 @@ class SettingsScreenViewModel(
                 .collect { result ->
                     _screenState.update { it.copy(expenseTags = result.mapNotNull { it?.toModelItem() }) }
                 }
+        }
+    }
+
+    private fun loadCurrencyPreferences() {
+        viewModelScope.launch {
+            currencyPreferences.selectedCurrency.collect { code ->
+                val currencies = getSupportedCurrencies()
+                val selected = currencies.find { it.code == code } ?: currencies.first()
+                _screenState.update {
+                    it.copy(
+                        selectedCurrency = selected,
+                        availableCurrencies = currencies
+                    )
+                }
+            }
+        }
+    }
+
+    fun setCurrency(code: String) {
+        viewModelScope.launch {
+            currencyPreferences.setSelectedCurrency(code)
         }
     }
 

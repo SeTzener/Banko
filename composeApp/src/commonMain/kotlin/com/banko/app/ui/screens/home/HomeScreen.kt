@@ -77,7 +77,6 @@ import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import banko.composeapp.generated.resources.Res
 import banko.composeapp.generated.resources.app_name
-import banko.composeapp.generated.resources.currency_nok
 import banko.composeapp.generated.resources.details
 import banko.composeapp.generated.resources.ic_delete
 import com.banko.app.ModelTransaction
@@ -87,6 +86,7 @@ import com.banko.app.ui.components.ExpandableCard
 import com.banko.app.ui.components.ExpenseTag
 import com.banko.app.ui.models.Transaction
 import com.banko.app.ui.components.dialogs.TransactionDeleteDialog
+import com.banko.app.domain.model.currencyDisplayForCode
 import com.banko.app.ui.utils.toUserMessage
 import kotlinx.datetime.Month
 import org.jetbrains.compose.resources.painterResource
@@ -105,12 +105,14 @@ fun HomeScreen(component: HomeComponent) {
     val uiState by viewModel.uiState.collectAsState()
     val selectedCategoryId by viewModel.selectedCategoryId.collectAsState()
     val isUncategorizedSelected by viewModel.isUncategorizedSelected.collectAsState()
+    val selectedCurrency by viewModel.selectedCurrency.collectAsState()
 
     HomeScreen(
         transactionListState = transactionListState,
         filteredTransactionListState = filteredTransactionListState,
         timespanState = timespanState,
         uiState = uiState,
+        selectedCurrency = selectedCurrency,
         selectedCategoryId = selectedCategoryId,
         isUncategorizedSelected = isUncategorizedSelected,
         navigateToDetails = component::navigateToDetails,
@@ -130,6 +132,7 @@ fun HomeScreen(
     filteredTransactionListState: TransactionListState,
     timespanState: TimespanState,
     uiState: UiState,
+    selectedCurrency: String,
     selectedCategoryId: String?,
     isUncategorizedSelected: Boolean,
     navigateToDetails: (ModelTransaction) -> Unit,
@@ -246,7 +249,7 @@ fun HomeScreen(
                             }
                     ) {
                         CircularIndicator(
-                            currency = stringResource(Res.string.currency_nok),
+                            currency = selectedCurrency,
                             transactions = transactionListState.transactions,
                             selectedTimespan = timespanState.selectedTimespan,
                             onCategoryClick = onCategoryClick,
@@ -403,7 +406,7 @@ private fun SwipableTransactionRow(
             ) {
                 Text(
                     modifier = Modifier.align(Alignment.End),
-                    text = "${transaction.amount} ${transaction.currency}",
+                    text = "${transaction.amount} ${currencyDisplayForCode(transaction.currency)}",
                     color = MaterialTheme.colorScheme.primary,
                     overflow = TextOverflow.Ellipsis,
                     maxLines = 1

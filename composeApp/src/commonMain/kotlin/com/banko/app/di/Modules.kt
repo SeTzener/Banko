@@ -1,5 +1,7 @@
 package com.banko.app.di
 
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import com.banko.app.ApiExpenseTagRepository
 import com.banko.app.ApiTransactionRepository
 import com.banko.app.DatabaseTransactionRepository
@@ -7,13 +9,16 @@ import com.banko.app.api.auth.AuthRepository
 import com.banko.app.api.auth.SessionManager
 import com.banko.app.api.auth.TokenStorage
 import com.banko.app.api.services.BankoApiService
+import com.banko.app.api.services.FrankfurterService
 import com.banko.app.database.BankoDatabase
 import com.banko.app.database.CreateDatabase
 import com.banko.app.database.repository.ExpenseTagRepository
 import com.banko.app.data.local.TransactionLocalDataSource
 import com.banko.app.data.remote.TransactionRemoteDataSource
+import com.banko.app.data.repository.CurrencyRepository
 import com.banko.app.data.repository.TransactionRepository
 import com.banko.app.domain.AssignExpenseTagToTransactionUseCase
+import com.banko.app.domain.CurrencyPreferences
 import com.banko.app.domain.GetAllExpenseTagUseCase
 import com.banko.app.domain.SaveNoteUseCase
 import com.banko.app.ui.screens.details.DetailsScreenViewModel
@@ -42,6 +47,9 @@ val  sharedModule = module {
     singleOf(::TransactionLocalDataSource)
     singleOf(::TransactionRemoteDataSource)
     singleOf(::TransactionRepository)
+    single { FrankfurterService() }
+    singleOf(::CurrencyRepository)
+    single { CurrencyPreferences(get<DataStore<Preferences>>()) }
 
     // Use Cases
     singleOf(::AssignExpenseTagToTransactionUseCase)

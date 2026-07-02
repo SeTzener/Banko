@@ -52,6 +52,7 @@ import com.banko.app.ui.screens.home.TimespanSelection
 import com.banko.app.ui.theme.Grey_Nevada
 import kotlinx.datetime.Month
 import org.jetbrains.compose.resources.stringResource
+import com.banko.app.domain.model.currencyDisplayForCode
 import kotlin.math.abs
 import kotlin.math.roundToLong
 
@@ -179,7 +180,7 @@ fun CircularIndicator(
                 monthlyBudget = animatedEarnings,
                 bigTextFontSize = bigTextFontSize,
                 bigTextColor = bigTextColor,
-                currency = currency,
+                currency = currencyDisplayForCode(currency),
                 monthlySpendings = spendingsLabel,
                 monthlyEarnings = earningsLabel,
                 smallTextColor = smallTextColor,
