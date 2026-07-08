@@ -7,6 +7,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -36,6 +37,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -65,11 +68,14 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
@@ -82,7 +88,6 @@ import banko.composeapp.generated.resources.ic_delete
 import com.banko.app.ModelTransaction
 import com.banko.app.ui.components.CircularIndicator
 import com.banko.app.ui.components.ErrorSnackbarHost
-import com.banko.app.ui.components.ExpandableCard
 import com.banko.app.ui.components.ExpenseTag
 import com.banko.app.ui.models.Transaction
 import com.banko.app.ui.components.dialogs.TransactionDeleteDialog
@@ -159,130 +164,232 @@ fun HomeScreen(
         }
     }
 
-    Column(
-        Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        TopContent()
-        TimespanBar(
-            selectedTimespan = timespanState.selectedTimespan,
-            availableMonths = timespanState.availableMonths,
-            availableYears = timespanState.availableYears,
-            isYearView = timespanState.isYearView,
-            onTimespanSelected = onTimespanSelected,
-            isLoadingMore = transactionListState.isLoadingMore,
-            onToggleView = onToggleView,
-            onLoadMore = onLoadMore
-        )
-        ExpandableCard(
-            isExpanded = true,
-            topContent = {},
-            expandedContent = {
-                AnimatedContent(
-                    targetState = timespanState.selectedTimespan,
-                    transitionSpec = {
-                        fun TimespanSelection.weight(): Int = when (this) {
-                            is TimespanSelection.Month -> ym.year * 12 + ym.month
-                            is TimespanSelection.Year -> year * 12 + 6
-                        }
-                        val target = targetState.weight()
-                        val initial = initialState.weight()
-                        if (target > initial) {
-                            slideInHorizontally { width -> -width } + fadeIn() togetherWith
-                            slideOutHorizontally { width -> width } + fadeOut()
-                        } else {
-                            slideInHorizontally { width -> width } + fadeIn() togetherWith
-                            slideOutHorizontally { width -> -width } + fadeOut()
-                        }
-                    },
-                    label = "widgetAnimation"
-                ) { _ ->
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .pointerInput(Unit) {
-                                detectHorizontalDragGestures(
-                                    onDragStart = { dragOffset = 0f },
-                                    onHorizontalDrag = { change, amount ->
-                                        change.consume()
-                                        dragOffset += amount
-                                    },
-                                    onDragEnd = {
-                                        val ts = currentTimespanState
-                                        when (val sel = ts.selectedTimespan) {
-                                            is TimespanSelection.Month -> {
-                                                when {
-                                                    dragOffset < -swipeThreshold -> {
-                                                        val idx = ts.availableMonths.indexOf(sel.ym)
-                                                        if (idx < ts.availableMonths.size - 1) {
-                                                            onTimespanSelected(TimespanSelection.Month(ts.availableMonths[idx + 1]))
-                                                        }
-                                                    }
-                                                    dragOffset > swipeThreshold -> {
-                                                        val idx = ts.availableMonths.indexOf(sel.ym)
-                                                        if (idx > 0) {
-                                                            onTimespanSelected(TimespanSelection.Month(ts.availableMonths[idx - 1]))
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                            is TimespanSelection.Year -> {
-                                                when {
-                                                    dragOffset < -swipeThreshold -> {
-                                                        val idx = ts.availableYears.indexOf(sel.year)
-                                                        if (idx < ts.availableYears.size - 1) {
-                                                            onTimespanSelected(TimespanSelection.Year(ts.availableYears[idx + 1]))
-                                                        }
-                                                    }
-                                                    dragOffset > swipeThreshold -> {
-                                                        val idx = ts.availableYears.indexOf(sel.year)
-                                                        if (idx > 0) {
-                                                            onTimespanSelected(TimespanSelection.Year(ts.availableYears[idx - 1]))
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        dragOffset = 0f
-                                    }
-                                )
-                            }
-                    ) {
-                        CircularIndicator(
-                            currency = selectedCurrency,
-                            transactions = transactionListState.transactions,
-                            selectedTimespan = timespanState.selectedTimespan,
-                            onCategoryClick = onCategoryClick,
-                            selectedCategoryId = selectedCategoryId,
-                            isUncategorizedSelected = isUncategorizedSelected,
-                        )
-                    }
+    var foregroundHeightPx by remember { mutableFloatStateOf(0f) }
+    var indicatorHeightPx by remember { mutableFloatStateOf(0f) }
+    var scrollOffset by rememberSaveable { mutableStateOf(0f) }
+    val listState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+
+    val collapseConnection = remember {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                if (indicatorHeightPx <= 0f) return Offset.Zero
+
+                val current = scrollOffset
+                if (available.y < 0f && current < indicatorHeightPx) {
+                    val consumed = maxOf(available.y, -(indicatorHeightPx - current))
+                    scrollOffset = current - consumed
+                    return Offset(0f, consumed)
                 }
+                return Offset.Zero
             }
-        )
-        LoadingProgressIndicator(isLoading = transactionListState.isLoadingMore)
-        // TODO: Remove ErrorSnackbarHost and revert to SnackbarHost (temporary)
-        Scaffold(
-            snackbarHost = {
-                ErrorSnackbarHost(
-                    hostState = snackbarHostState,
-                    rawError = uiState.error?.fullMessage,
-                )
+
+            override fun onPostScroll(
+                consumed: Offset,
+                available: Offset,
+                source: NestedScrollSource
+            ): Offset {
+                if (indicatorHeightPx <= 0f) return Offset.Zero
+
+                val current = scrollOffset
+                if (available.y > 0f && current > 0f) {
+                    val consumed = minOf(available.y, current)
+                    scrollOffset = current - consumed
+                    return Offset(0f, consumed)
+                }
+                return Offset.Zero
             }
-        ) { padding ->
+
+            override suspend fun onPreFling(available: Velocity): Velocity {
+                if (indicatorHeightPx <= 0f) return Velocity.Zero
+
+                val current = scrollOffset
+                if (current == 0f || current == indicatorHeightPx) return Velocity.Zero
+
+                if (available.y < 0f) {
+                    animate(current, indicatorHeightPx) { value, _ ->
+                        scrollOffset = value
+                    }
+                    return available
+                }
+                return Velocity.Zero
+            }
+
+            override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
+                if (indicatorHeightPx <= 0f) return Velocity.Zero
+
+                val current = scrollOffset
+                if (current <= 0f) return Velocity.Zero
+
+                if (available.y > 0f) {
+                    animate(current, 0f) { value, _ ->
+                        scrollOffset = value
+                    }
+                    return available
+                }
+                return Velocity.Zero
+            }
+        }
+    }
+
+    Scaffold(
+        snackbarHost = {
+            ErrorSnackbarHost(
+                hostState = snackbarHostState,
+                rawError = uiState.error?.fullMessage,
+            )
+        }
+    ) { padding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .padding(top = with(LocalDensity.current) { foregroundHeightPx.toDp() })
             ) {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    tonalElevation = 2.dp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .layout { measurable, constraints ->
+                                val placeable = measurable.measure(constraints)
+                                indicatorHeightPx = placeable.height.toFloat()
+                                val visibleHeight = (placeable.height - scrollOffset.roundToInt()).coerceAtLeast(0)
+                                layout(placeable.width, visibleHeight) {
+                                    placeable.placeRelative(0, 0)
+                                }
+                            }
+                            .clipToBounds()
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .offset { IntOffset(0, -scrollOffset.roundToInt()) }
+                        ) {
+                            AnimatedContent(
+                                targetState = timespanState.selectedTimespan,
+                                transitionSpec = {
+                                    fun TimespanSelection.weight(): Int = when (this) {
+                                        is TimespanSelection.Month -> ym.year * 12 + ym.month
+                                        is TimespanSelection.Year -> year * 12 + 6
+                                    }
+                                    val target = targetState.weight()
+                                    val initial = initialState.weight()
+                                    if (target > initial) {
+                                        slideInHorizontally { width -> -width } + fadeIn() togetherWith
+                                        slideOutHorizontally { width -> width } + fadeOut()
+                                    } else {
+                                        slideInHorizontally { width -> width } + fadeIn() togetherWith
+                                        slideOutHorizontally { width -> -width } + fadeOut()
+                                    }
+                                },
+                                label = "widgetAnimation"
+                            ) { _ ->
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .pointerInput(Unit) {
+                                            detectHorizontalDragGestures(
+                                                onDragStart = { dragOffset = 0f },
+                                                onHorizontalDrag = { change, amount ->
+                                                    change.consume()
+                                                    dragOffset += amount
+                                                },
+                                                onDragEnd = {
+                                                    val ts = currentTimespanState
+                                                    when (val sel = ts.selectedTimespan) {
+                                                        is TimespanSelection.Month -> {
+                                                            when {
+                                                                dragOffset < -swipeThreshold -> {
+                                                                    val idx = ts.availableMonths.indexOf(sel.ym)
+                                                                    if (idx < ts.availableMonths.size - 1) {
+                                                                        onTimespanSelected(TimespanSelection.Month(ts.availableMonths[idx + 1]))
+                                                                    }
+                                                                }
+                                                                dragOffset > swipeThreshold -> {
+                                                                    val idx = ts.availableMonths.indexOf(sel.ym)
+                                                                    if (idx > 0) {
+                                                                        onTimespanSelected(TimespanSelection.Month(ts.availableMonths[idx - 1]))
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                        is TimespanSelection.Year -> {
+                                                            when {
+                                                                dragOffset < -swipeThreshold -> {
+                                                                    val idx = ts.availableYears.indexOf(sel.year)
+                                                                    if (idx < ts.availableYears.size - 1) {
+                                                                        onTimespanSelected(TimespanSelection.Year(ts.availableYears[idx + 1]))
+                                                                    }
+                                                                }
+                                                                dragOffset > swipeThreshold -> {
+                                                                    val idx = ts.availableYears.indexOf(sel.year)
+                                                                    if (idx > 0) {
+                                                                        onTimespanSelected(TimespanSelection.Year(ts.availableYears[idx - 1]))
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                    dragOffset = 0f
+                                                }
+                                            )
+                                        }
+                                ) {
+                                    CircularIndicator(
+                                        currency = selectedCurrency,
+                                        transactions = transactionListState.transactions,
+                                        selectedTimespan = timespanState.selectedTimespan,
+                                        onCategoryClick = onCategoryClick,
+                                        selectedCategoryId = selectedCategoryId,
+                                        isUncategorizedSelected = isUncategorizedSelected,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
                 LazyTransactionList(
-                    isLoading = filteredTransactionListState.isLoading,
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
                     isRefreshing = filteredTransactionListState.isRefreshing,
                     transactions = filteredTransactionListState.transactions,
                     navigateToDetails = navigateToDetails,
                     onRefresh = onRefresh,
-                    onDeleteTransaction = onDeleteTransaction
+                    onDeleteTransaction = onDeleteTransaction,
+                    listState = listState,
+                    collapseConnection = collapseConnection
+                )
+            }
+
+            Column(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth()
+                    .background(color = MaterialTheme.colorScheme.surface)
+                    .onGloballyPositioned { foregroundHeightPx = it.size.height.toFloat() }
+            ) {
+                TopContent()
+                TimespanBar(
+                    selectedTimespan = timespanState.selectedTimespan,
+                    availableMonths = timespanState.availableMonths,
+                    availableYears = timespanState.availableYears,
+                    isYearView = timespanState.isYearView,
+                    onTimespanSelected = onTimespanSelected,
+                    isLoadingMore = transactionListState.isLoadingMore,
+                    onToggleView = onToggleView,
+                    onLoadMore = onLoadMore
+                )
+                LoadingProgressIndicator(
+                    isLoading = filteredTransactionListState.isLoading || transactionListState.isLoadingMore
                 )
             }
         }
@@ -593,28 +700,32 @@ private fun MonthChip(
     }
 }
 
+private val NoOpNestedScrollConnection = object : NestedScrollConnection {}
+
 @Composable
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 private fun LazyTransactionList(
-    isLoading: Boolean,
+    modifier: Modifier = Modifier,
     isRefreshing: Boolean,
     transactions: List<ModelTransaction>,
     navigateToDetails: (ModelTransaction) -> Unit,
     onRefresh: () -> Unit,
-    onDeleteTransaction: (String) -> Unit
+    onDeleteTransaction: (String) -> Unit,
+    listState: LazyListState,
+    collapseConnection: NestedScrollConnection = NoOpNestedScrollConnection
 ) {
-    val listState = rememberLazyListState()
     var openedRowId by remember { mutableStateOf<String?>(null) }
     val groupedTransactions = remember(transactions) { transactions.groupBy { it.bookingDate.date } }
 
-    LoadingProgressIndicator(isLoading = isLoading)
     PullToRefreshBox(
+        modifier = modifier,
         isRefreshing = isRefreshing,
         onRefresh = onRefresh,
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .nestedScroll(collapseConnection)
                 .pointerInput(openedRowId) {
                     if (openedRowId != null) {
                         detectTapGestures {
