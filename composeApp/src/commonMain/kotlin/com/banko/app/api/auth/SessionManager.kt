@@ -23,10 +23,18 @@ class SessionManager(
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
     init {
-        _authState.value = if (authRepository.isLoggedIn) {
-            AuthState.Authenticated
+        if (authRepository.isLoggedIn) {
+            scope.launch {
+                when (authRepository.refreshToken()) {
+                    is Result.Success -> _authState.value = AuthState.Authenticated
+                    is Result.Error -> {
+                        authRepository.logout()
+                        _authState.value = AuthState.Unauthenticated
+                    }
+                }
+            }
         } else {
-            AuthState.Unauthenticated
+            _authState.value = AuthState.Unauthenticated
         }
     }
 

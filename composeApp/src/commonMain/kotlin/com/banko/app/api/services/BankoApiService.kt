@@ -22,7 +22,6 @@ import com.banko.app.api.utils.deleteSafe
 import com.banko.app.api.utils.Result
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
-import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.auth.Auth
 import io.ktor.client.plugins.auth.authProvider
 import io.ktor.client.plugins.auth.providers.BearerAuthProvider
@@ -41,6 +40,8 @@ class BankoApiService(
     client: HttpClient = HttpClient(HttpClientProvider()),
     private val tokenStorage: TokenStorage? = null
 ) {
+    var onSessionExpired: (() -> Unit)? = null
+
     private val client = tokenStorage?.let { ts ->
         HttpClient {
             HttpClientProvider()()
@@ -64,7 +65,8 @@ class BankoApiService(
                             ts.accessToken = authResponse.accessToken
                             ts.refreshToken = authResponse.refreshToken
                             BearerTokens(authResponse.accessToken, authResponse.refreshToken)
-                        } catch (e: ClientRequestException) {
+                        } catch (e: Exception) {
+                            onSessionExpired?.invoke()
                             null
                         }
                     }
