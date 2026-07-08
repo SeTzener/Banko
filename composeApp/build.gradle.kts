@@ -142,7 +142,6 @@ room {
     schemaDirectory("$projectDir/schemas")
 }
 dependencies {
-    implementation(libs.androidx.compose.material.core)
     debugImplementation(compose.uiTooling)
 
     // Room target platform

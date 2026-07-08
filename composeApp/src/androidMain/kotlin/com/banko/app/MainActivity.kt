@@ -3,8 +3,11 @@ package com.banko.app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.remember
+import com.arkivanov.decompose.DefaultComponentContext
 import com.arkivanov.decompose.ExperimentalDecomposeApi
 import com.arkivanov.decompose.retainedComponent
+import com.arkivanov.essenty.lifecycle.LifecycleRegistry
 import com.banko.app.api.auth.SessionManager
 import com.banko.app.ui.screens.auth.AuthComponent
 import com.banko.app.ui.screens.navigation.RootComponent
@@ -21,10 +24,12 @@ class MainActivity : ComponentActivity() {
                 sessionManager = sessionManager,
             )
         }
-        val authComponent = retainedComponent {
-            AuthComponent(componentContext = it)
-        }
         setContent {
+            val authComponent = remember {
+                AuthComponent(
+                    componentContext = DefaultComponentContext(LifecycleRegistry())
+                )
+            }
             App(root = root, authComponent = authComponent)
         }
     }
