@@ -8,6 +8,10 @@ class AuthRepository(
     private val apiService: BankoApiService,
     private val tokenStorage: TokenStorage
 ) {
+    init {
+        apiService.onSessionExpired = { logout() }
+    }
+
     val isLoggedIn: Boolean
         get() = tokenStorage.accessToken != null
 
@@ -67,6 +71,7 @@ class AuthRepository(
             }
             is Result.Error -> {
                 tokenStorage.clear()
+                apiService.clearAuthCache()
                 result
             }
         }
@@ -74,5 +79,6 @@ class AuthRepository(
 
     fun logout() {
         tokenStorage.clear()
+        apiService.clearAuthCache()
     }
 }

@@ -37,12 +37,29 @@ class SessionManagerTest {
     }
 
     @Test
-    fun `init authenticated when logged in`() {
+    fun `init authenticated when logged in and refresh succeeds`() = runTest(testDispatcher) {
         every { authRepository.isLoggedIn } returns true
+        coEvery { authRepository.refreshToken() } returns Result.Success(
+            AuthResponse("acc-1", "tok", "ref", 900)
+        )
 
         val sessionManager = SessionManager(authRepository)
+        advanceUntilIdle()
 
         assertEquals(AuthState.Authenticated, sessionManager.authState.value)
+    }
+
+    @Test
+    fun `init unauthenticated when refresh fails`() = runTest(testDispatcher) {
+        every { authRepository.isLoggedIn } returns true
+        coEvery { authRepository.refreshToken() } returns Result.Error.HttpError(
+            401, "Unauthorized"
+        )
+
+        val sessionManager = SessionManager(authRepository)
+        advanceUntilIdle()
+
+        assertEquals(AuthState.Unauthenticated, sessionManager.authState.value)
     }
 
     @Test
@@ -97,9 +114,13 @@ class SessionManagerTest {
     }
 
     @Test
-    fun `logout transitions to unauthenticated`() {
+    fun `logout transitions to unauthenticated`() = runTest(testDispatcher) {
         every { authRepository.isLoggedIn } returns true
+        coEvery { authRepository.refreshToken() } returns Result.Success(
+            AuthResponse("acc-1", "tok", "ref", 900)
+        )
         val sessionManager = SessionManager(authRepository)
+        advanceUntilIdle()
 
         sessionManager.logout()
 

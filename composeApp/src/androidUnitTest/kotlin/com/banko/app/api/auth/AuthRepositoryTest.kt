@@ -19,7 +19,7 @@ import kotlin.test.assertTrue
 
 class AuthRepositoryTest {
 
-    private val apiService = mockk<BankoApiService>()
+    private val apiService = mockk<BankoApiService>(relaxed = true)
     private val tokenStorage = mockk<TokenStorage>(relaxed = true)
 
     private fun createRepository(): AuthRepository {
