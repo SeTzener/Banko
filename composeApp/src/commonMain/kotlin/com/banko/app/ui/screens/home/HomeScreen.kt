@@ -37,6 +37,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -164,17 +166,18 @@ fun HomeScreen(
 
     var foregroundHeightPx by remember { mutableFloatStateOf(0f) }
     var indicatorHeightPx by remember { mutableFloatStateOf(0f) }
-    val scrollOffset = remember { mutableFloatStateOf(0f) }
+    var scrollOffset by rememberSaveable { mutableStateOf(0f) }
+    val listState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
 
     val collapseConnection = remember {
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
                 if (indicatorHeightPx <= 0f) return Offset.Zero
 
-                val current = scrollOffset.floatValue
+                val current = scrollOffset
                 if (available.y < 0f && current < indicatorHeightPx) {
                     val consumed = maxOf(available.y, -(indicatorHeightPx - current))
-                    scrollOffset.floatValue = current - consumed
+                    scrollOffset = current - consumed
                     return Offset(0f, consumed)
                 }
                 return Offset.Zero
@@ -187,10 +190,10 @@ fun HomeScreen(
             ): Offset {
                 if (indicatorHeightPx <= 0f) return Offset.Zero
 
-                val current = scrollOffset.floatValue
+                val current = scrollOffset
                 if (available.y > 0f && current > 0f) {
                     val consumed = minOf(available.y, current)
-                    scrollOffset.floatValue = current - consumed
+                    scrollOffset = current - consumed
                     return Offset(0f, consumed)
                 }
                 return Offset.Zero
@@ -199,12 +202,12 @@ fun HomeScreen(
             override suspend fun onPreFling(available: Velocity): Velocity {
                 if (indicatorHeightPx <= 0f) return Velocity.Zero
 
-                val current = scrollOffset.floatValue
+                val current = scrollOffset
                 if (current == 0f || current == indicatorHeightPx) return Velocity.Zero
 
                 if (available.y < 0f) {
                     animate(current, indicatorHeightPx) { value, _ ->
-                        scrollOffset.floatValue = value
+                        scrollOffset = value
                     }
                     return available
                 }
@@ -214,12 +217,12 @@ fun HomeScreen(
             override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
                 if (indicatorHeightPx <= 0f) return Velocity.Zero
 
-                val current = scrollOffset.floatValue
+                val current = scrollOffset
                 if (current <= 0f) return Velocity.Zero
 
                 if (available.y > 0f) {
                     animate(current, 0f) { value, _ ->
-                        scrollOffset.floatValue = value
+                        scrollOffset = value
                     }
                     return available
                 }
@@ -259,7 +262,7 @@ fun HomeScreen(
                             .layout { measurable, constraints ->
                                 val placeable = measurable.measure(constraints)
                                 indicatorHeightPx = placeable.height.toFloat()
-                                val visibleHeight = (placeable.height - scrollOffset.floatValue.roundToInt()).coerceAtLeast(0)
+                                val visibleHeight = (placeable.height - scrollOffset.roundToInt()).coerceAtLeast(0)
                                 layout(placeable.width, visibleHeight) {
                                     placeable.placeRelative(0, 0)
                                 }
@@ -269,7 +272,7 @@ fun HomeScreen(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .offset { IntOffset(0, -scrollOffset.floatValue.roundToInt()) }
+                                .offset { IntOffset(0, -scrollOffset.roundToInt()) }
                         ) {
                             AnimatedContent(
                                 targetState = timespanState.selectedTimespan,
@@ -362,6 +365,7 @@ fun HomeScreen(
                     navigateToDetails = navigateToDetails,
                     onRefresh = onRefresh,
                     onDeleteTransaction = onDeleteTransaction,
+                    listState = listState,
                     collapseConnection = collapseConnection
                 )
             }
@@ -707,9 +711,9 @@ private fun LazyTransactionList(
     navigateToDetails: (ModelTransaction) -> Unit,
     onRefresh: () -> Unit,
     onDeleteTransaction: (String) -> Unit,
+    listState: LazyListState,
     collapseConnection: NestedScrollConnection = NoOpNestedScrollConnection
 ) {
-    val listState = rememberLazyListState()
     var openedRowId by remember { mutableStateOf<String?>(null) }
     val groupedTransactions = remember(transactions) { transactions.groupBy { it.bookingDate.date } }
 
