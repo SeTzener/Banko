@@ -88,6 +88,7 @@ import banko.composeapp.generated.resources.Res
 import banko.composeapp.generated.resources.app_name
 import banko.composeapp.generated.resources.details
 import banko.composeapp.generated.resources.ic_delete
+import banko.composeapp.generated.resources.ic_tag
 import banko.composeapp.generated.resources.ic_tag_filled
 import com.banko.app.ModelTransaction
 import com.banko.app.ui.components.BankLogo
@@ -528,15 +529,16 @@ private fun SwipableTransactionRow(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (transaction.expenseTag != null) {
-                        Icon(
-                            painter = painterResource(Res.drawable.ic_tag_filled),
-                            contentDescription = transaction.expenseTag.name,
-                            tint = transaction.expenseTag.color,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                    }
+                    val tag = transaction.expenseTag
+                    Icon(
+                        painter = painterResource(
+                            if (tag != null) Res.drawable.ic_tag_filled else Res.drawable.ic_tag
+                        ),
+                        contentDescription = tag?.name,
+                        tint = tag?.color ?: MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
                     Spacer(modifier = Modifier.weight(1f))
                     Text(
                         text = "${transaction.amount} ${currencyDisplayForCode(transaction.currency)}",
