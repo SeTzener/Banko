@@ -33,7 +33,9 @@ data class Transaction(
     val debtorName: String? = null,
     val remittanceInformationStructuredArray: List<String>? = null,
     val note: String? = null,
-    val expenseTag: ExpenseTag? = null
+    val expenseTag: ExpenseTag? = null,
+    val bankName: String? = null,
+    val bankLogoUrl: String? = null
 )
 
 @Serializable
@@ -66,7 +68,9 @@ fun Transaction.toModelItem() = ModelTransaction(
     debtorName = debtorName,
     remittanceInformationStructuredArray = remittanceInformationStructuredArray,
     note = note,
-    expenseTag = expenseTag?.toModelItem()
+    expenseTag = expenseTag?.toModelItem(),
+    bankName = bankName,
+    bankLogoUrl = bankLogoUrl
 )
 
 fun DebtorAccount.toModelItem() = ModelDebtorAccount(
