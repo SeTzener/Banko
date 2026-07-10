@@ -89,4 +89,45 @@ class AssignExpenseTagToTransactionUseCaseTest {
         }
         Unit
     }
+
+    @Test
+    fun `should clear expense tag when expenseTagId is null`() = runBlocking {
+        val transactionId = "tx-1"
+        val transaction = Transaction(
+            id = transactionId,
+            bookingDate = "2024-01-15",
+            valueDate = "2024-01-15",
+            amount = "42.50",
+            currency = "EUR",
+            debtorAccountId = null,
+            remittanceInformationUnstructured = "Test payment",
+            remittanceInformationUnstructuredArray = emptyList(),
+            bankTransactionCode = "PMNT",
+            internalTransactionId = "int-1",
+            creditorName = null,
+            creditorAccountId = null,
+            debtorName = null,
+            remittanceInformationStructuredArray = null,
+            note = null,
+            expenseTagId = "old-tag"
+        )
+
+        coEvery { transactionRepository.findRawTransactionById(transactionId) } returns transaction
+        coEvery { transactionRepository.upsertTransaction(any(), any(), any(), any()) } returns Unit
+
+        useCase(transactionId, null)
+
+        coVerify {
+            transactionRepository.findRawTransactionById(transactionId)
+            transactionRepository.upsertTransaction(
+                transaction = transaction.copy(expenseTagId = null),
+                creditorAccount = null,
+                debtorAccount = null,
+                expenseTag = null
+            )
+        }
+        coVerify(exactly = 0) {
+            expenseTagRepository.findExpenseTagById(any())
+        }
+    }
 }

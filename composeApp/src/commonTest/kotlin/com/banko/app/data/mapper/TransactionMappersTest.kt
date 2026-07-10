@@ -36,7 +36,9 @@ class TransactionMappersTest {
         debtorName = "John Doe",
         remittanceInformationStructuredArray = listOf("INV-001"),
         note = "Test note",
-        expenseTag = DomainExpenseTag(id = "tag-1", name = "Groceries", color = 0xFF00FF, isEarning = false, aka = listOf("food"))
+        expenseTag = DomainExpenseTag(id = "tag-1", name = "Groceries", color = 0xFF00FF, isEarning = false, aka = listOf("food")),
+        bankName = "ING",
+        bankLogoUrl = "https://example.com/ing-logo.png"
     )
 
     private val daoCreditorAccount = DaoCreditorAccount(id = "cred-1", iban = "DE789", bban = "012")
@@ -61,7 +63,9 @@ class TransactionMappersTest {
         debtorName = "John Doe",
         remittanceInformationStructuredArray = listOf("INV-001"),
         note = "Test note",
-        expenseTag = DtoExpenseTag(id = "tag-1", name = "Groceries", color = 0xFF00FF, isEarning = false, aka = listOf("food"))
+        expenseTag = DtoExpenseTag(id = "tag-1", name = "Groceries", color = 0xFF00FF, isEarning = false, aka = listOf("food")),
+        bankName = "ING",
+        bankLogoUrl = "https://example.com/ing-logo.png"
     )
 
     @Test
@@ -213,7 +217,9 @@ class TransactionMappersTest {
             creditorName = null,
             debtorName = null,
             note = null,
-            remittanceInformationStructuredArray = null
+            remittanceInformationStructuredArray = null,
+            bankName = null,
+            bankLogoUrl = null
         )
         val result = dto.toDomain()
         val expected = domainTransaction.copy(
@@ -224,7 +230,9 @@ class TransactionMappersTest {
             creditorName = null,
             debtorName = null,
             note = null,
-            remittanceInformationStructuredArray = null
+            remittanceInformationStructuredArray = null,
+            bankName = null,
+            bankLogoUrl = null
         )
         assertEquals(expected, result)
     }
@@ -245,5 +253,38 @@ class TransactionMappersTest {
     fun `List of FullTransaction toDomain should return empty list for empty input`() {
         val result = emptyList<FullTransaction>().toDomain()
         assertEquals(emptyList(), result)
+    }
+
+    @Test
+    fun `FullTransaction toDomain should map bankName and bankLogoUrl`() {
+        val fullTx = FullTransaction(
+            transaction = daoTransaction,
+            creditorAccount = daoCreditorAccount,
+            debtorAccount = daoDebtorAccount,
+            expenseTag = daoExpenseTag
+        )
+        val result = fullTx.toDomain()
+        assertEquals("ING", result.bankName)
+        assertEquals("https://example.com/ing-logo.png", result.bankLogoUrl)
+    }
+
+    @Test
+    fun `FullTransaction toDomain should map null bankName and bankLogoUrl`() {
+        val fullTx = FullTransaction(
+            transaction = daoTransaction.copy(bankName = null, bankLogoUrl = null),
+            creditorAccount = daoCreditorAccount,
+            debtorAccount = daoDebtorAccount,
+            expenseTag = daoExpenseTag
+        )
+        val result = fullTx.toDomain()
+        assertNull(result.bankName)
+        assertNull(result.bankLogoUrl)
+    }
+
+    @Test
+    fun `DomainTransaction toDao should preserve bankName and bankLogoUrl`() {
+        val result = domainTransaction.toDao()
+        assertEquals("ING", result.bankName)
+        assertEquals("https://example.com/ing-logo.png", result.bankLogoUrl)
     }
 }
