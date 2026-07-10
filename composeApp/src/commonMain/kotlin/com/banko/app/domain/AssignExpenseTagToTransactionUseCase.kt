@@ -13,6 +13,13 @@ class AssignExpenseTagToTransactionUseCase(
     suspend operator fun invoke(transactionId: String, expenseTagId: String?) {
         val transaction = transactionRepository.findRawTransactionById(transactionId)
             ?: error("no transaction in db with id $transactionId")
+        if (expenseTagId == null) {
+            transactionRepository.upsertTransaction(
+                transaction = transaction.copy(expenseTagId = null),
+                expenseTag = null
+            )
+            return
+        }
         val tag = expenseTagRepository.findExpenseTagById(expenseTagId).first()
             ?: error("no expense tag found in db with id $expenseTagId")
         transactionRepository.upsertTransaction(
