@@ -72,6 +72,8 @@ kotlin {
             implementation(libs.room.runtime)
             implementation(libs.room.paging)
             implementation(libs.sqlite.bundle)
+            implementation(libs.coil.compose)
+            implementation(libs.coil.network.ktor)
 
             api(libs.datastore)
             api(libs.datastore.preferences)
