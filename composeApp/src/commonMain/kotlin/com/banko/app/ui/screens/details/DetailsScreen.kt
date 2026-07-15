@@ -1,6 +1,7 @@
 package com.banko.app.ui.screens.details
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -57,7 +58,6 @@ import banko.composeapp.generated.resources.ic_arrow_drop_down
 import banko.composeapp.generated.resources.ic_calendar_month
 import banko.composeapp.generated.resources.ic_more
 import banko.composeapp.generated.resources.ic_quill
-import banko.composeapp.generated.resources.ic_save
 import banko.composeapp.generated.resources.ic_tag
 import banko.composeapp.generated.resources.ic_tag_filled
 import com.banko.app.ui.components.BankLogo
@@ -537,8 +537,8 @@ fun DetailsScreen(
 
             // Expense Tag
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth()
+                Box(
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp, start = 16.dp, end = 16.dp)
                 ) {
                     TextField(
                         modifier = Modifier.padding(top = 12.dp, start = 16.dp),
@@ -564,22 +564,11 @@ fun DetailsScreen(
                             )
                         },
                         trailingIcon = {
-                            IconButton(onClick = {
-                                getExpenseTags()
-                                tagMenuExpanded.value = true
-                            }, content = {
-                                Icon(
-                                    painter = painterResource(Res.drawable.ic_arrow_drop_down),
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                                ExpenseTagDropdown(
-                                    expanded = tagMenuExpanded,
-                                    expenseTags = expenseTags,
-                                    onTagSelected = { tag ->
-                                        transaction = transaction.copy(expenseTag = tag)
-                                    })
-                            })
+                            Icon(
+                                painter = painterResource(Res.drawable.ic_arrow_drop_down),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
                         },
                         colors = TextFieldDefaults.colors(
                             unfocusedTextColor = MaterialTheme.colorScheme.primary,
@@ -588,21 +577,20 @@ fun DetailsScreen(
                             focusedContainerColor = MaterialTheme.colorScheme.surface,
                         )
                     )
-                    if (oldTag != transaction.expenseTag?.id) {
-                        IconButton(
-                            modifier = Modifier.align(Alignment.Bottom), onClick = {
-                                assignExpenseTag(
-                                    transaction.id, transaction.expenseTag?.id
-                                )
-                                oldTag = transaction.expenseTag?.id
-                            }) {
-                            Icon(
-                                painter = painterResource(Res.drawable.ic_save),
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
+                    Box(
+                        modifier = Modifier.matchParentSize().clickable {
+                            getExpenseTags()
+                            tagMenuExpanded.value = true
                         }
-                    }
+                    )
+                    ExpenseTagDropdown(
+                        expanded = tagMenuExpanded,
+                        expenseTags = expenseTags,
+                        onTagSelected = { tag ->
+                            transaction = transaction.copy(expenseTag = tag)
+                            assignExpenseTag(transaction.id, tag?.id)
+                            oldTag = tag?.id
+                        })
                 }
             }
 

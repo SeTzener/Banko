@@ -409,7 +409,7 @@ private fun SwipableTransactionRow(
     isOpen: Boolean,
     onOpen: () -> Unit,
     onClose: () -> Unit,
-    onDetailsClick: () -> Unit,
+    onClick: () -> Unit,
     onDeleteTransaction: (String) -> Unit
 ) {
     var offsetX by remember { mutableStateOf(0f) }
@@ -437,19 +437,6 @@ private fun SwipableTransactionRow(
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
     ) {
-        TextButton(
-            onClick = onDetailsClick,
-            modifier = Modifier.align(Alignment.CenterEnd)
-                .background(MaterialTheme.colorScheme.primary)
-                .width(85.dp)
-                .height(32.dp)
-        ) {
-            Text(
-                text = stringResource(Res.string.details),
-                color = MaterialTheme.colorScheme.onPrimary
-            )
-        }
-
         IconButton(
             onClick = { isDeleteTransaction.value = true },
             modifier = Modifier.align(Alignment.CenterStart)
@@ -474,17 +461,13 @@ private fun SwipableTransactionRow(
                         onHorizontalDrag = { change, dragAmount ->
                             change.consume()
                             offsetX = (offsetX + dragAmount)
-                                .coerceIn(-buttonWidthPx, buttonWidthPx)
+                                .coerceIn(0f, buttonWidthPx)
                         },
                         onDragEnd = {
                             offsetX = when {
                                 offsetX > buttonWidthPx / 2 -> {
                                     onOpen()
                                     buttonWidthPx
-                                }
-                                offsetX < -buttonWidthPx / 2 -> {
-                                    onOpen()
-                                    -buttonWidthPx
                                 }
                                 else -> {
                                     onClose()
@@ -493,7 +476,8 @@ private fun SwipableTransactionRow(
                             }
                         }
                     )
-                },
+                }
+                .clickable { onClick() },
             shape = RoundedCornerShape(12.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface
@@ -779,7 +763,7 @@ private fun LazyTransactionList(
                             isOpen = openedRowId == transaction.id,
                             onOpen = { openedRowId = transaction.id },
                             onClose = { openedRowId = null },
-                            onDetailsClick = { navigateToDetails(transaction) },
+                            onClick = { navigateToDetails(transaction) },
                             onDeleteTransaction = onDeleteTransaction
                         )
                     }
