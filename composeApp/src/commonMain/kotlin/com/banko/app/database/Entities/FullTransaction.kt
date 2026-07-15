@@ -31,5 +31,7 @@ fun FullTransaction.toModelItem() = ModelTransaction(
     debtorName = transaction.debtorName,
     remittanceInformationStructuredArray = transaction.remittanceInformationStructuredArray,
     note = transaction.note,
-    expenseTag = expenseTag?.toModelItem()
+    expenseTag = expenseTag?.toModelItem(),
+    bankName = transaction.bankName,
+    bankLogoUrl = transaction.bankLogoUrl
 )

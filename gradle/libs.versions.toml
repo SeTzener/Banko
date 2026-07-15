@@ -1,6 +1,6 @@
 [versions]
 agp = "8.10.1"
-android-compileSdk = "34"
+android-compileSdk = "36"
 android-minSdk = "25"
 android-targetSdk = "34"
 androidx-activityCompose = "1.9.3"
@@ -31,6 +31,7 @@ robolectric = "4.14.1"
 room = "2.7.0-alpha12"
 serialization = "1.7.3"
 sqllite = "2.5.0-alpha12"
+coil = "3.1.0"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -90,6 +91,10 @@ room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "
 room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 room-paging = { group = "androidx.room", name = "room-paging", version.ref = "room" }
 sqlite-bundle = { group = "androidx.sqlite", name = "sqlite-bundled", version.ref = "sqllite" }
+
+# Coil
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
+coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil" }
 
 # Serialization
 kotlinx-serialization-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-core", version.ref = "serialization" }

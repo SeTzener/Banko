@@ -60,6 +60,7 @@ import banko.composeapp.generated.resources.ic_quill
 import banko.composeapp.generated.resources.ic_save
 import banko.composeapp.generated.resources.ic_tag
 import banko.composeapp.generated.resources.ic_tag_filled
+import com.banko.app.ui.components.BankLogo
 import com.banko.app.ui.components.ErrorSnackbarHost
 import com.banko.app.ui.models.ExpenseTag
 import com.banko.app.ui.models.Transaction
@@ -248,6 +249,36 @@ fun DetailsScreen(
             modifier = Modifier.fillMaxWidth().weight(1f)
                 .padding(top = 8.dp, start = 16.dp, end = 16.dp, bottom = 8.dp)
         ) {
+            // Bank Info
+            if (transaction.bankName != null) {
+                item {
+                    Row(
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp).fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        BankLogo(
+                            logoUrl = transaction.bankLogoUrl,
+                            bankName = transaction.bankName
+                        )
+                        TextField(
+                            modifier = Modifier.weight(1f).padding(start = 12.dp),
+                            onValueChange = {},
+                            value = transaction.bankName ?: "",
+                            supportingText = {
+                                Text(text = "Bank")
+                            },
+                            readOnly = true,
+                            colors = TextFieldDefaults.colors(
+                                unfocusedTextColor = MaterialTheme.colorScheme.primary,
+                                focusedTextColor = MaterialTheme.colorScheme.primary,
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                            )
+                        )
+                    }
+                }
+            }
+
             // Remittance Information
             item {
                 TextField(

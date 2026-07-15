@@ -28,7 +28,9 @@ data class Transaction (
     val debtorName: String? = null,
     val remittanceInformationStructuredArray: List<String>? = null,
     val note: String? = null,
-    val expenseTag: ExpenseTag? = null
+    val expenseTag: ExpenseTag? = null,
+    val bankName: String? = null,
+    val bankLogoUrl: String? = null
 )
 
 @Serializable
@@ -61,7 +63,9 @@ fun Transaction.toDao() = DaoTransaction(
     debtorName = debtorName,
     remittanceInformationStructuredArray = remittanceInformationStructuredArray,
     note = note,
-    expenseTagId = expenseTag?.id
+    expenseTagId = expenseTag?.id,
+    bankName = bankName,
+    bankLogoUrl = bankLogoUrl
 )
 
 fun DebtorAccount.toDao() = DaoDebtorAccount(
@@ -92,7 +96,9 @@ fun DomainTransaction.toUi() = Transaction(
     debtorName = debtorName,
     remittanceInformationStructuredArray = remittanceInformationStructuredArray,
     note = note,
-    expenseTag = expenseTag?.toUi()
+    expenseTag = expenseTag?.toUi(),
+    bankName = bankName,
+    bankLogoUrl = bankLogoUrl
 )
 
 fun DomainCreditorAccount.toUi() = CreditorAccount(id = id, iban = iban, bban = bban)

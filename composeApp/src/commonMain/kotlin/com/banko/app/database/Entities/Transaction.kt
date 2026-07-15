@@ -44,5 +44,7 @@ data class Transaction(
     val debtorName: String?,
     val remittanceInformationStructuredArray: List<String>?,
     val note: String?,
-    val expenseTagId: String?
+    val expenseTagId: String?,
+    val bankName: String? = null,
+    val bankLogoUrl: String? = null
 )

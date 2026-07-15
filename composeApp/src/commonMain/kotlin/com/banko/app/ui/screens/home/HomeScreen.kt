@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -40,6 +41,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -85,7 +88,10 @@ import banko.composeapp.generated.resources.Res
 import banko.composeapp.generated.resources.app_name
 import banko.composeapp.generated.resources.details
 import banko.composeapp.generated.resources.ic_delete
+import banko.composeapp.generated.resources.ic_tag
+import banko.composeapp.generated.resources.ic_tag_filled
 import com.banko.app.ModelTransaction
+import com.banko.app.ui.components.BankLogo
 import com.banko.app.ui.components.CircularIndicator
 import com.banko.app.ui.components.ErrorSnackbarHost
 import com.banko.app.ui.components.ExpenseTag
@@ -458,8 +464,8 @@ private fun SwipableTransactionRow(
             )
         }
 
-        // Main Transaction Row
-        Row(
+        // Main Transaction Card
+        Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .offset { IntOffset(offsetX.roundToInt(), 0) }
@@ -487,44 +493,61 @@ private fun SwipableTransactionRow(
                             }
                         }
                     )
+                },
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        modifier = Modifier.weight(1f),
+                        text = transaction.remittanceInformationUnstructured.replace("\\s+".toRegex(), " "),
+                        color = MaterialTheme.colorScheme.primary,
+                        overflow = TextOverflow.Ellipsis,
+                        maxLines = 1,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    BankLogo(
+                        logoUrl = transaction.bankLogoUrl,
+                        bankName = transaction.bankName,
+                        size = 22
+                    )
                 }
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(horizontal = 8.dp, vertical = 4.dp)
-        )
-        {
-            Column(
-                modifier = Modifier
-                    .weight(7f)
-                    .align(Alignment.CenterVertically)
-                    .padding(start = 12.dp, end = 7.dp)
-            ) {
-                Text(
-                    text = transaction.remittanceInformationUnstructured,
-                    color = MaterialTheme.colorScheme.primary,
-                    overflow = TextOverflow.Ellipsis,
-                    maxLines = 1
-                )
-            }
-            Column(
-                modifier = Modifier
-                    .weight(3f)
-                    .align(Alignment.CenterVertically)
-                    .padding(end = 5.dp)
-            ) {
-                Text(
-                    modifier = Modifier.align(Alignment.End),
-                    text = "${transaction.amount} ${currencyDisplayForCode(transaction.currency)}",
-                    color = MaterialTheme.colorScheme.primary,
-                    overflow = TextOverflow.Ellipsis,
-                    maxLines = 1
-                )
-            }
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .align(Alignment.CenterVertically)
-            ) {
-                ExpenseTag(transaction.expenseTag)
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val tag = transaction.expenseTag
+                    Icon(
+                        painter = painterResource(
+                            if (tag != null) Res.drawable.ic_tag_filled else Res.drawable.ic_tag
+                        ),
+                        contentDescription = tag?.name,
+                        tint = tag?.color ?: MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.weight(1f))
+                    Text(
+                        text = "${transaction.amount} ${currencyDisplayForCode(transaction.currency)}",
+                        color = if (transaction.amount >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                        overflow = TextOverflow.Ellipsis,
+                        maxLines = 1,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
             }
         }
     }

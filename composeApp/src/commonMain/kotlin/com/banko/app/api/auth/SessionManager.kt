@@ -24,6 +24,7 @@ class SessionManager(
 
     init {
         if (authRepository.isLoggedIn) {
+            _authState.value = AuthState.Authenticated
             scope.launch {
                 when (authRepository.refreshToken()) {
                     is Result.Success -> _authState.value = AuthState.Authenticated

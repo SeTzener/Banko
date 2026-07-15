@@ -31,7 +31,9 @@ fun FullTransaction.toDomain(): DomainTransaction = DomainTransaction(
     debtorName = transaction.debtorName,
     remittanceInformationStructuredArray = transaction.remittanceInformationStructuredArray,
     note = transaction.note,
-    expenseTag = expenseTag?.toDomain()
+    expenseTag = expenseTag?.toDomain(),
+    bankName = transaction.bankName,
+    bankLogoUrl = transaction.bankLogoUrl
 )
 
 fun List<FullTransaction>.toDomain(): List<DomainTransaction> = map { it.toDomain() }
@@ -62,7 +64,9 @@ fun DtoTransaction.toDomain(): DomainTransaction = DomainTransaction(
     debtorName = debtorName,
     remittanceInformationStructuredArray = remittanceInformationStructuredArray,
     note = note,
-    expenseTag = expenseTag?.toDomain()
+    expenseTag = expenseTag?.toDomain(),
+    bankName = bankName,
+    bankLogoUrl = bankLogoUrl
 )
 
 fun DtoCreditorAccount.toDomain() = DomainCreditorAccount(id = id, iban = iban, bban = bban)
@@ -91,7 +95,9 @@ fun DomainTransaction.toDao(): DaoTransaction = DaoTransaction(
     debtorName = debtorName,
     remittanceInformationStructuredArray = remittanceInformationStructuredArray,
     note = note,
-    expenseTagId = expenseTag?.id
+    expenseTagId = expenseTag?.id,
+    bankName = bankName,
+    bankLogoUrl = bankLogoUrl
 )
 
 fun DomainCreditorAccount.toDao() = DaoCreditorAccount(id = id, iban = iban, bban = bban)
