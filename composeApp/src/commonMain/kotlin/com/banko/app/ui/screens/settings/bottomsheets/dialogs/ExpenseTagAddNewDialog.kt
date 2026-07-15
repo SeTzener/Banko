@@ -25,6 +25,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import banko.composeapp.generated.resources.Res
 import banko.composeapp.generated.resources.expense_tag_add_new_button_cancel
@@ -48,7 +50,7 @@ fun ExpenseTagAddNewDialog(
     var isEarning by remember { mutableStateOf(false) }
 
     if (showColorPicker.value) {
-        ExpenseTagColorpickerDialog(
+        ExpenseTagColorpickerBottomSheet(
             showColorPicker = showColorPicker,
             editedColor = color
         )
@@ -104,6 +106,9 @@ fun ExpenseTagAddNewDialog(
                         textStyle = MaterialTheme.typography.bodyMedium,
                         singleLine = true,
                         isError = isError,
+                        keyboardOptions = KeyboardOptions(
+                            capitalization = KeyboardCapitalization.Words,
+                        ),
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color.Transparent,
                             unfocusedContainerColor = Color.Transparent,

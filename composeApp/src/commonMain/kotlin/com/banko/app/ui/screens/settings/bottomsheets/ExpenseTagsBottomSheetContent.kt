@@ -30,6 +30,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import banko.composeapp.generated.resources.Res
 import banko.composeapp.generated.resources.expense_tag_add_new
@@ -45,7 +47,7 @@ import com.banko.app.ui.components.dialogs.ErrorDetailDialog
 import com.banko.app.ui.models.ExpenseTag
 import com.banko.app.ui.screens.settings.SettingsScreenState
 import com.banko.app.ui.screens.settings.bottomsheets.dialogs.ExpenseTagAddNewDialog
-import com.banko.app.ui.screens.settings.bottomsheets.dialogs.ExpenseTagColorpickerDialog
+import com.banko.app.ui.screens.settings.bottomsheets.dialogs.ExpenseTagColorpickerBottomSheet
 import com.banko.app.ui.screens.settings.bottomsheets.dialogs.ExpenseTagDeleteDialog
 import com.banko.app.ui.utils.toUserMessage
 import org.jetbrains.compose.resources.painterResource
@@ -186,7 +188,7 @@ fun TagItem(
     }
 
     if (showColorPicker.value) {
-        ExpenseTagColorpickerDialog(
+        ExpenseTagColorpickerBottomSheet(
             showColorPicker = showColorPicker,
             editedColor = editedColor
         )
@@ -257,6 +259,9 @@ fun TagItem(
                 onValueChange = { editedName.value = it },
                 textStyle = MaterialTheme.typography.bodyMedium,
                 singleLine = true,
+                keyboardOptions = KeyboardOptions(
+                    capitalization = KeyboardCapitalization.Words,
+                ),
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = Color.Transparent,
                     unfocusedContainerColor = Color.Transparent,

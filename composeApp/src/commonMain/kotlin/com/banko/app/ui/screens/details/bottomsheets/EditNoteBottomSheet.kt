@@ -25,6 +25,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import banko.composeapp.generated.resources.Res
@@ -94,6 +95,7 @@ fun EditNoteBottomSheet(
             ),
             keyboardOptions = KeyboardOptions(
                 autoCorrectEnabled = true,
+                capitalization = KeyboardCapitalization.Sentences,
                 keyboardType = KeyboardType.Text,
                 imeAction = ImeAction.Send,
             )

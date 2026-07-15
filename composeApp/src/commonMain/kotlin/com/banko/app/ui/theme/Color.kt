@@ -53,6 +53,33 @@ val MidnightBlue = Color(0xFF191970)    // Dark, saturated blue
 val Chartreuse = Color(0xFF7FFF00)      // Bright greenish-yellow
 val Olive = Color(0xFF808000)           // Muted green-brown
 
+// Additional Blue
+val CornflowerBlue = Color(0xFF6495ED)  // Soft medium blue
+val RoyalBlue = Color(0xFF4169E1)       // Vivid blue
+val PowderBlue = Color(0xFFB0E0E6)      // Light pastel blue
+
+// Additional Purple
+val Plum = Color(0xFFDDA0DD)            // Soft pink-purple
+val Mauve = Color(0xFFE0B0FF)           // Light purple-pink
+
+// Additional Green
+val SageGreen = Color(0xFF9DC183)       // Muted earthy green
+val MintGreen = Color(0xFF98FF98)       // Bright mint
+
+// Additional Orange/Yellow
+val Gold = Color(0xFFFFD700)            // Pure gold
+val Banana = Color(0xFFFAE199)          // Soft yellow
+
+// Additional Red
+val Crimson = Color(0xFFDC143C)         // Bright deep red
+val Tomato = Color(0xFFFF6347)          // Orange-red
+val RosyBrown = Color(0xFFBC8F8F)       // Muted pink-brown
+
+// Additional Neutrals
+val Taupe = Color(0xFF483C32)           // Dark warm brown
+val Umber = Color(0xFF635147)           // Earthy brown
+val Onyx = Color(0xFF353839)            // Near-black
+
 val Darkmode_Primary = Color(0xBB86FCFF)
 val Darkmode_PrimaryVariant = Color(0x3700B3FF)
 val Darkmode_Secondary = Teal
@@ -66,31 +93,59 @@ val Light_Surface = Color(0xFFFFFFF0)
 val Light_On_Surface = Color(0xFFF2EFDE)
 
 val colorList: List<Color> = listOf(
+    // Blues
     SteelBlue,
     DeepSkyBlue,
     DodgerBlue,
     DarkMidnightBlue,
+    MidnightBlue,
+    CadetBlue,
+    CornflowerBlue,
+    RoyalBlue,
+    PowderBlue,
+
+    // Purples
     MediumPurple,
     Lavender,
     DarkOrchid,
     PatriarchPurple,
+    Plum,
+    Mauve,
+
+    // Greens
     MediumSeaGreen,
     LimeGreen,
     DarkOliveGreen,
     Teal,
+    Chartreuse,
+    Olive,
+    SageGreen,
+    MintGreen,
+
+    // Oranges & Yellows
     Orange,
     Amber,
     Coral,
+    PeachPuff,
+    LightGoldenrodYellow,
+    Gold,
+    Banana,
+
+    // Reds
     Firebrick,
+    Crimson,
+    Tomato,
+    RosyBrown,
+
+    // Turquoises & Cyans
     DarkTurquoise,
     Aqua,
+
+    // Neutrals
     DarkSlateGray,
     LightSlateGray,
     Gainsboro,
-    PeachPuff,
-    LightGoldenrodYellow,
-    CadetBlue,
-    MidnightBlue,
-    Chartreuse,
-    Olive
+    Taupe,
+    Umber,
+    Onyx
 )
