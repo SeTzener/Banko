@@ -50,7 +50,7 @@ fun ExpenseTagAddNewDialog(
     var isEarning by remember { mutableStateOf(false) }
 
     if (showColorPicker.value) {
-        ExpenseTagColorpickerDialog(
+        ExpenseTagColorpickerBottomSheet(
             showColorPicker = showColorPicker,
             editedColor = color
         )

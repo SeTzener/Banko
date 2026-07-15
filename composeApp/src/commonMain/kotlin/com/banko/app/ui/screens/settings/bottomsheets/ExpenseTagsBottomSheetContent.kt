@@ -47,7 +47,7 @@ import com.banko.app.ui.components.dialogs.ErrorDetailDialog
 import com.banko.app.ui.models.ExpenseTag
 import com.banko.app.ui.screens.settings.SettingsScreenState
 import com.banko.app.ui.screens.settings.bottomsheets.dialogs.ExpenseTagAddNewDialog
-import com.banko.app.ui.screens.settings.bottomsheets.dialogs.ExpenseTagColorpickerDialog
+import com.banko.app.ui.screens.settings.bottomsheets.dialogs.ExpenseTagColorpickerBottomSheet
 import com.banko.app.ui.screens.settings.bottomsheets.dialogs.ExpenseTagDeleteDialog
 import com.banko.app.ui.utils.toUserMessage
 import org.jetbrains.compose.resources.painterResource
@@ -188,7 +188,7 @@ fun TagItem(
     }
 
     if (showColorPicker.value) {
-        ExpenseTagColorpickerDialog(
+        ExpenseTagColorpickerBottomSheet(
             showColorPicker = showColorPicker,
             editedColor = editedColor
         )
