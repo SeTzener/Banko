@@ -2,6 +2,7 @@ package com.banko.app.ui.screens.settings
 
 import androidx.compose.ui.graphics.Color
 import com.banko.app.api.repositories.ExpenseTagRepository
+import com.banko.app.api.services.BankoApiService
 import com.banko.app.database.Entities.ExpenseTag as DaoExpenseTag
 import com.banko.app.domain.CurrencyPreferences
 import com.banko.app.database.repository.ExpenseTagRepository as DatabaseExpenseTagRepository
@@ -30,6 +31,7 @@ class SettingsScreenViewModelTest {
     private val dbRepository = mockk<DatabaseExpenseTagRepository>(relaxed = true)
     private val apiRepository = mockk<ExpenseTagRepository>(relaxed = true)
     private val currencyPreferences = mockk<CurrencyPreferences>(relaxed = true)
+    private val apiService = mockk<BankoApiService>(relaxed = true)
     private val testDispatcher: TestDispatcher = StandardTestDispatcher()
 
     @Before
@@ -48,7 +50,8 @@ class SettingsScreenViewModelTest {
         val vm = SettingsScreenViewModel(
             dbRepository = dbRepository,
             apiRepository = apiRepository,
-            currencyPreferences = currencyPreferences
+            currencyPreferences = currencyPreferences,
+            apiService = apiService,
         )
         advanceUntilIdle()
 
@@ -67,7 +70,8 @@ class SettingsScreenViewModelTest {
         val vm = SettingsScreenViewModel(
             dbRepository = dbRepository,
             apiRepository = apiRepository,
-            currencyPreferences = currencyPreferences
+            currencyPreferences = currencyPreferences,
+            apiService = apiService,
         )
         advanceUntilIdle()
 
@@ -88,7 +92,8 @@ class SettingsScreenViewModelTest {
         val vm = SettingsScreenViewModel(
             dbRepository = dbRepository,
             apiRepository = apiRepository,
-            currencyPreferences = currencyPreferences
+            currencyPreferences = currencyPreferences,
+            apiService = apiService,
         )
         advanceUntilIdle()
 
@@ -108,7 +113,8 @@ class SettingsScreenViewModelTest {
         val vm = SettingsScreenViewModel(
             dbRepository = dbRepository,
             apiRepository = apiRepository,
-            currencyPreferences = currencyPreferences
+            currencyPreferences = currencyPreferences,
+            apiService = apiService,
         )
         advanceUntilIdle()
 
@@ -128,7 +134,8 @@ class SettingsScreenViewModelTest {
         val vm = SettingsScreenViewModel(
             dbRepository = dbRepository,
             apiRepository = apiRepository,
-            currencyPreferences = currencyPreferences
+            currencyPreferences = currencyPreferences,
+            apiService = apiService,
         )
         advanceUntilIdle()
 
@@ -148,7 +155,8 @@ class SettingsScreenViewModelTest {
         val vm = SettingsScreenViewModel(
             dbRepository = dbRepository,
             apiRepository = apiRepository,
-            currencyPreferences = currencyPreferences
+            currencyPreferences = currencyPreferences,
+            apiService = apiService,
         )
         advanceUntilIdle()
 
@@ -163,7 +171,8 @@ class SettingsScreenViewModelTest {
         val vm = SettingsScreenViewModel(
             dbRepository = dbRepository,
             apiRepository = apiRepository,
-            currencyPreferences = currencyPreferences
+            currencyPreferences = currencyPreferences,
+            apiService = apiService,
         )
         advanceUntilIdle()
 
