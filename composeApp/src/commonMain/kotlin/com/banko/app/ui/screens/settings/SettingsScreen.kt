@@ -1,12 +1,13 @@
 package com.banko.app.ui.screens.settings
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -32,6 +33,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import banko.composeapp.generated.resources.Res
+import banko.composeapp.generated.resources.account_balance
+import banko.composeapp.generated.resources.add_new_bank
+import banko.composeapp.generated.resources.add_new_bank_description
+import banko.composeapp.generated.resources.banks
 import banko.composeapp.generated.resources.currency
 import banko.composeapp.generated.resources.expense_tags
 import banko.composeapp.generated.resources.expense_tags_title
@@ -39,11 +44,13 @@ import banko.composeapp.generated.resources.general
 import banko.composeapp.generated.resources.ic_arrow_right
 import banko.composeapp.generated.resources.ic_currency
 import banko.composeapp.generated.resources.ic_expense_tags
+import banko.composeapp.generated.resources.linked_banks
 import banko.composeapp.generated.resources.profile
 import banko.composeapp.generated.resources.settings
 import com.banko.app.domain.model.currencyDisplayForCode
 import com.banko.app.ui.components.SettingsCard
 import com.banko.app.ui.screens.settings.bottomsheets.ExpenseTagsBottomSheetContent
+import com.banko.app.ui.screens.settings.bottomsheets.LinkedBanksBottomSheetContent
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -71,6 +78,19 @@ fun SettingsScreen(component: SettingsComponent) {
                 onTagDelete = { viewModel.deleteExpenseTag(it) },
                 clearError = { viewModel.clearError() },
                 onClose = { currentBottomSheet = BottomSheetType.NONE }
+            )
+        }
+    }
+
+    if (currentBottomSheet == BottomSheetType.LINKED_BANKS) {
+        ModalBottomSheet(
+            onDismissRequest = { currentBottomSheet = BottomSheetType.NONE },
+            sheetState = sheetState
+        ) {
+            LinkedBanksBottomSheetContent(
+                screenState = screenState,
+                onReAuthorize = { institutionId -> component.onReAuthorize(institutionId) },
+                onClose = { currentBottomSheet = BottomSheetType.NONE },
             )
         }
     }
@@ -191,6 +211,31 @@ fun SettingsScreen(component: SettingsComponent) {
             Row {
                 Text(
                     modifier = Modifier.padding(top = 24.dp, bottom = 16.dp),
+                    text = stringResource(Res.string.banks),
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.titleSmall
+                )
+            }
+            Row {
+                SettingsCard(
+                    icon = Res.drawable.account_balance,
+                    title = Res.string.add_new_bank,
+                    description = Res.string.add_new_bank_description,
+                    onClick = component.onNavigateToBankLinking,
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Row {
+                SettingsCard(
+                    icon = Res.drawable.account_balance,
+                    title = Res.string.linked_banks,
+                    description = Res.string.linked_banks,
+                    onClick = { currentBottomSheet = BottomSheetType.LINKED_BANKS },
+                )
+            }
+            Row {
+                Text(
+                    modifier = Modifier.padding(top = 24.dp, bottom = 16.dp),
                     text = stringResource(Res.string.expense_tags_title),
                     color = MaterialTheme.colorScheme.primary,
                     style = MaterialTheme.typography.titleSmall
@@ -210,5 +255,6 @@ fun SettingsScreen(component: SettingsComponent) {
 
 enum class BottomSheetType {
     EXPENSE_TAGS,
+    LINKED_BANKS,
     NONE
 }
