@@ -25,8 +25,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.banko.app.ui.theme.Amber
+import com.banko.app.ui.theme.Crimson
+import com.banko.app.ui.theme.Firebrick
+import com.banko.app.ui.theme.MediumSeaGreen
 import banko.composeapp.generated.resources.Res
 import banko.composeapp.generated.resources.error_status
 import banko.composeapp.generated.resources.expired
@@ -197,10 +200,10 @@ private fun StatusBadge(
     status: BankAuthorizationStatus,
 ) {
     val (text, color) = when (status) {
-        BankAuthorizationStatus.Linked -> stringResource(Res.string.linked) to Color(0xFF4CAF50)
-        BankAuthorizationStatus.Processing -> stringResource(Res.string.processing) to Color(0xFFFFC107)
-        BankAuthorizationStatus.Expired -> stringResource(Res.string.expired) to Color(0xFFF44336)
-        BankAuthorizationStatus.Error -> stringResource(Res.string.error_status) to Color(0xFFF44336)
+        BankAuthorizationStatus.Linked -> stringResource(Res.string.linked) to MediumSeaGreen
+        BankAuthorizationStatus.Processing -> stringResource(Res.string.processing) to Amber
+        BankAuthorizationStatus.Expired -> stringResource(Res.string.expired) to Firebrick
+        BankAuthorizationStatus.Error -> stringResource(Res.string.error_status) to Crimson
     }
 
     Row(
