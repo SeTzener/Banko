@@ -9,6 +9,7 @@ object JsonProvider {
         prettyPrint = true
         isLenient = true
         ignoreUnknownKeys = true
+        encodeDefaults = true
         serializersModule = SerializersModule {
             contextual(ColorSerializer) // Register Color serializer globally
         }
