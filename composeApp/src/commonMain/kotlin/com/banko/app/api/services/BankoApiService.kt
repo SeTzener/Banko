@@ -4,14 +4,20 @@ import com.banko.app.api.HttpClientProvider
 import com.banko.app.api.auth.TokenStorage
 import com.banko.app.api.dto.bankoApi.AcceptConsentRequest
 import com.banko.app.api.dto.bankoApi.AuthResponse
+import com.banko.app.api.dto.bankoApi.BankAuthCallbackRequest
+import com.banko.app.api.dto.bankoApi.BankAuthCallbackResponse
 import com.banko.app.api.dto.bankoApi.ChangePasswordRequest
 import com.banko.app.api.dto.bankoApi.ExpenseTag
 import com.banko.app.api.dto.bankoApi.ExpenseTags
+import com.banko.app.api.dto.bankoApi.GetBankAuthorizationsResponse
+import com.banko.app.api.dto.bankoApi.GoCardlessInstitutionDto
 import com.banko.app.api.dto.bankoApi.LoginRequest
 import com.banko.app.api.dto.bankoApi.RefreshRequest
 import com.banko.app.api.dto.bankoApi.RegisterRequest
 import com.banko.app.api.dto.bankoApi.Transactions
 import com.banko.app.api.dto.bankoApi.UpdateProfileRequest
+import com.banko.app.api.dto.bankoApi.UpsertEndUserAgreementRequest
+import com.banko.app.api.dto.bankoApi.UpsertEndUserAgreementResponse
 import com.banko.app.api.dto.bankoApi.UpsertExpenseTag
 import com.banko.app.api.dto.bankoApi.UserExportData
 import com.banko.app.api.dto.bankoApi.UserProfileResponse
@@ -245,6 +251,41 @@ class BankoApiService(
 
     suspend fun deleteAccount(): Result<Unit> {
         return client.deleteSafe("$baseUrl/Users/me") {
+            contentType(ContentType.Application.Json)
+        }
+    }
+
+    suspend fun getInstitutions(country: String): Result<List<GoCardlessInstitutionDto>> {
+        return client.getSafe<List<GoCardlessInstitutionDto>>("$baseUrl/Settings/institutions") {
+            contentType(ContentType.Application.Json)
+            parameter("country", country)
+        }
+    }
+
+    suspend fun upsertEndUserAgreement(
+        institutionId: String,
+        daysOfAccess: Int = 90
+    ): Result<UpsertEndUserAgreementResponse> {
+        return client.postSafe("$baseUrl/Settings/end-user-agreement") {
+            contentType(ContentType.Application.Json)
+            setBody(
+                UpsertEndUserAgreementRequest(
+                    institutionId = institutionId,
+                    daysOfAccess = daysOfAccess,
+                )
+            )
+        }
+    }
+
+    suspend fun bankAuthCallback(requisitionId: String): Result<BankAuthCallbackResponse> {
+        return client.postSafe("$baseUrl/Settings/bank-auth-callback") {
+            contentType(ContentType.Application.Json)
+            setBody(BankAuthCallbackRequest(requisitionId = requisitionId))
+        }
+    }
+
+    suspend fun getBankAuthorizations(): Result<GetBankAuthorizationsResponse> {
+        return client.getSafe("$baseUrl/Settings/BankAuthorization") {
             contentType(ContentType.Application.Json)
         }
     }

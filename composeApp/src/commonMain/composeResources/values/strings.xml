@@ -105,4 +105,33 @@
     <string name="profile_delete_account_confirm_yes">Delete</string>
     <string name="profile_delete_account_confirm_cancel">Cancel</string>
     <string name="profile_re_accept_consent">Re-accept Privacy Policy</string>
+
+    <!-- Bank Linking -->
+    <string name="add_new_bank">Add New Bank</string>
+    <string name="add_new_bank_description">Link a bank account</string>
+    <string name="linked_banks">Linked Banks</string>
+    <string name="no_linked_banks">No linked banks yet</string>
+    <string name="select_country">Select Country</string>
+    <string name="select_country_description">Choose your bank\'s country</string>
+    <string name="search_countries">Search countries…</string>
+    <string name="search_banks">Search banks…</string>
+    <string name="select_bank">Select Bank</string>
+    <string name="select_bank_description">Choose your bank</string>
+    <string name="no_banks_found">No banks found for this country</string>
+    <string name="linking_account">Linking your account…</string>
+    <string name="account_linked_successfully">Account linked successfully!</string>
+    <string name="linked_accounts">Linked Accounts</string>
+    <string name="account_linking_failed">Account linking failed</string>
+    <string name="re_authorize">Re-authorize</string>
+    <string name="linked">Linked</string>
+    <string name="processing">Processing</string>
+    <string name="expired">Expired</string>
+    <string name="error_status">Error</string>
+    <string name="done">Done</string>
+    <string name="bank_auth_error">Bank authorization error</string>
+    <string name="bank_auth_error_description">Authorization was cancelled or failed. Please try again.</string>
+    <string name="retry">Retry</string>
+    <string name="back">Back</string>
+    <string name="banks">BANKS</string>
+    <string name="iban_label">IBAN: %s</string>
 </resources>

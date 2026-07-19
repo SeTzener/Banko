@@ -8,6 +8,7 @@ import com.arkivanov.decompose.router.stack.childStack
 import com.arkivanov.decompose.router.stack.pop
 import com.banko.app.api.auth.SessionManager
 import com.banko.app.ui.models.Transaction
+import com.banko.app.ui.screens.banklinking.BankLinkingComponent
 import com.banko.app.ui.screens.details.DetailsComponent
 import com.banko.app.ui.screens.home.HomeComponent
 import com.banko.app.ui.screens.profile.ProfileComponent
@@ -54,12 +55,23 @@ class RootComponent(
                 SettingsComponent(
                     componentContext = context,
                     onNavigateToProfile = { navigation.bringToFront(Configuration.Profile) },
+                    onNavigateToBankLinking = { navigation.bringToFront(Configuration.BankLinking()) },
+                    onReAuthorize = { institutionId ->
+                        navigation.bringToFront(Configuration.BankLinking(institutionId = institutionId))
+                    },
                 )
             )
             is Configuration.Profile -> Child.Profile(
                 ProfileComponent(
                     componentContext = context,
                     onGoBack = { navigation.pop() },
+                )
+            )
+            is Configuration.BankLinking -> Child.BankLinking(
+                BankLinkingComponent(
+                    componentContext = context,
+                    onGoBack = { navigation.pop() },
+                    institutionId = config.institutionId,
                 )
             )
         }
@@ -70,6 +82,7 @@ class RootComponent(
         data class Details(val component: DetailsComponent) : Child()
         data class Settings(val component: SettingsComponent) : Child()
         data class Profile(val component: ProfileComponent) : Child()
+        data class BankLinking(val component: BankLinkingComponent) : Child()
     }
 
     @Serializable
@@ -86,5 +99,10 @@ class RootComponent(
 
         @Serializable
         data object Profile : Configuration()
+
+        @Serializable
+        data class BankLinking(
+            val institutionId: String? = null,
+        ) : Configuration()
     }
 }

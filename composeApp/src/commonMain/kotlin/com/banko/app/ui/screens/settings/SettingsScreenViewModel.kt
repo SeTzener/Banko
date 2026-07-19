@@ -6,6 +6,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.banko.app.ApiExpenseTagRepository
 import com.banko.app.DatabaseExpenseTagRepository
+import com.banko.app.api.services.BankoApiService
+import com.banko.app.api.utils.Result
 import com.banko.app.database.Entities.toModelItem
 import com.banko.app.domain.CurrencyPreferences
 import com.banko.app.domain.model.CurrencyInfo
@@ -26,6 +28,7 @@ class SettingsScreenViewModel(
     private val dbRepository: DatabaseExpenseTagRepository,
     private val apiRepository: ApiExpenseTagRepository,
     private val currencyPreferences: CurrencyPreferences,
+    private val apiService: BankoApiService,
 ) : ViewModel() {
     private val _screenState = MutableStateFlow(SettingsScreenState())
     val screenState: StateFlow<SettingsScreenState> = _screenState
@@ -33,6 +36,7 @@ class SettingsScreenViewModel(
     init {
         getExpenseTags()
         loadCurrencyPreferences()
+        loadBankAuthorizations()
     }
 
     private fun getExpenseTags() {
@@ -118,5 +122,26 @@ class SettingsScreenViewModel(
 
     fun clearError() {
         _screenState.update { it.copy(error = null) }
+    }
+
+    fun loadBankAuthorizations() {
+        viewModelScope.launch {
+            _screenState.update { it.copy(isLoadingBanks = true) }
+            when (val result = apiService.getBankAuthorizations()) {
+                is Result.Success -> {
+                    _screenState.update {
+                        it.copy(
+                            bankAuthorizations = result.value.bankAuthorizations,
+                            isLoadingBanks = false,
+                        )
+                    }
+                }
+                is Result.Error -> {
+                    _screenState.update {
+                        it.copy(isLoadingBanks = false)
+                    }
+                }
+            }
+        }
     }
 }

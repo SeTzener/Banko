@@ -22,6 +22,7 @@ import com.banko.app.domain.CurrencyPreferences
 import com.banko.app.domain.GetAllExpenseTagUseCase
 import com.banko.app.domain.SaveNoteUseCase
 import com.banko.app.ui.screens.details.DetailsScreenViewModel
+import com.banko.app.ui.screens.banklinking.BankLinkingViewModel
 import com.banko.app.ui.screens.home.HomeScreenViewModel
 import com.banko.app.ui.screens.login.LoginViewModel
 import com.banko.app.ui.screens.profile.ProfileViewModel
@@ -63,6 +64,7 @@ val  sharedModule = module {
     viewModelOf(::SettingsScreenViewModel)
     viewModelOf(::HomeScreenViewModel)
     viewModelOf(::DetailsScreenViewModel)
+    viewModelOf(::BankLinkingViewModel)
 }
 
 //    Example 1

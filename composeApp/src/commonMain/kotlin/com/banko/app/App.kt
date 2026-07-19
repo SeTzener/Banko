@@ -23,6 +23,7 @@ import com.arkivanov.decompose.router.stack.pushNew
 import com.banko.app.api.auth.AuthState
 import com.banko.app.ui.screens.auth.AuthComponent
 import com.banko.app.ui.screens.auth.AuthScreen
+import com.banko.app.ui.screens.banklinking.BankLinkingScreen
 import com.banko.app.ui.screens.details.DetailsScreen
 import com.banko.app.ui.screens.details.DetailsScreenViewModel
 import com.banko.app.ui.screens.home.HomeScreen
@@ -95,6 +96,7 @@ fun App(root: RootComponent, authComponent: AuthComponent) {
                                 )
                                 is RootComponent.Child.Settings -> SettingsScreen(instance.component)
                                 is RootComponent.Child.Profile -> ProfileScreen(instance.component)
+                                is RootComponent.Child.BankLinking -> BankLinkingScreen(instance.component)
                             }
                         }
                     }
