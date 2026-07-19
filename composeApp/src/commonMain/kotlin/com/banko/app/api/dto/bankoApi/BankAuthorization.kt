@@ -97,6 +97,8 @@ data class BankAuthDto(
     val status: BankAuthorizationStatus = BankAuthorizationStatus.Processing,
     @SerialName("institutionName")
     val institutionName: String? = null,
+    @SerialName("institutionLogoUrl")
+    val institutionLogoUrl: String? = null,
     @SerialName("createdAt")
     val createdAt: String = "",
     @SerialName("updatedAt")

@@ -136,7 +136,7 @@ private fun BankAuthorizationRow(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             BankLogo(
-                logoUrl = null,
+                logoUrl = auth.institutionLogoUrl,
                 bankName = auth.institutionName,
                 size = 40,
             )
