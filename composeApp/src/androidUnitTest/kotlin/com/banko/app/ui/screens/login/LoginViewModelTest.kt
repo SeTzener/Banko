@@ -1,8 +1,8 @@
 package com.banko.app.ui.screens.login
 
 import com.banko.app.api.auth.SessionManager
-import io.mockk.coVerify
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -101,6 +101,6 @@ class LoginViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(true, viewModel.state.value.isLoading)
-        coVerify { sessionManager.login("test@example.com", "password123") }
+        verify { sessionManager.login("test@example.com", "password123") }
     }
 }
