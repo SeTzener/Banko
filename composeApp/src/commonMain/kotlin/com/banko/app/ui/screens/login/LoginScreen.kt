@@ -20,6 +20,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -32,7 +33,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import banko.composeapp.generated.resources.Res
-import banko.composeapp.generated.resources.auth_error_login_failed
 import banko.composeapp.generated.resources.login_button
 import banko.composeapp.generated.resources.login_email
 import banko.composeapp.generated.resources.login_no_account
@@ -68,6 +68,10 @@ fun LoginScreen(component: LoginComponent) {
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
             enabled = !state.isLoading,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                unfocusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            ),
         )
         Spacer(Modifier.height(12.dp))
         OutlinedTextField(
@@ -78,6 +82,10 @@ fun LoginScreen(component: LoginComponent) {
             modifier = Modifier.fillMaxWidth(),
             enabled = !state.isLoading,
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                unfocusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            ),
             trailingIcon = {
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
                     Icon(
@@ -90,7 +98,7 @@ fun LoginScreen(component: LoginComponent) {
         state.error?.let {
             Spacer(Modifier.height(8.dp))
             Text(
-                text = stringResource(Res.string.auth_error_login_failed),
+                text = it,
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall,
             )

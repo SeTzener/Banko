@@ -73,14 +73,20 @@ class CurrencyRepository(
                 current = current.plus(DatePeriod(days = 1))
             }
 
-            if (missingDates.isEmpty()) return@withLock cachedMap.filterValues { it != null }.mapValues { it.value!! }
+            if (missingDates.isEmpty()) {
+                val filtered = cachedMap.filterValues { it != null }.mapValues { it.value!! }
+                return@withLock fillGaps(filtered, startDate, endDate)
+            }
 
             val actualStart = missingDates.first()
             val actualEnd = missingDates.last()
 
             val result = frankfurterService.getTimeSeriesRates(fromCurrency, toCurrency, actualStart.toString(), actualEnd.toString())
             when (result) {
-                is Result.Error -> return@withLock cachedMap.filterValues { it != null }.mapValues { it.value!! }
+                is Result.Error -> {
+                    val filtered = cachedMap.filterValues { it != null }.mapValues { it.value!! }
+                    fillGaps(filtered, startDate, endDate)
+                }
                 is Result.Success -> {
                     val ratesToInsert = mutableListOf<ExchangeRate>()
                     var apiCurrent = actualStart
@@ -92,10 +98,32 @@ class CurrencyRepository(
                     }
                     exchangeRateDao.upsertExchangeRates(ratesToInsert)
                     val fetchedMap = ratesToInsert.associate { LocalDate.parse(it.date) to it.rate }
-                    (cachedMap + fetchedMap).filterValues { it != null }.mapValues { it.value!! }
+                    val merged = (cachedMap + fetchedMap).filterValues { it != null }.mapValues { it.value!! }
+                    fillGaps(merged, startDate, endDate)
                 }
             }
         }
+    }
+
+    private fun fillGaps(
+        rates: Map<LocalDate, Double>,
+        startDate: LocalDate,
+        endDate: LocalDate,
+    ): Map<LocalDate, Double> {
+        val result = mutableMapOf<LocalDate, Double>()
+        var lastRate: Double? = null
+        var current = startDate
+        while (current <= endDate) {
+            val rate = rates[current]
+            if (rate != null) {
+                lastRate = rate
+            }
+            if (lastRate != null) {
+                result[current] = lastRate
+            }
+            current = current.plus(DatePeriod(days = 1))
+        }
+        return result
     }
 
     suspend fun getRateCount(): Long = exchangeRateDao.getRateCount()

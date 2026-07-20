@@ -112,7 +112,6 @@ fun DetailsScreen(
 ) {
     var transaction by remember { mutableStateOf(transactions) }
     val transactionNote = remember { mutableStateOf(transaction.note ?: "") }
-    var oldTag by remember { mutableStateOf(transaction.expenseTag?.id) }
     val isEditing by remember { mutableStateOf(false) }
     val isEditNote = remember { mutableStateOf(false) }
     val isDeleteNote = remember { mutableStateOf(false) }
@@ -284,7 +283,8 @@ fun DetailsScreen(
                 TextField(
                     modifier = Modifier.padding(start = 16.dp, end = 16.dp).fillMaxWidth(),
                     onValueChange = {},
-                    value = transaction.remittanceInformationUnstructuredArray.joinToString(" "),
+                    value = transaction.remittanceInformationUnstructured,
+                    minLines = 3,
                     supportingText = {
                         Text(
                             text = stringResource(Res.string.details_remittance_information)
@@ -560,7 +560,7 @@ fun DetailsScreen(
                                 },
                                 contentDescription = null,
                                 tint = transaction.expenseTag?.color
-                                    ?: MaterialTheme.colorScheme.onSurface
+                                    ?: MaterialTheme.colorScheme.primary
                             )
                         },
                         trailingIcon = {
@@ -589,7 +589,6 @@ fun DetailsScreen(
                         onTagSelected = { tag ->
                             transaction = transaction.copy(expenseTag = tag)
                             assignExpenseTag(transaction.id, tag?.id)
-                            oldTag = tag?.id
                         })
                 }
             }

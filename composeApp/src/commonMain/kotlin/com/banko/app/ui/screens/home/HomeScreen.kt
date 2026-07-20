@@ -44,6 +44,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -53,7 +54,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -86,7 +86,6 @@ import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import banko.composeapp.generated.resources.Res
 import banko.composeapp.generated.resources.app_name
-import banko.composeapp.generated.resources.details
 import banko.composeapp.generated.resources.ic_delete
 import banko.composeapp.generated.resources.ic_tag
 import banko.composeapp.generated.resources.ic_tag_filled
@@ -94,11 +93,11 @@ import com.banko.app.ModelTransaction
 import com.banko.app.ui.components.BankLogo
 import com.banko.app.ui.components.CircularIndicator
 import com.banko.app.ui.components.ErrorSnackbarHost
-import com.banko.app.ui.components.ExpenseTag
 import com.banko.app.ui.models.Transaction
 import com.banko.app.ui.components.dialogs.TransactionDeleteDialog
 import com.banko.app.domain.model.currencyDisplayForCode
 import com.banko.app.ui.utils.toUserMessage
+import com.banko.app.utils.tailDisplay
 import kotlinx.datetime.Month
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -243,7 +242,8 @@ fun HomeScreen(
                 hostState = snackbarHostState,
                 rawError = uiState.error?.fullMessage,
             )
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.surface
     ) { padding ->
         Box(
             modifier = Modifier
@@ -494,14 +494,13 @@ private fun SwipableTransactionRow(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        modifier = Modifier.weight(1f),
-                        text = transaction.remittanceInformationUnstructured.replace("\\s+".toRegex(), " "),
+                        modifier = Modifier.weight(1f).padding(end = 16.dp),
+                        text = transaction.remittanceInformationUnstructured.replace("\\s+".toRegex(), " ").tailDisplay(),
                         color = MaterialTheme.colorScheme.primary,
                         overflow = TextOverflow.Ellipsis,
-                        maxLines = 1,
-                        style = MaterialTheme.typography.bodySmall
+                        maxLines = 2,
+                        style = MaterialTheme.typography.labelSmall
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
                     BankLogo(
                         logoUrl = transaction.bankLogoUrl,
                         bankName = transaction.bankName,
@@ -542,7 +541,7 @@ private fun TopContent() {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 20.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp),
     ) {
         Text(
             text = stringResource(Res.string.app_name),
@@ -758,14 +757,20 @@ private fun LazyTransactionList(
                         items = transactionsByDate,
                         key = { it.id }
                     ) { transaction ->
-                        SwipableTransactionRow(
-                            transaction = transaction,
-                            isOpen = openedRowId == transaction.id,
-                            onOpen = { openedRowId = transaction.id },
-                            onClose = { openedRowId = null },
-                            onClick = { navigateToDetails(transaction) },
-                            onDeleteTransaction = onDeleteTransaction
-                        )
+                        Column {
+                            SwipableTransactionRow(
+                                transaction = transaction,
+                                isOpen = openedRowId == transaction.id,
+                                onOpen = { openedRowId = transaction.id },
+                                onClose = { openedRowId = null },
+                                onClick = { navigateToDetails(transaction) },
+                                onDeleteTransaction = onDeleteTransaction
+                            )
+                            HorizontalDivider(
+                                modifier = Modifier.padding(horizontal = 12.dp),
+                                color = MaterialTheme.colorScheme.outlineVariant
+                            )
+                        }
                     }
                 }
             }

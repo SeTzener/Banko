@@ -3,6 +3,7 @@ package com.banko.app.api.utils
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.RedirectResponseException
 import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.request.*
@@ -71,6 +72,8 @@ suspend inline fun <reified T> HttpClient.safeRequest(
             body = try { e.response.body() } catch (e: Exception) { null }
         )
     } catch (e: UnresolvedAddressException) {
+        Result.Error.NetworkError(e)
+    } catch (e: HttpRequestTimeoutException) {
         Result.Error.NetworkError(e)
     } catch (e: SerializationException) {
         Result.Error.SerializationError(e)

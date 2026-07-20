@@ -40,14 +40,12 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import banko.composeapp.generated.resources.Res
 import banko.composeapp.generated.resources.expense_tag_Other
-import banko.composeapp.generated.resources.expense_tag_uncategorized
 import banko.composeapp.generated.resources.monthly_earnings
 import banko.composeapp.generated.resources.monthly_spendings
 import banko.composeapp.generated.resources.yearly_earnings
 import banko.composeapp.generated.resources.yearly_spendings
 import com.banko.app.ModelTransaction
 import com.banko.app.ui.models.Category
-import com.banko.app.ui.models.Transaction
 import com.banko.app.ui.screens.home.TimespanSelection
 import com.banko.app.ui.theme.Grey_Nevada
 import kotlinx.datetime.Month
