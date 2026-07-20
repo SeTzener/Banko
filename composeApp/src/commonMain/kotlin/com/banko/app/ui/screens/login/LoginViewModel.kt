@@ -3,6 +3,7 @@ package com.banko.app.ui.screens.login
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.banko.app.api.auth.SessionManager
+import com.banko.app.api.utils.Result
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -37,6 +38,23 @@ class LoginViewModel(
             return
         }
         _state.update { it.copy(isLoading = true, error = null) }
-        sessionManager.login(s.email, s.password)
+        viewModelScope.launch {
+            when (val result = sessionManager.login(s.email, s.password)) {
+                is Result.Success -> _state.update { it.copy(isLoading = false) }
+                is Result.Error -> _state.update {
+                    it.copy(isLoading = false, error = errorMessageFor(result))
+                }
+            }
+        }
+    }
+
+    private fun errorMessageFor(error: Result.Error): String = when (error) {
+        is Result.Error.HttpError -> when (error.code) {
+            401, 403 -> "Wrong email and/or password."
+            in 500..599 -> "Server not responding. Check your connection and try again."
+            else -> "An unexpected error occurred. Please try again."
+        }
+        is Result.Error.NetworkError -> "Server not responding. Check your connection and try again."
+        else -> "An unexpected error occurred. Please try again."
     }
 }

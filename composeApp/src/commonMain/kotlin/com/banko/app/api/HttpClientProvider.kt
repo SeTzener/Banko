@@ -19,9 +19,13 @@ object HttpClientProvider {
             level = LogLevel.INFO
         }
         install(HttpTimeout) {
-            socketTimeoutMillis = TIMEOUT
+            connectTimeoutMillis = CONNECT_TIMEOUT
+            socketTimeoutMillis = SOCKET_TIMEOUT
+            requestTimeoutMillis = REQUEST_TIMEOUT
         }
     }
 }
 
-internal const val TIMEOUT: Long = 60_000L
+internal const val CONNECT_TIMEOUT: Long = 15_000L
+internal const val SOCKET_TIMEOUT: Long = 30_000L
+internal const val REQUEST_TIMEOUT: Long = 30_000L

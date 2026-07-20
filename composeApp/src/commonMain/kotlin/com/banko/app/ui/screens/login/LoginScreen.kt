@@ -33,7 +33,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import banko.composeapp.generated.resources.Res
-import banko.composeapp.generated.resources.auth_error_login_failed
 import banko.composeapp.generated.resources.login_button
 import banko.composeapp.generated.resources.login_email
 import banko.composeapp.generated.resources.login_no_account
@@ -99,7 +98,7 @@ fun LoginScreen(component: LoginComponent) {
         state.error?.let {
             Spacer(Modifier.height(8.dp))
             Text(
-                text = stringResource(Res.string.auth_error_login_failed),
+                text = it,
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall,
             )

@@ -91,6 +91,9 @@
     <string name="auth_error_invalid_password">Password must be at least 8 characters.</string>
     <string name="auth_error_login_failed">Login failed. Please check your credentials.</string>
     <string name="auth_error_registration_failed">Registration failed. Please try again.</string>
+    <string name="auth_error_wrong_credentials">Wrong email and/or password.</string>
+    <string name="auth_error_server_not_responding">Server not responding. Check your connection and try again.</string>
+    <string name="auth_error_unknown">An unexpected error occurred. Please try again.</string>
     <string name="profile">Profile</string>
     <string name="profile_logout">Log out</string>
     <string name="profile_account_id">Account ID</string>

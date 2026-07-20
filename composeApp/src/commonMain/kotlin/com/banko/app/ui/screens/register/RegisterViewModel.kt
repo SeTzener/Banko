@@ -3,6 +3,7 @@ package com.banko.app.ui.screens.register
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.banko.app.api.auth.SessionManager
+import com.banko.app.api.utils.Result
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -47,11 +48,28 @@ class RegisterViewModel(
             return
         }
         _state.update { it.copy(isLoading = true, error = null) }
-        sessionManager.register(
-            email = s.email,
-            password = s.password,
-            fullName = s.fullName.ifBlank { null },
-            consentGiven = s.consentGiven,
-        )
+        viewModelScope.launch {
+            when (val result = sessionManager.register(
+                email = s.email,
+                password = s.password,
+                fullName = s.fullName.ifBlank { null },
+                consentGiven = s.consentGiven,
+            )) {
+                is Result.Success -> _state.update { it.copy(isLoading = false) }
+                is Result.Error -> _state.update {
+                    it.copy(isLoading = false, error = errorMessageFor(result))
+                }
+            }
+        }
+    }
+
+    private fun errorMessageFor(error: Result.Error): String = when (error) {
+        is Result.Error.HttpError -> when (error.code) {
+            409 -> "An account with this email already exists."
+            in 500..599 -> "Server not responding. Check your connection and try again."
+            else -> "An unexpected error occurred. Please try again."
+        }
+        is Result.Error.NetworkError -> "Server not responding. Check your connection and try again."
+        else -> "An unexpected error occurred. Please try again."
     }
 }

@@ -39,22 +39,30 @@ class SessionManager(
         }
     }
 
-    fun login(email: String, password: String) {
-        scope.launch {
-            _authState.value = AuthState.Loading
-            when (authRepository.login(email, password)) {
-                is Result.Success -> _authState.value = AuthState.Authenticated
-                is Result.Error -> _authState.value = AuthState.Unauthenticated
+    suspend fun login(email: String, password: String): Result<Unit> {
+        _authState.value = AuthState.Loading
+        return when (val result = authRepository.login(email, password)) {
+            is Result.Success -> {
+                _authState.value = AuthState.Authenticated
+                Result.Success(Unit)
+            }
+            is Result.Error -> {
+                _authState.value = AuthState.Unauthenticated
+                result
             }
         }
     }
 
-    fun register(email: String, password: String, fullName: String?, consentGiven: Boolean) {
-        scope.launch {
-            _authState.value = AuthState.Loading
-            when (authRepository.register(email, password, fullName, consentGiven)) {
-                is Result.Success -> _authState.value = AuthState.Authenticated
-                is Result.Error -> _authState.value = AuthState.Unauthenticated
+    suspend fun register(email: String, password: String, fullName: String?, consentGiven: Boolean): Result<Unit> {
+        _authState.value = AuthState.Loading
+        return when (val result = authRepository.register(email, password, fullName, consentGiven)) {
+            is Result.Success -> {
+                _authState.value = AuthState.Authenticated
+                Result.Success(Unit)
+            }
+            is Result.Error -> {
+                _authState.value = AuthState.Unauthenticated
+                result
             }
         }
     }
