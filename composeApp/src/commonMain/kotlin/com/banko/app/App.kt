@@ -1,5 +1,6 @@
 package com.banko.app
 
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
@@ -13,11 +14,14 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.unit.dp
 import com.arkivanov.decompose.ExperimentalDecomposeApi
 import com.arkivanov.decompose.extensions.compose.jetbrains.stack.Children
 import com.arkivanov.decompose.extensions.compose.jetbrains.stack.animation.slide
 import com.arkivanov.decompose.extensions.compose.jetbrains.stack.animation.stackAnimation
 import com.arkivanov.decompose.extensions.compose.jetbrains.subscribeAsState
+import com.arkivanov.decompose.router.stack.pop
 import com.arkivanov.decompose.router.stack.popTo
 import com.arkivanov.decompose.router.stack.bringToFront
 import com.arkivanov.decompose.router.stack.pushNew
@@ -26,7 +30,6 @@ import com.banko.app.ui.screens.auth.AuthComponent
 import com.banko.app.ui.screens.auth.AuthScreen
 import com.banko.app.ui.screens.banklinking.BankLinkingScreen
 import com.banko.app.ui.screens.details.DetailsScreen
-import com.banko.app.ui.screens.details.DetailsScreenViewModel
 import com.banko.app.ui.screens.home.HomeScreen
 import com.banko.app.ui.screens.profile.ProfileScreen
 import org.jetbrains.compose.ui.tooling.preview.Preview
@@ -96,7 +99,10 @@ fun App(root: RootComponent, authComponent: AuthComponent) {
                     ) {
                         Children(
                             stack = childStack.value,
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier.fillMaxSize().swipeToGoBack(
+                                enabled = childStack.value.items.size > 1,
+                                onBack = { root.navigation.pop() },
+                            ),
                             animation = stackAnimation(slide()),
                         ) { child ->
                             when (val instance = child.instance) {
@@ -114,4 +120,32 @@ fun App(root: RootComponent, authComponent: AuthComponent) {
             }
         }
     }
+}
+
+private fun Modifier.swipeToGoBack(
+    enabled: Boolean = true,
+    onBack: () -> Unit,
+): Modifier = if (!enabled) this else pointerInput(Unit) {
+    val edgeThresholdPx = with(density) { 24.dp.toPx() }
+    val distanceThresholdPx = with(density) { 100.dp.toPx() }
+    var totalDragX = 0f
+    var dragFromEdge = false
+
+    detectHorizontalDragGestures(
+        onDragStart = { offset ->
+            totalDragX = 0f
+            dragFromEdge = offset.x < edgeThresholdPx
+        },
+        onHorizontalDrag = { _, dragAmount ->
+            if (dragFromEdge && dragAmount > 0) {
+                totalDragX += dragAmount
+                if (totalDragX > distanceThresholdPx) {
+                    onBack()
+                    dragFromEdge = false
+                }
+            }
+        },
+        onDragEnd = { dragFromEdge = false },
+        onDragCancel = { dragFromEdge = false },
+    )
 }
