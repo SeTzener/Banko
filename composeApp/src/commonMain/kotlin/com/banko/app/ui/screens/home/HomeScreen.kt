@@ -54,7 +54,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -87,7 +86,6 @@ import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import banko.composeapp.generated.resources.Res
 import banko.composeapp.generated.resources.app_name
-import banko.composeapp.generated.resources.details
 import banko.composeapp.generated.resources.ic_delete
 import banko.composeapp.generated.resources.ic_tag
 import banko.composeapp.generated.resources.ic_tag_filled
@@ -95,7 +93,6 @@ import com.banko.app.ModelTransaction
 import com.banko.app.ui.components.BankLogo
 import com.banko.app.ui.components.CircularIndicator
 import com.banko.app.ui.components.ErrorSnackbarHost
-import com.banko.app.ui.components.ExpenseTag
 import com.banko.app.ui.models.Transaction
 import com.banko.app.ui.components.dialogs.TransactionDeleteDialog
 import com.banko.app.domain.model.currencyDisplayForCode

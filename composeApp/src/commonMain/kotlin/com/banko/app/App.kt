@@ -24,7 +24,6 @@ import com.arkivanov.decompose.extensions.compose.jetbrains.subscribeAsState
 import com.arkivanov.decompose.router.stack.pop
 import com.arkivanov.decompose.router.stack.popTo
 import com.arkivanov.decompose.router.stack.bringToFront
-import com.arkivanov.decompose.router.stack.pushNew
 import com.banko.app.api.auth.AuthState
 import com.banko.app.ui.screens.auth.AuthComponent
 import com.banko.app.ui.screens.auth.AuthScreen
@@ -37,10 +36,6 @@ import com.banko.app.ui.screens.navigation.RootComponent
 import com.banko.app.ui.screens.navigation.bottomNavItems
 import com.banko.app.ui.screens.settings.SettingsScreen
 import com.banko.app.ui.theme.BankoTheme
-import com.banko.app.ui.theme.Dark_On_Surface
-import com.banko.app.ui.theme.Dark_Surface
-import com.banko.app.ui.theme.Light_On_Surface
-import com.banko.app.ui.theme.Light_Surface
 
 @OptIn(ExperimentalDecomposeApi::class)
 @Composable

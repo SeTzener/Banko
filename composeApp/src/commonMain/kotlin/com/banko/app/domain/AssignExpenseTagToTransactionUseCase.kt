@@ -2,9 +2,7 @@ package com.banko.app.domain
 
 import com.banko.app.DatabaseExpenseTagRepository
 import com.banko.app.DatabaseTransactionRepository
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
 
 class AssignExpenseTagToTransactionUseCase(
     private val transactionRepository: DatabaseTransactionRepository,

@@ -112,7 +112,6 @@ fun DetailsScreen(
 ) {
     var transaction by remember { mutableStateOf(transactions) }
     val transactionNote = remember { mutableStateOf(transaction.note ?: "") }
-    var oldTag by remember { mutableStateOf(transaction.expenseTag?.id) }
     val isEditing by remember { mutableStateOf(false) }
     val isEditNote = remember { mutableStateOf(false) }
     val isDeleteNote = remember { mutableStateOf(false) }
@@ -590,7 +589,6 @@ fun DetailsScreen(
                         onTagSelected = { tag ->
                             transaction = transaction.copy(expenseTag = tag)
                             assignExpenseTag(transaction.id, tag?.id)
-                            oldTag = tag?.id
                         })
                 }
             }

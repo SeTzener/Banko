@@ -1,7 +1,5 @@
 package com.banko.app.ui.screens.banklinking
 
-import com.banko.app.api.dto.bankoApi.BankAccountSummaryDto
-import com.banko.app.api.dto.bankoApi.BankAuthorizationStatus
 import com.banko.app.api.dto.bankoApi.BankAuthDto
 import com.banko.app.api.dto.bankoApi.GoCardlessInstitutionDto
 import com.banko.app.api.dto.bankoApi.LinkedBankAccount

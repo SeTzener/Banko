@@ -3,10 +3,8 @@ package com.banko.app.ui.screens.banklinking
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.banko.app.api.dto.bankoApi.BankAuthorizationStatus
-import com.banko.app.api.dto.bankoApi.GetBankAuthorizationsResponse
 import com.banko.app.api.services.BankoApiService
 import com.banko.app.api.utils.Result
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
