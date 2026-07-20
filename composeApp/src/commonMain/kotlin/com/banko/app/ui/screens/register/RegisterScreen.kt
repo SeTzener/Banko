@@ -22,6 +22,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -73,6 +74,10 @@ fun RegisterScreen(component: RegisterComponent) {
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
             enabled = !state.isLoading,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                unfocusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            ),
         )
         Spacer(Modifier.height(12.dp))
         OutlinedTextField(
@@ -82,6 +87,10 @@ fun RegisterScreen(component: RegisterComponent) {
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
             enabled = !state.isLoading,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                unfocusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            ),
         )
         Spacer(Modifier.height(12.dp))
         OutlinedTextField(
@@ -92,6 +101,10 @@ fun RegisterScreen(component: RegisterComponent) {
             modifier = Modifier.fillMaxWidth(),
             enabled = !state.isLoading,
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                unfocusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            ),
             trailingIcon = {
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
                     Icon(
