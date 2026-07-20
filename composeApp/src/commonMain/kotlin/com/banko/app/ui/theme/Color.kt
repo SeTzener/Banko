@@ -84,13 +84,13 @@ val Darkmode_Primary = Color(0xBB86FCFF)
 val Darkmode_PrimaryVariant = Color(0x3700B3FF)
 val Darkmode_Secondary = Teal
 val Dark_Surface = Color(0xFF212121)
-val Dark_On_Surface = Color(0xFF303030)
+val Dark_On_Surface = Color(0xFF283031)
 
 val Brightmode_Primary = Color(0xFF6650A4)
 val Brightmode_PrimaryVariant = Color(0xFF642B73)
 val Brightmode_Secondary = DarkSlateGray
 val Light_Surface = Color(0xFFFFFFF0)
-val Light_On_Surface = Color(0xFFF2EFDE)
+val Light_On_Surface = Color(0xFFf4f3eb)
 
 val colorList: List<Color> = listOf(
     // Blues

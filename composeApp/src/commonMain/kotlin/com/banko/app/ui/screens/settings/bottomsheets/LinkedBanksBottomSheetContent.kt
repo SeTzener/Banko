@@ -93,7 +93,7 @@ fun LinkedBanksBottomSheetContent(
                 Text(
                     text = stringResource(Res.string.no_linked_banks),
                     style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(vertical = 24.dp),
                 )
             }
@@ -177,14 +177,14 @@ private fun BankAuthorizationRow(
                                 Text(
                                     text = stringResource(Res.string.iban_label, maskIban(iban)),
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                 )
                             }
                             account.currency?.let { currency ->
                                 Text(
                                     text = " · $currency",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                 )
                             }
                         }

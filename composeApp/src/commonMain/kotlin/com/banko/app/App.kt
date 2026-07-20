@@ -61,8 +61,8 @@ fun App(root: RootComponent, authComponent: AuthComponent) {
                     containerColor = MaterialTheme.colorScheme.surface,
                     bottomBar = {
                         BottomNavigation(
-                            backgroundColor = if (isSystemInDarkTheme()) Dark_Surface else Light_Surface,
-                            contentColor = if (isSystemInDarkTheme()) Dark_On_Surface else Light_On_Surface
+                            backgroundColor = MaterialTheme.colorScheme.surface,
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                         ) {
                             bottomNavItems.forEach { item ->
                                 BottomNavigationItem(

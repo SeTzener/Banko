@@ -561,7 +561,7 @@ fun DetailsScreen(
                                 },
                                 contentDescription = null,
                                 tint = transaction.expenseTag?.color
-                                    ?: MaterialTheme.colorScheme.onSurface
+                                    ?: MaterialTheme.colorScheme.primary
                             )
                         },
                         trailingIcon = {
