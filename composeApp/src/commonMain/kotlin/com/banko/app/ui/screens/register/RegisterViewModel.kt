@@ -13,7 +13,8 @@ import kotlinx.coroutines.launch
 data class RegisterScreenState(
     val email: String = "",
     val password: String = "",
-    val fullName: String = "",
+    val name: String = "",
+    val surname: String = "",
     val consentGiven: Boolean = false,
     val isLoading: Boolean = false,
     val error: String? = null,
@@ -33,8 +34,12 @@ class RegisterViewModel(
         _state.update { it.copy(password = value, error = null) }
     }
 
-    fun onFullNameChanged(value: String) {
-        _state.update { it.copy(fullName = value, error = null) }
+    fun onNameChanged(value: String) {
+        _state.update { it.copy(name = value, error = null) }
+    }
+
+    fun onSurnameChanged(value: String) {
+        _state.update { it.copy(surname = value, error = null) }
     }
 
     fun onConsentChanged(value: Boolean) {
@@ -43,16 +48,17 @@ class RegisterViewModel(
 
     fun register() {
         val s = _state.value
-        if (s.email.isBlank() || s.password.isBlank()) {
+        if (s.email.isBlank() || s.password.isBlank() || s.name.isBlank() || s.surname.isBlank()) {
             _state.update { it.copy(error = "Please fill in all fields.") }
             return
         }
         _state.update { it.copy(isLoading = true, error = null) }
         viewModelScope.launch {
+            val fullName = "${s.surname} ${s.name}"
             when (val result = sessionManager.register(
                 email = s.email,
                 password = s.password,
-                fullName = s.fullName.ifBlank { null },
+                fullName = fullName,
                 consentGiven = s.consentGiven,
             )) {
                 is Result.Success -> _state.update { it.copy(isLoading = false) }
