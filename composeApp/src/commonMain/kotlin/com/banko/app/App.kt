@@ -7,6 +7,7 @@ import androidx.compose.material.BottomNavigation
 import androidx.compose.material.BottomNavigationItem
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -57,6 +58,7 @@ fun App(root: RootComponent, authComponent: AuthComponent) {
             AuthState.Authenticated -> {
                 val childStack = root.childStack.subscribeAsState()
                 Scaffold(
+                    containerColor = MaterialTheme.colorScheme.surface,
                     bottomBar = {
                         BottomNavigation(
                             backgroundColor = if (isSystemInDarkTheme()) Dark_Surface else Light_Surface,
@@ -82,7 +84,8 @@ fun App(root: RootComponent, authComponent: AuthComponent) {
                     }
                 ) { paddingValues ->
                     Surface(
-                        modifier = Modifier.padding(paddingValues)
+                        modifier = Modifier.padding(paddingValues),
+                        color = MaterialTheme.colorScheme.surface
                     ) {
                         Children(
                             stack = childStack.value,
