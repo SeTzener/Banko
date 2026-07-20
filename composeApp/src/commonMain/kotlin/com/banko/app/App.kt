@@ -1,13 +1,13 @@
 package com.banko.app
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.BottomNavigation
-import androidx.compose.material.BottomNavigationItem
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -60,17 +60,24 @@ fun App(root: RootComponent, authComponent: AuthComponent) {
                 Scaffold(
                     containerColor = MaterialTheme.colorScheme.surface,
                     bottomBar = {
-                        BottomNavigation(
-                            backgroundColor = MaterialTheme.colorScheme.surface,
-                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        NavigationBar(
+                            containerColor = MaterialTheme.colorScheme.surface
                         ) {
                             bottomNavItems.forEach { item ->
-                                BottomNavigationItem(
+                                val selected = childStack.value.active.configuration == item.route
+                                NavigationBarItem(
                                     icon = { Icon(item.icon, contentDescription = item.label) },
                                     label = { Text(item.label) },
-                                    selected = childStack.value.active.configuration == item.route,
+                                    selected = selected,
+                                    colors = NavigationBarItemDefaults.colors(
+                                        selectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                        selectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                        indicatorColor = MaterialTheme.colorScheme.surface
+                                    ),
                                     onClick = {
-                                        if (childStack.value.active.configuration != item.route) {
+                                        if (!selected) {
                                             if (item.route != RootComponent.Configuration.Home) {
                                                 root.navigation.bringToFront(item.route)
                                             } else {
