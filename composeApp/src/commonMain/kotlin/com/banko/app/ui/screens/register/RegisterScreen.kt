@@ -2,6 +2,7 @@ package com.banko.app.ui.screens.register
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -39,7 +40,8 @@ import banko.composeapp.generated.resources.login_email
 import banko.composeapp.generated.resources.login_password
 import banko.composeapp.generated.resources.register_button
 import banko.composeapp.generated.resources.register_consent
-import banko.composeapp.generated.resources.register_full_name
+import banko.composeapp.generated.resources.register_name
+import banko.composeapp.generated.resources.register_surname
 import banko.composeapp.generated.resources.register_has_account
 import banko.composeapp.generated.resources.register_login_link
 import banko.composeapp.generated.resources.register_title
@@ -66,18 +68,35 @@ fun RegisterScreen(component: RegisterComponent) {
             color = MaterialTheme.colorScheme.primary,
         )
         Spacer(Modifier.height(32.dp))
-        OutlinedTextField(
-            value = state.fullName,
-            onValueChange = viewModel::onFullNameChanged,
-            label = { Text(stringResource(Res.string.register_full_name)) },
-            singleLine = true,
+        Row(
             modifier = Modifier.fillMaxWidth(),
-            enabled = !state.isLoading,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                unfocusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            ),
-        )
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            OutlinedTextField(
+                value = state.name,
+                onValueChange = viewModel::onNameChanged,
+                label = { Text(stringResource(Res.string.register_name)) },
+                singleLine = true,
+                modifier = Modifier.weight(1f),
+                enabled = !state.isLoading,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
+            )
+            OutlinedTextField(
+                value = state.surname,
+                onValueChange = viewModel::onSurnameChanged,
+                label = { Text(stringResource(Res.string.register_surname)) },
+                singleLine = true,
+                modifier = Modifier.weight(1f),
+                enabled = !state.isLoading,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
+            )
+        }
         Spacer(Modifier.height(12.dp))
         OutlinedTextField(
             value = state.email,
@@ -123,7 +142,7 @@ fun RegisterScreen(component: RegisterComponent) {
                 onCheckedChange = viewModel::onConsentChanged,
                 enabled = !state.isLoading,
             )
-            Text(stringResource(Res.string.register_consent))
+            Text(stringResource(Res.string.register_consent), color = MaterialTheme.colorScheme.primary)
         }
         state.error?.let {
             Spacer(Modifier.height(8.dp))

@@ -82,7 +82,8 @@
     <string name="login_no_account">Don't have an account?</string>
     <string name="login_register_link">Register</string>
     <string name="register_title">Create Account</string>
-    <string name="register_full_name">Full Name</string>
+    <string name="register_name">Name</string>
+    <string name="register_surname">Surname</string>
     <string name="register_consent">I agree to the privacy policy</string>
     <string name="register_button">Create Account</string>
     <string name="register_has_account">Already have an account?</string>
