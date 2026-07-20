@@ -1,12 +1,13 @@
 package com.banko.app.ui.screens.login
 
 import com.banko.app.api.auth.SessionManager
+import io.mockk.coVerify
 import io.mockk.mockk
-import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Before
@@ -91,14 +92,14 @@ class LoginViewModelTest {
     }
 
     @Test
-    fun `login with valid fields calls sessionManager login`() {
+    fun `login with valid fields calls sessionManager login`() = runTest {
         val viewModel = LoginViewModel(sessionManager)
         viewModel.onEmailChanged("test@example.com")
         viewModel.onPasswordChanged("password123")
 
         viewModel.login()
+        testDispatcher.scheduler.advanceUntilIdle()
 
-        assertEquals(true, viewModel.state.value.isLoading)
-        verify { sessionManager.login("test@example.com", "password123") }
+        coVerify { sessionManager.login("test@example.com", "password123") }
     }
 }

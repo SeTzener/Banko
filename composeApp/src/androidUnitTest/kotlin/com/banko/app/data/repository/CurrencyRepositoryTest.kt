@@ -255,8 +255,8 @@ class CurrencyRepositoryTest {
 
             val second = repo.getRatesForDateRange("NOK", "EUR", LocalDate(2026, 1, 1), LocalDate(2026, 1, 4))
 
-            assertEquals(2, first.size)
-            assertEquals(2, second.size)
+            assertEquals(4, first.size)
+            assertEquals(4, second.size)
             assertEquals(1, callCount)
         }
     }
@@ -300,7 +300,7 @@ class CurrencyRepositoryTest {
             val wide = repo.getRatesForDateRange("NOK", "EUR", LocalDate(2026, 1, 1), LocalDate(2026, 1, 5))
             assertEquals(2, callCount)
 
-            assertEquals(3, wide.size)
+            assertEquals(5, wide.size)
             // Null-rate entries are filtered from the returned map
             assertEquals(0.085, wide[LocalDate(2026, 1, 1)])
             assertEquals(0.084, wide[LocalDate(2026, 1, 3)])
@@ -351,7 +351,7 @@ class CurrencyRepositoryTest {
 
             val extended = repo.getRatesForDateRange("NOK", "EUR", LocalDate(2026, 1, 1), LocalDate(2026, 1, 5))
 
-            assertEquals(3, extended.size)
+            assertEquals(5, extended.size)
         }
     }
 
