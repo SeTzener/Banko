@@ -284,7 +284,8 @@ fun DetailsScreen(
                 TextField(
                     modifier = Modifier.padding(start = 16.dp, end = 16.dp).fillMaxWidth(),
                     onValueChange = {},
-                    value = transaction.remittanceInformationUnstructuredArray.joinToString(" "),
+                    value = transaction.remittanceInformationUnstructured,
+                    minLines = 3,
                     supportingText = {
                         Text(
                             text = stringResource(Res.string.details_remittance_information)
