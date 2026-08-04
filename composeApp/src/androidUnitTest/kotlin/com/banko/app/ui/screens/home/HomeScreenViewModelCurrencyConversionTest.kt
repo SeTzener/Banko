@@ -5,6 +5,8 @@ import com.banko.app.data.repository.TransactionRepository
 import com.banko.app.domain.CurrencyPreferences
 import com.banko.app.domain.model.Transaction as DomainTransaction
 import com.banko.app.ui.models.toUi
+import com.banko.app.utils.beginningOfCurrentMonth
+import com.banko.app.utils.getLastDayOfMonth
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -177,18 +179,25 @@ class HomeScreenViewModelCurrencyConversionTest {
 
     @Test
     fun `should use booking date for rate lookup`() = runTest(testDispatcher) {
-        val tx = createTransaction("tx-1", 100.0, "USD", date = LocalDate(2026, 7, 15))
+        val currentMonth = beginningOfCurrentMonth()
+        val fromDate = currentMonth.date
+        val toDate = LocalDate(
+            currentMonth.year,
+            currentMonth.monthNumber,
+            getLastDayOfMonth(currentMonth.year, currentMonth.monthNumber)
+        )
+        val tx = createTransaction("tx-1", 100.0, "USD", date = fromDate)
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(listOf(tx))
         coEvery { currencyPreferences.selectedCurrency } returns flowOf("EUR")
         coEvery {
-            currencyRepository.getRatesForDateRange("USD", "EUR", LocalDate(2026, 7, 1), LocalDate(2026, 7, 31))
-        } returns mapOf(LocalDate(2026, 7, 15) to 0.91)
+            currencyRepository.getRatesForDateRange("USD", "EUR", fromDate, toDate)
+        } returns mapOf(fromDate to 0.91)
 
         val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
         advanceUntilIdle()
 
         coVerify {
-            currencyRepository.getRatesForDateRange("USD", "EUR", LocalDate(2026, 7, 1), LocalDate(2026, 7, 31))
+            currencyRepository.getRatesForDateRange("USD", "EUR", fromDate, toDate)
         }
         assertEquals("EUR", vm.state.value.transactions[0].currency)
     }
