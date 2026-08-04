@@ -28,7 +28,9 @@ import com.banko.app.api.utils.deleteSafe
 import com.banko.app.api.utils.Result
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.auth.Auth
+import io.ktor.client.plugins.auth.AuthCircuitBreaker
 import io.ktor.client.plugins.auth.authProvider
 import io.ktor.client.plugins.auth.providers.BearerAuthProvider
 import io.ktor.client.plugins.auth.providers.BearerTokens
@@ -37,7 +39,10 @@ import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.LocalDate
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -47,6 +52,8 @@ class BankoApiService(
     private val tokenStorage: TokenStorage? = null
 ) {
     var onSessionExpired: (() -> Unit)? = null
+
+    private val refreshMutex = Mutex()
 
     private val client = tokenStorage?.let { ts ->
         HttpClient {
@@ -59,21 +66,25 @@ class BankoApiService(
                         BearerTokens(access, refresh)
                     }
                     refreshTokens {
-                        val currentRefreshToken = ts.refreshToken
-                            ?: return@refreshTokens null
-                        try {
-                            val response = client.post("$baseUrl/Users/refresh") {
-                                contentType(ContentType.Application.Json)
-                                setBody(RefreshRequest(refreshToken = currentRefreshToken))
-                                markAsRefreshTokenRequest()
+                        refreshMutex.withLock {
+                            val currentRefreshToken = ts.refreshToken
+                                ?: return@withLock null
+                            try {
+                                val response = client.post("$baseUrl/Users/refresh") {
+                                    contentType(ContentType.Application.Json)
+                                    setBody(RefreshRequest(refreshToken = currentRefreshToken))
+                                    markAsRefreshTokenRequest()
+                                }
+                                val authResponse = response.body<AuthResponse>()
+                                ts.accessToken = authResponse.accessToken
+                                ts.refreshToken = authResponse.refreshToken
+                                BearerTokens(authResponse.accessToken, authResponse.refreshToken)
+                            } catch (e: Exception) {
+                                if (e is ClientRequestException && e.response.status == HttpStatusCode.Unauthorized) {
+                                    onSessionExpired?.invoke()
+                                }
+                                null
                             }
-                            val authResponse = response.body<AuthResponse>()
-                            ts.accessToken = authResponse.accessToken
-                            ts.refreshToken = authResponse.refreshToken
-                            BearerTokens(authResponse.accessToken, authResponse.refreshToken)
-                        } catch (e: Exception) {
-                            onSessionExpired?.invoke()
-                            null
                         }
                     }
                 }
@@ -210,9 +221,12 @@ class BankoApiService(
     }
 
     suspend fun refreshToken(refreshToken: String): Result<AuthResponse> {
-        return client.postSafe("$baseUrl/Users/refresh") {
-            contentType(ContentType.Application.Json)
-            setBody(RefreshRequest(refreshToken = refreshToken))
+        return refreshMutex.withLock {
+            client.postSafe("$baseUrl/Users/refresh") {
+                contentType(ContentType.Application.Json)
+                setBody(RefreshRequest(refreshToken = refreshToken))
+                attributes.put(AuthCircuitBreaker, Unit)
+            }
         }
     }
 

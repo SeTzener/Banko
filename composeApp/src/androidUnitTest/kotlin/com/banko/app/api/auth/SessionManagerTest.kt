@@ -18,6 +18,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import java.io.IOException
 import kotlin.test.assertEquals
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -60,6 +61,34 @@ class SessionManagerTest {
         advanceUntilIdle()
 
         assertEquals(AuthState.Unauthenticated, sessionManager.authState.value)
+    }
+
+    @Test
+    fun `init stays authenticated when refresh fails with network error`() = runTest(testDispatcher) {
+        every { authRepository.isLoggedIn } returns true
+        coEvery { authRepository.refreshToken() } returns Result.Error.NetworkError(
+            IOException("server down")
+        )
+
+        val sessionManager = SessionManager(authRepository)
+        advanceUntilIdle()
+
+        assertEquals(AuthState.Authenticated, sessionManager.authState.value)
+        verify(exactly = 0) { authRepository.logout() }
+    }
+
+    @Test
+    fun `init stays authenticated when refresh fails with non-401 error`() = runTest(testDispatcher) {
+        every { authRepository.isLoggedIn } returns true
+        coEvery { authRepository.refreshToken() } returns Result.Error.HttpError(
+            500, "Internal Server Error"
+        )
+
+        val sessionManager = SessionManager(authRepository)
+        advanceUntilIdle()
+
+        assertEquals(AuthState.Authenticated, sessionManager.authState.value)
+        verify(exactly = 0) { authRepository.logout() }
     }
 
     @Test

@@ -10,6 +10,7 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.verify
+import java.io.IOException
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import kotlin.test.assertEquals
@@ -149,6 +150,34 @@ class AuthRepositoryTest {
 
         assertTrue(result is Result.Error)
         verify { tokenStorage.clear() }
+    }
+
+    @Test
+    fun `refresh token network error keeps tokens`() {
+        every { tokenStorage.refreshToken } returns "old-refresh"
+        coEvery { apiService.refreshToken("old-refresh") } returns Result.Error.NetworkError(
+            IOException("server down")
+        )
+
+        val repo = createRepository()
+        val result = runBlocking { repo.refreshToken() }
+
+        assertTrue(result is Result.Error)
+        verify(exactly = 0) { tokenStorage.clear() }
+    }
+
+    @Test
+    fun `refresh token non-401 http error keeps tokens`() {
+        every { tokenStorage.refreshToken } returns "old-refresh"
+        coEvery { apiService.refreshToken("old-refresh") } returns Result.Error.HttpError(
+            500, "Internal Server Error"
+        )
+
+        val repo = createRepository()
+        val result = runBlocking { repo.refreshToken() }
+
+        assertTrue(result is Result.Error)
+        verify(exactly = 0) { tokenStorage.clear() }
     }
 
     @Test

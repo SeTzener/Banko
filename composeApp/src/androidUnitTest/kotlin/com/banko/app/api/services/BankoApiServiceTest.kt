@@ -15,6 +15,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.auth.AuthCircuitBreaker
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
@@ -461,6 +462,7 @@ class BankoApiServiceTest {
             val engine = MockEngine { request ->
                 assertEquals("/Users/refresh", request.url.encodedPath)
                 assertEquals(HttpMethod.Post, request.method)
+                assertTrue(request.attributes.contains(AuthCircuitBreaker))
                 respond(
                     content = """{"accountId":"acc-1","accessToken":"new-tok","refreshToken":"new-ref","expiresIn":900}""",
                     headers = headersOf(HttpHeaders.ContentType, "application/json"),

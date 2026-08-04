@@ -1,12 +1,15 @@
 package com.banko.app.api.auth
 
 import com.banko.app.api.utils.Result
+import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 sealed interface AuthState {
@@ -16,21 +19,30 @@ sealed interface AuthState {
 }
 
 class SessionManager(
-    private val authRepository: AuthRepository,
-    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private val authRepository: AuthRepository
 ) {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private var refreshJob: Job? = null
+
     private val _authState = MutableStateFlow<AuthState>(AuthState.Loading)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
     init {
         if (authRepository.isLoggedIn) {
             _authState.value = AuthState.Authenticated
-            scope.launch {
-                when (authRepository.refreshToken()) {
-                    is Result.Success -> _authState.value = AuthState.Authenticated
+            refreshJob = scope.launch {
+                when (val result = authRepository.refreshToken()) {
+                    is Result.Success -> {
+                        if (isActive) _authState.value = AuthState.Authenticated
+                    }
+                    is Result.Error.HttpError -> {
+                        if (isActive && result.code == HttpStatusCode.Unauthorized.value) {
+                            authRepository.logout()
+                            _authState.value = AuthState.Unauthenticated
+                        }
+                    }
                     is Result.Error -> {
-                        authRepository.logout()
-                        _authState.value = AuthState.Unauthenticated
+                        if (isActive) _authState.value = AuthState.Authenticated
                     }
                 }
             }
@@ -68,6 +80,7 @@ class SessionManager(
     }
 
     fun logout() {
+        refreshJob?.cancel()
         authRepository.logout()
         _authState.value = AuthState.Unauthenticated
     }

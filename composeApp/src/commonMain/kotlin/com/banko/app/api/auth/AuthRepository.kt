@@ -3,6 +3,7 @@ package com.banko.app.api.auth
 import com.banko.app.api.dto.bankoApi.AuthResponse
 import com.banko.app.api.services.BankoApiService
 import com.banko.app.api.utils.Result
+import io.ktor.http.HttpStatusCode
 
 class AuthRepository(
     private val apiService: BankoApiService,
@@ -69,11 +70,14 @@ class AuthRepository(
                 apiService.clearAuthCache()
                 result
             }
-            is Result.Error -> {
-                tokenStorage.clear()
-                apiService.clearAuthCache()
+            is Result.Error.HttpError -> {
+                if (result.code == HttpStatusCode.Unauthorized.value) {
+                    tokenStorage.clear()
+                    apiService.clearAuthCache()
+                }
                 result
             }
+            is Result.Error -> result
         }
     }
 
