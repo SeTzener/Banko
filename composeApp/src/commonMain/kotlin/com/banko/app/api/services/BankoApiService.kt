@@ -29,6 +29,8 @@ import com.banko.app.api.utils.Result
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.HttpRequestTimeoutException
+import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.plugins.auth.Auth
 import io.ktor.client.plugins.auth.AuthCircuitBreaker
 import io.ktor.client.plugins.auth.authProvider
@@ -41,8 +43,11 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
+import io.ktor.util.network.UnresolvedAddressException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -54,9 +59,10 @@ class BankoApiService(
     var onSessionExpired: (() -> Unit)? = null
 
     private val refreshMutex = Mutex()
+    private var refreshDeferred: CompletableDeferred<Result<AuthResponse>>? = null
 
     private val client = tokenStorage?.let { ts ->
-        HttpClient {
+        HttpClient(client.engine) {
             HttpClientProvider()()
             install(Auth) {
                 bearer {
@@ -66,25 +72,10 @@ class BankoApiService(
                         BearerTokens(access, refresh)
                     }
                     refreshTokens {
-                        refreshMutex.withLock {
-                            val currentRefreshToken = ts.refreshToken
-                                ?: return@withLock null
-                            try {
-                                val response = client.post("$baseUrl/Users/refresh") {
-                                    contentType(ContentType.Application.Json)
-                                    setBody(RefreshRequest(refreshToken = currentRefreshToken))
-                                    markAsRefreshTokenRequest()
-                                }
-                                val authResponse = response.body<AuthResponse>()
-                                ts.accessToken = authResponse.accessToken
-                                ts.refreshToken = authResponse.refreshToken
-                                BearerTokens(authResponse.accessToken, authResponse.refreshToken)
-                            } catch (e: Exception) {
-                                if (e is ClientRequestException && e.response.status == HttpStatusCode.Unauthorized) {
-                                    onSessionExpired?.invoke()
-                                }
-                                null
-                            }
+                        when (val result = singleFlightRefresh()) {
+                            is Result.Success ->
+                                BearerTokens(result.value.accessToken, result.value.refreshToken)
+                            is Result.Error -> null
                         }
                     }
                 }
@@ -97,6 +88,64 @@ class BankoApiService(
     }
 
     private val baseUrl = "https://www.bankoapi.space"
+
+    private suspend fun singleFlightRefresh(): Result<AuthResponse> {
+        refreshDeferred?.let { return it.await() }
+        return refreshMutex.withLock {
+            refreshDeferred?.let { return@withLock it.await() }
+            val deferred = CompletableDeferred<Result<AuthResponse>>()
+            refreshDeferred = deferred
+            try {
+                deferred.complete(performRefresh())
+            } catch (e: Exception) {
+                deferred.complete(Result.Error.UnexpectedError(e))
+            } finally {
+                refreshDeferred = null
+            }
+            deferred.await()
+        }
+    }
+
+    private suspend fun performRefresh(): Result<AuthResponse> {
+        val ts = tokenStorage
+            ?: return Result.Error.UnexpectedError(IllegalStateException("No token storage"))
+        val currentRefreshToken = ts.refreshToken
+            ?: return Result.Error.UnexpectedError(IllegalStateException("No refresh token"))
+        return try {
+            val response = client.post("$baseUrl/Users/refresh") {
+                contentType(ContentType.Application.Json)
+                setBody(RefreshRequest(refreshToken = currentRefreshToken))
+                attributes.put(AuthCircuitBreaker, Unit)
+            }
+            val authResponse = response.body<AuthResponse>()
+            ts.accessToken = authResponse.accessToken
+            ts.refreshToken = authResponse.refreshToken
+            ts.accessTokenExpiresAt =
+                Clock.System.now().toEpochMilliseconds() + authResponse.expiresIn * 1000L
+            Result.Success(authResponse)
+        } catch (e: ClientRequestException) {
+            if (e.response.status == HttpStatusCode.Unauthorized) {
+                onSessionExpired?.invoke()
+            }
+            Result.Error.HttpError(
+                code = e.response.status.value,
+                description = e.response.status.description,
+                message = "Client error: ${e.message}"
+            )
+        } catch (e: ServerResponseException) {
+            Result.Error.HttpError(
+                code = e.response.status.value,
+                description = e.response.status.description,
+                message = "Server error: ${e.message}"
+            )
+        } catch (e: UnresolvedAddressException) {
+            Result.Error.NetworkError(e)
+        } catch (e: HttpRequestTimeoutException) {
+            Result.Error.NetworkError(e)
+        } catch (e: Exception) {
+            Result.Error.UnexpectedError(e)
+        }
+    }
 
     suspend fun getTransactions(
         pageNumber: Int,
@@ -220,14 +269,8 @@ class BankoApiService(
         }
     }
 
-    suspend fun refreshToken(refreshToken: String): Result<AuthResponse> {
-        return refreshMutex.withLock {
-            client.postSafe("$baseUrl/Users/refresh") {
-                contentType(ContentType.Application.Json)
-                setBody(RefreshRequest(refreshToken = refreshToken))
-                attributes.put(AuthCircuitBreaker, Unit)
-            }
-        }
+    suspend fun refreshToken(): Result<AuthResponse> {
+        return singleFlightRefresh()
     }
 
     suspend fun getProfile(): Result<UserProfileResponse> {
