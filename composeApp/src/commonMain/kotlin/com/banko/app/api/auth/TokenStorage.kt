@@ -24,9 +24,17 @@ class TokenStorage(private val settings: Settings = Settings()) {
             else settings.remove("account_id")
         }
 
+    var accessTokenExpiresAt: Long?
+        get() = settings.getLongOrNull("access_token_expires_at")
+        set(value) {
+            if (value != null) settings.putLong("access_token_expires_at", value)
+            else settings.remove("access_token_expires_at")
+        }
+
     fun clear() {
         settings.remove("access_token")
         settings.remove("refresh_token")
         settings.remove("account_id")
+        settings.remove("access_token_expires_at")
     }
 }

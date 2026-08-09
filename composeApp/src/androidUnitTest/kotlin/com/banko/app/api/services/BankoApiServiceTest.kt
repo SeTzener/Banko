@@ -1,5 +1,6 @@
 package com.banko.app.api.services
 
+import com.banko.app.api.auth.TokenStorage
 import com.banko.app.api.dto.bankoApi.AuthResponse
 import com.banko.app.api.dto.bankoApi.ExpenseTag
 import com.banko.app.api.dto.bankoApi.ExpenseTags
@@ -15,15 +16,23 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.auth.AuthCircuitBreaker
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.json.Json
 import org.junit.Test
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
@@ -458,21 +467,55 @@ class BankoApiServiceTest {
     @Test
     fun `should refresh token`() {
         runBlocking {
+            val tokenStorage = mockk<TokenStorage>(relaxed = true)
+            every { tokenStorage.refreshToken } returns "old-refresh"
             val engine = MockEngine { request ->
                 assertEquals("/Users/refresh", request.url.encodedPath)
                 assertEquals(HttpMethod.Post, request.method)
+                assertTrue(request.attributes.contains(AuthCircuitBreaker))
                 respond(
                     content = """{"accountId":"acc-1","accessToken":"new-tok","refreshToken":"new-ref","expiresIn":900}""",
                     headers = headersOf(HttpHeaders.ContentType, "application/json"),
                     status = HttpStatusCode.OK
                 )
             }
-            val service = BankoApiService(httpClient(engine))
+            val service = BankoApiService(httpClient(engine), tokenStorage)
 
-            val result = service.refreshToken("old-refresh")
+            val result = service.refreshToken()
 
             assertIs<Result.Success<AuthResponse>>(result)
             assertEquals("new-tok", result.value.accessToken)
+            verify { tokenStorage.accessToken = "new-tok" }
+            verify { tokenStorage.refreshToken = "new-ref" }
+        }
+    }
+
+    @Test
+    fun `concurrent refresh requests share a single in-flight refresh`() {
+        runBlocking {
+            val tokenStorage = mockk<TokenStorage>(relaxed = true)
+            every { tokenStorage.refreshToken } returns "old-refresh"
+            val refreshCount = AtomicInteger(0)
+            val engine = MockEngine { request ->
+                assertEquals("/Users/refresh", request.url.encodedPath)
+                refreshCount.incrementAndGet()
+                delay(50)
+                respond(
+                    content = """{"accountId":"acc-1","accessToken":"new-tok","refreshToken":"new-ref","expiresIn":900}""",
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                    status = HttpStatusCode.OK
+                )
+            }
+            val service = BankoApiService(httpClient(engine), tokenStorage)
+
+            val jobs = (1..5).map {
+                launch {
+                    service.refreshToken()
+                }
+            }
+            jobs.joinAll()
+
+            assertEquals(1, refreshCount.get())
         }
     }
 
