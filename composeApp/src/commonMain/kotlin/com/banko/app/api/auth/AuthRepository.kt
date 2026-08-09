@@ -4,37 +4,28 @@ import com.banko.app.api.dto.bankoApi.AuthResponse
 import com.banko.app.api.services.BankoApiService
 import com.banko.app.api.utils.Result
 import io.ktor.http.HttpStatusCode
+import kotlinx.datetime.Clock
 
 class AuthRepository(
     private val apiService: BankoApiService,
     private val tokenStorage: TokenStorage
 ) {
+    var onSessionExpired: (() -> Unit)? = null
+
     init {
-        apiService.onSessionExpired = { logout() }
+        apiService.onSessionExpired = { sessionExpired() }
     }
 
     val isLoggedIn: Boolean
         get() = tokenStorage.accessToken != null
 
+    val accessTokenExpiresAt: Long?
+        get() = tokenStorage.accessTokenExpiresAt
+
     suspend fun login(email: String, password: String): Result<AuthResponse> {
-        if (email == "dev" && password == "dev") {
-            val devResponse = AuthResponse(
-                accessToken = "dev-access-token",
-                refreshToken = "dev-refresh-token",
-                accountId = "00000000-0000-0000-0000-000000000001",
-                expiresIn = 999999
-            )
-            tokenStorage.accessToken = devResponse.accessToken
-            tokenStorage.refreshToken = devResponse.refreshToken
-            tokenStorage.accountId = devResponse.accountId
-            apiService.clearAuthCache()
-            return Result.Success(devResponse)
-        }
         return when (val result = apiService.login(email, password)) {
             is Result.Success -> {
-                tokenStorage.accessToken = result.value.accessToken
-                tokenStorage.refreshToken = result.value.refreshToken
-                tokenStorage.accountId = result.value.accountId
+                persistAuthResponse(result.value)
                 apiService.clearAuthCache()
                 result
             }
@@ -50,9 +41,7 @@ class AuthRepository(
     ): Result<AuthResponse> {
         return when (val result = apiService.register(email, password, fullName, consentGiven)) {
             is Result.Success -> {
-                tokenStorage.accessToken = result.value.accessToken
-                tokenStorage.refreshToken = result.value.refreshToken
-                tokenStorage.accountId = result.value.accountId
+                persistAuthResponse(result.value)
                 apiService.clearAuthCache()
                 result
             }
@@ -61,19 +50,17 @@ class AuthRepository(
     }
 
     suspend fun refreshToken(): Result<AuthResponse> {
-        val currentRefresh = tokenStorage.refreshToken
-            ?: return Result.Error.UnexpectedError(IllegalStateException("No refresh token"))
-        return when (val result = apiService.refreshToken(currentRefresh)) {
+        if (tokenStorage.refreshToken == null) {
+            return Result.Error.UnexpectedError(IllegalStateException("No refresh token"))
+        }
+        return when (val result = apiService.refreshToken()) {
             is Result.Success -> {
-                tokenStorage.accessToken = result.value.accessToken
-                tokenStorage.refreshToken = result.value.refreshToken
                 apiService.clearAuthCache()
                 result
             }
             is Result.Error.HttpError -> {
                 if (result.code == HttpStatusCode.Unauthorized.value) {
-                    tokenStorage.clear()
-                    apiService.clearAuthCache()
+                    sessionExpired()
                 }
                 result
             }
@@ -84,5 +71,18 @@ class AuthRepository(
     fun logout() {
         tokenStorage.clear()
         apiService.clearAuthCache()
+    }
+
+    private fun sessionExpired() {
+        logout()
+        onSessionExpired?.invoke()
+    }
+
+    private fun persistAuthResponse(response: AuthResponse) {
+        tokenStorage.accessToken = response.accessToken
+        tokenStorage.refreshToken = response.refreshToken
+        tokenStorage.accountId = response.accountId
+        tokenStorage.accessTokenExpiresAt =
+            Clock.System.now().toEpochMilliseconds() + response.expiresIn * 1000L
     }
 }
