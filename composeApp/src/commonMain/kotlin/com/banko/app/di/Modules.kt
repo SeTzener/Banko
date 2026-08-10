@@ -2,7 +2,6 @@ package com.banko.app.di
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
-import com.banko.app.ApiExpenseTagRepository
 import com.banko.app.ApiTransactionRepository
 import com.banko.app.DatabaseTransactionRepository
 import com.banko.app.api.auth.AuthRepository
@@ -13,9 +12,12 @@ import com.banko.app.api.services.FrankfurterService
 import com.banko.app.database.BankoDatabase
 import com.banko.app.database.CreateDatabase
 import com.banko.app.database.repository.ExpenseTagRepository
+import com.banko.app.data.local.ExpenseTagLocalDataSource
 import com.banko.app.data.local.TransactionLocalDataSource
+import com.banko.app.data.remote.ExpenseTagRemoteDataSource
 import com.banko.app.data.remote.TransactionRemoteDataSource
 import com.banko.app.data.repository.CurrencyRepository
+import com.banko.app.data.repository.ExpenseTagRepository
 import com.banko.app.data.repository.TransactionRepository
 import com.banko.app.domain.AssignExpenseTagToTransactionUseCase
 import com.banko.app.domain.CurrencyPreferences
@@ -44,10 +46,12 @@ val  sharedModule = module {
     single { SessionManager(get()) }
     singleOf(::DatabaseTransactionRepository)
     singleOf(::ApiTransactionRepository)
-    singleOf(::ApiExpenseTagRepository)
     singleOf(::TransactionLocalDataSource)
     singleOf(::TransactionRemoteDataSource)
     singleOf(::TransactionRepository)
+    singleOf(::ExpenseTagLocalDataSource)
+    singleOf(::ExpenseTagRemoteDataSource)
+    singleOf(::ExpenseTagRepository)
     single { FrankfurterService() }
     singleOf(::CurrencyRepository)
     single { CurrencyPreferences(get<DataStore<Preferences>>()) }

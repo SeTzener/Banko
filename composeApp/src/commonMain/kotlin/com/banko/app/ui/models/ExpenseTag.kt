@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.toArgb
 import com.banko.app.DaoExpenseTag
 import com.banko.app.DtoExpenseTag
 import com.banko.app.api.utils.jsonAdapters.ColorSerializer
+import com.banko.app.domain.model.ExpenseTag as DomainExpenseTag
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -15,6 +16,14 @@ data class ExpenseTag (
     val color: Color,
     val isEarning: Boolean?,
     val aka: List<String>
+)
+
+fun ExpenseTag.toDomain() = DomainExpenseTag(
+    id = id,
+    name = name,
+    color = color.toArgb().toLong(),
+    isEarning = isEarning,
+    aka = aka
 )
 
 fun ExpenseTag.toDto() = DtoExpenseTag(

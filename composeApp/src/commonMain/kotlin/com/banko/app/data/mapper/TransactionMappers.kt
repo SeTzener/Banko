@@ -109,3 +109,11 @@ fun DomainExpenseTag.toDao() = DaoExpenseTag(
     isEarning = isEarning,
     aka = if (aka.isEmpty()) null else aka
 )
+
+fun DomainExpenseTag.toDto() = DtoExpenseTag(
+    id = id,
+    name = name,
+    color = color,
+    isEarning = isEarning,
+    aka = if (aka.isEmpty()) null else aka
+)
