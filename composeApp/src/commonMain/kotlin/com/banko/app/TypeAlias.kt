@@ -19,9 +19,3 @@ typealias DtoCreditorAccount = com.banko.app.api.dto.bankoApi.CreditorAccount
 typealias ModelExpenseTag = com.banko.app.ui.models.ExpenseTag
 typealias DaoExpenseTag = com.banko.app.database.Entities.ExpenseTag
 typealias DtoExpenseTag = com.banko.app.api.dto.bankoApi.ExpenseTag
-
-// Repositories
-typealias ApiTransactionRepository = com.banko.app.api.repositories.TransactionsRepository
-typealias ApiExpenseTagRepository = com.banko.app.api.repositories.ExpenseTagRepository
-typealias DatabaseTransactionRepository = com.banko.app.database.repository.TransactionsRepository
-typealias DatabaseExpenseTagRepository = com.banko.app.database.repository.ExpenseTagRepository

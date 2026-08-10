@@ -1,18 +1,11 @@
 package com.banko.app.domain
 
-import com.banko.app.ApiTransactionRepository
-import com.banko.app.DatabaseTransactionRepository
-import com.banko.app.api.utils.Result
+import com.banko.app.data.repository.TransactionRepository
 
 class SaveNoteUseCase(
-    private val apiTransactionsRepository: ApiTransactionRepository,
-    private val transactionRepository: DatabaseTransactionRepository
+    private val transactionRepository: TransactionRepository
 ) {
     suspend operator fun invoke(id: String, note: String) {
-        val apiResult = apiTransactionsRepository.saveNote(id = id, text = note)
-        when (apiResult) {
-            is Result.Error -> throw RuntimeException("Failed to save note: $apiResult")
-            is Result.Success -> transactionRepository.saveNote(id, note)
-        }
+        transactionRepository.saveNote(id, note)
     }
 }

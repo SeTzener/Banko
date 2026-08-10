@@ -64,7 +64,7 @@ class BankoDaoTest {
 
         dao.upsertTransaction(tx)
 
-        val loaded = dao.getRawTransactionById("tx-1")
+        val loaded = dao.getFullTransactionById("tx-1")?.transaction
         assertNotNull(loaded)
         assertEquals(tx, loaded)
     }
@@ -119,7 +119,7 @@ class BankoDaoTest {
         dao.upsertTransaction(tx)
         dao.saveNote("tx-1", "My note")
 
-        val loaded = dao.getRawTransactionById("tx-1")
+        val loaded = dao.getFullTransactionById("tx-1")?.transaction
         assertEquals("My note", loaded?.note)
     }
 
@@ -146,7 +146,7 @@ class BankoDaoTest {
 
         dao.upsertTransaction(tx)
         dao.deleteTransaction("tx-1")
-        assertNull(dao.getRawTransactionById("tx-1"))
+        assertNull(dao.getFullTransactionById("tx-1"))
     }
 
     @Test
@@ -237,28 +237,6 @@ class BankoDaoTest {
 
         val loaded = dao.getExpenseTagById("tag-1").first()
         assertNull(loaded)
-    }
-
-    @Test
-    fun `should upsert and query creditor account by id`() = runBlocking {
-        val account = CreditorAccount(id = "cred-1", iban = "DE123", bban = "456")
-
-        dao.upsertCreditorAccount(account)
-
-        val loaded = dao.getCreditorAccountById("cred-1").first()
-        assertNotNull(loaded)
-        assertEquals(account, loaded)
-    }
-
-    @Test
-    fun `should upsert and query debtor account by id`() = runBlocking {
-        val account = DebtorAccount(id = "debt-1", iban = "DE789", bban = "012")
-
-        dao.upsertDebtorAccount(account)
-
-        val loaded = dao.getDebtorAccountById("debt-1").first()
-        assertNotNull(loaded)
-        assertEquals(account, loaded)
     }
 
     @Test
@@ -452,7 +430,7 @@ class BankoDaoTest {
         val updated = tx.copy(remittanceInformationUnstructured = "Updated")
         dao.upsertTransaction(updated)
 
-        val loaded = dao.getRawTransactionById("tx-1")
+        val loaded = dao.getFullTransactionById("tx-1")?.transaction
         assertEquals("Updated", loaded?.remittanceInformationUnstructured)
     }
 }

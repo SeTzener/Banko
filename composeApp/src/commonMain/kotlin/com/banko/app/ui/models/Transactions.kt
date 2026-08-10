@@ -1,9 +1,6 @@
 package com.banko.app.ui.models
 
 import androidx.compose.ui.graphics.Color
-import com.banko.app.DaoCreditorAccount
-import com.banko.app.DaoDebtorAccount
-import com.banko.app.DaoTransaction
 import com.banko.app.domain.model.Transaction as DomainTransaction
 import com.banko.app.domain.model.CreditorAccount as DomainCreditorAccount
 import com.banko.app.domain.model.DebtorAccount as DomainDebtorAccount
@@ -45,39 +42,6 @@ data class DebtorAccount(
     val id: String,
     val iban: String,
     val bban: String
-)
-
-fun Transaction.toDao() = DaoTransaction(
-    id = id,
-    bookingDate = bookingDate.toString(),
-    valueDate = valueDate.toString(),
-    amount = amount.toString(),
-    currency = currency,
-    debtorAccountId = debtorAccount?.id,
-    remittanceInformationUnstructured = remittanceInformationUnstructured,
-    remittanceInformationUnstructuredArray = remittanceInformationUnstructuredArray,
-    bankTransactionCode = bankTransactionCode ?: "",
-    internalTransactionId = internalTransactionId,
-    creditorName = creditorName,
-    creditorAccountId = creditorAccount?.id,
-    debtorName = debtorName,
-    remittanceInformationStructuredArray = remittanceInformationStructuredArray,
-    note = note,
-    expenseTagId = expenseTag?.id,
-    bankName = bankName,
-    bankLogoUrl = bankLogoUrl
-)
-
-fun DebtorAccount.toDao() = DaoDebtorAccount(
-    id = id,
-    iban = iban,
-    bban = bban
-)
-
-fun CreditorAccount.toDao() = DaoCreditorAccount(
-    id = id,
-    iban = iban,
-    bban = bban
 )
 
 fun DomainTransaction.toUi() = Transaction(

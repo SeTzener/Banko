@@ -61,9 +61,6 @@ interface BankoDao {
     )
     fun getTransactionsForMonth(startDate: String, endDateExclusive: String): Flow<List<FullTransaction>>
 
-    @Query("SELECT * FROM transactions WHERE id = :transactionId")
-    suspend fun getRawTransactionById(transactionId: String): DaoTransaction?
-
     @Transaction
     @Query(
         """
@@ -97,16 +94,17 @@ interface BankoDao {
     @Upsert
     suspend fun upsertTransaction(transaction: DaoTransaction)
 
-    // Creditor Accounts
-    @Query("SELECT * FROM creditor_account WHERE id = :creditorAccountId")
-    fun getCreditorAccountById(creditorAccountId: String): Flow<DaoCreditorAccount?>
+    @Query(
+        """
+            UPDATE transactions
+            SET expenseTagId = :expenseTagId
+            WHERE id = :transactionId
+        """
+    )
+    suspend fun assignExpenseTag(transactionId: String, expenseTagId: String?)
 
     @Upsert
     suspend fun upsertCreditorAccount(creditorAccount: DaoCreditorAccount)
-
-    // Debtor Accounts
-    @Query("SELECT * FROM debtor_account WHERE id = :debtorAccountId")
-    fun getDebtorAccountById(debtorAccountId: String): Flow<DaoDebtorAccount?>
 
     @Upsert
     suspend fun upsertDebtorAccount(debtorAccount: DaoDebtorAccount)

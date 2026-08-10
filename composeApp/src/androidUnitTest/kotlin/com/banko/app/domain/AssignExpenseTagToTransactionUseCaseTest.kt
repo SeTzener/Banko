@@ -1,77 +1,67 @@
 package com.banko.app.domain
 
-import com.banko.app.database.Entities.ExpenseTag
-import com.banko.app.database.Entities.Transaction
-import com.banko.app.database.repository.ExpenseTagRepository
-import com.banko.app.database.repository.TransactionsRepository
+import com.banko.app.data.repository.ExpenseTagRepository
+import com.banko.app.data.repository.TransactionRepository
+import com.banko.app.domain.model.ExpenseTag
+import com.banko.app.domain.model.Transaction
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
+import kotlinx.datetime.LocalDateTime
 import org.junit.Test
 import kotlin.test.assertFailsWith
 
 class AssignExpenseTagToTransactionUseCaseTest {
 
-    private val transactionRepository = mockk<TransactionsRepository>()
+    private val transactionRepository = mockk<TransactionRepository>()
     private val expenseTagRepository = mockk<ExpenseTagRepository>()
     private val useCase = AssignExpenseTagToTransactionUseCase(
         transactionRepository = transactionRepository,
         expenseTagRepository = expenseTagRepository
     )
 
+    private fun transaction(id: String, expenseTagId: String? = null) = Transaction(
+        id = id,
+        bookingDate = LocalDateTime(2024, 1, 15, 10, 30, 0),
+        valueDate = LocalDateTime(2024, 1, 15, 10, 30, 0),
+        amount = 42.50,
+        currency = "EUR",
+        debtorAccount = null,
+        remittanceInformationUnstructured = "Test payment",
+        remittanceInformationUnstructuredArray = emptyList(),
+        bankTransactionCode = "PMNT",
+        internalTransactionId = "int-1",
+        creditorName = null,
+        creditorAccount = null,
+        debtorName = null,
+        remittanceInformationStructuredArray = null,
+        note = null,
+        expenseTag = null
+    )
+
     @Test
     fun `should assign expense tag to transaction`() = runBlocking {
         val transactionId = "tx-1"
         val expenseTagId = "tag-1"
-        val transaction = Transaction(
-            id = transactionId,
-            bookingDate = "2024-01-15",
-            valueDate = "2024-01-15",
-            amount = "42.50",
-            currency = "EUR",
-            debtorAccountId = null,
-            remittanceInformationUnstructured = "Test payment",
-            remittanceInformationUnstructuredArray = emptyList(),
-            bankTransactionCode = "PMNT",
-            internalTransactionId = "int-1",
-            creditorName = null,
-            creditorAccountId = null,
-            debtorName = null,
-            remittanceInformationStructuredArray = null,
-            note = null,
-            expenseTagId = null
-        )
-        val tag = ExpenseTag(
-            id = expenseTagId,
-            name = "Groceries",
-            color = 0xFF00FF00,
-            isEarning = false,
-            aka = emptyList()
-        )
+        val tag = ExpenseTag(id = expenseTagId, name = "Groceries", color = 0xFF00FF, isEarning = false, aka = emptyList())
 
-        coEvery { transactionRepository.findRawTransactionById(transactionId) } returns transaction
-        coEvery { expenseTagRepository.findExpenseTagById(expenseTagId) } returns flowOf(tag)
-        coEvery { transactionRepository.upsertTransaction(any(), any(), any(), any()) } returns Unit
+        coEvery { transactionRepository.getTransactionById(transactionId) } returns transaction(transactionId)
+        coEvery { expenseTagRepository.getExpenseTagById(expenseTagId) } returns tag
+        coEvery { transactionRepository.assignExpenseTag(transactionId, expenseTagId) } returns Unit
 
         useCase(transactionId, expenseTagId)
 
         coVerify {
-            transactionRepository.findRawTransactionById(transactionId)
-            expenseTagRepository.findExpenseTagById(expenseTagId)
-            transactionRepository.upsertTransaction(
-                transaction = transaction.copy(expenseTagId = tag.id),
-                creditorAccount = null,
-                debtorAccount = null,
-                expenseTag = tag
-            )
+            transactionRepository.getTransactionById(transactionId)
+            expenseTagRepository.getExpenseTagById(expenseTagId)
+            transactionRepository.assignExpenseTag(transactionId, expenseTagId)
         }
     }
 
     @Test
     fun `should throw when transaction not found`() = runBlocking {
-        coEvery { transactionRepository.findRawTransactionById(any()) } returns null
+        coEvery { transactionRepository.getTransactionById(any()) } returns null
 
         assertFailsWith<IllegalStateException> {
             useCase("nonexistent", "tag-1")
@@ -81,8 +71,8 @@ class AssignExpenseTagToTransactionUseCaseTest {
 
     @Test
     fun `should throw when expense tag not found`() = runBlocking {
-        coEvery { transactionRepository.findRawTransactionById(any()) } returns mockk()
-        coEvery { expenseTagRepository.findExpenseTagById(any()) } returns flowOf(null)
+        coEvery { transactionRepository.getTransactionById(any()) } returns transaction("tx-1")
+        coEvery { expenseTagRepository.getExpenseTagById(any()) } returns null
 
         assertFailsWith<IllegalStateException> {
             useCase("tx-1", "nonexistent")
@@ -93,41 +83,17 @@ class AssignExpenseTagToTransactionUseCaseTest {
     @Test
     fun `should clear expense tag when expenseTagId is null`() = runBlocking {
         val transactionId = "tx-1"
-        val transaction = Transaction(
-            id = transactionId,
-            bookingDate = "2024-01-15",
-            valueDate = "2024-01-15",
-            amount = "42.50",
-            currency = "EUR",
-            debtorAccountId = null,
-            remittanceInformationUnstructured = "Test payment",
-            remittanceInformationUnstructuredArray = emptyList(),
-            bankTransactionCode = "PMNT",
-            internalTransactionId = "int-1",
-            creditorName = null,
-            creditorAccountId = null,
-            debtorName = null,
-            remittanceInformationStructuredArray = null,
-            note = null,
-            expenseTagId = "old-tag"
-        )
-
-        coEvery { transactionRepository.findRawTransactionById(transactionId) } returns transaction
-        coEvery { transactionRepository.upsertTransaction(any(), any(), any(), any()) } returns Unit
+        coEvery { transactionRepository.getTransactionById(transactionId) } returns transaction(transactionId)
+        coEvery { transactionRepository.assignExpenseTag(transactionId, null) } returns Unit
 
         useCase(transactionId, null)
 
         coVerify {
-            transactionRepository.findRawTransactionById(transactionId)
-            transactionRepository.upsertTransaction(
-                transaction = transaction.copy(expenseTagId = null),
-                creditorAccount = null,
-                debtorAccount = null,
-                expenseTag = null
-            )
+            transactionRepository.getTransactionById(transactionId)
+            transactionRepository.assignExpenseTag(transactionId, null)
         }
         coVerify(exactly = 0) {
-            expenseTagRepository.findExpenseTagById(any())
+            expenseTagRepository.getExpenseTagById(any())
         }
     }
 }
