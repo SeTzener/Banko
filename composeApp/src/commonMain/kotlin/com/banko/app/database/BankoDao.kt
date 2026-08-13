@@ -114,7 +114,7 @@ interface BankoDao {
     fun getExpenseTagById(expenseTagId: String): Flow<DaoExpenseTag?>
 
     @Query("SELECT * FROM expense_tag")
-    fun getAllExpenseTags(): Flow<List<DaoExpenseTag?>>
+    fun getAllExpenseTags(): Flow<List<DaoExpenseTag>>
 
     @Upsert
     suspend fun upsertExpenseTag(expenseTag: DaoExpenseTag)

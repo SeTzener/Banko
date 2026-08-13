@@ -15,7 +15,7 @@ class ExpenseTagLocalDataSource(
 
     fun getAllExpenseTags(): Flow<List<ExpenseTag>> =
         dao.getAllExpenseTags()
-            .map { tags -> tags.mapNotNull { it?.toDomain() } }
+            .map { tags -> tags.map { it.toDomain() } }
 
     suspend fun getExpenseTagById(expenseTagId: String): ExpenseTag? =
         dao.getExpenseTagById(expenseTagId).first()?.toDomain()
