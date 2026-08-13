@@ -1,8 +1,6 @@
 package com.banko.app.domain
 
-import com.banko.app.api.repositories.TransactionsRepository as ApiTransactionsRepo
-import com.banko.app.api.utils.Result
-import com.banko.app.database.repository.TransactionsRepository as DatabaseTransactionsRepo
+import com.banko.app.data.repository.TransactionRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -13,64 +11,30 @@ import kotlin.test.assertTrue
 
 class SaveNoteUseCaseTest {
 
-    private val apiTransactionsRepository = mockk<ApiTransactionsRepo>()
-    private val transactionRepository = mockk<DatabaseTransactionsRepo>()
-    private val useCase = SaveNoteUseCase(
-        apiTransactionsRepository = apiTransactionsRepository,
-        transactionRepository = transactionRepository
-    )
+    private val transactionRepository = mockk<TransactionRepository>()
+    private val useCase = SaveNoteUseCase(transactionRepository)
 
     @Test
-    fun `should save note locally when API succeeds`() = runBlocking {
+    fun `should save note via repository`() = runBlocking {
         val id = "tx-1"
         val note = "Test note"
 
-        coEvery { apiTransactionsRepository.saveNote(id, note) } returns Result.Success("ok")
         coEvery { transactionRepository.saveNote(id, note) } returns Unit
 
         useCase(id, note)
 
-        coVerify {
-            apiTransactionsRepository.saveNote(id, note)
-            transactionRepository.saveNote(id, note)
-        }
+        coVerify { transactionRepository.saveNote(id, note) }
     }
 
     @Test
-    fun `should not save note locally when API fails`() = runBlocking {
+    fun `should propagate exception from repository`() = runBlocking {
         val id = "tx-1"
         val note = "Test note"
 
-        coEvery { apiTransactionsRepository.saveNote(id, note) } returns Result.Error.HttpError(500, "Server error")
+        coEvery { transactionRepository.saveNote(id, note) } throws RuntimeException("Network error")
 
         val exception = runCatching { useCase(id, note) }.exceptionOrNull()
         assertNotNull(exception)
         assertTrue(exception is RuntimeException)
-
-        coVerify {
-            apiTransactionsRepository.saveNote(id, note)
-        }
-        coVerify(exactly = 0) {
-            transactionRepository.saveNote(any(), any())
-        }
-    }
-
-    @Test
-    fun `should propagate exception from API`() = runBlocking {
-        val id = "tx-1"
-        val note = "Test note"
-
-        coEvery { apiTransactionsRepository.saveNote(id, note) } throws RuntimeException("Network error")
-
-        val exception = runCatching { useCase(id, note) }.exceptionOrNull()
-        assertNotNull(exception)
-        assertTrue(exception is RuntimeException)
-
-        coVerify {
-            apiTransactionsRepository.saveNote(id, note)
-        }
-        coVerify(exactly = 0) {
-            transactionRepository.saveNote(any(), any())
-        }
     }
 }

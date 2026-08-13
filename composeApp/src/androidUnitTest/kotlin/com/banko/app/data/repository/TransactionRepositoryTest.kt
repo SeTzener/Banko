@@ -25,6 +25,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @RunWith(RobolectricTestRunner::class)
@@ -194,6 +195,91 @@ class TransactionRepositoryTest {
 
         val stored = repo.getTransactions(10).first()
         assertEquals(1, stored.size)
+    }
+
+    // ── assignExpenseTag coordination ─────────────────────────────
+
+    @Test
+    fun `should assign expense tag locally when remote assign succeeds`() = runBlocking {
+        val tx = Transaction(
+            id = "tx-tag",
+            bookingDate = LocalDateTime.parse("2024-01-15T10:30:00"),
+            valueDate = LocalDateTime.parse("2024-01-15T12:00:00"),
+            amount = 10.00,
+            currency = "EUR",
+            debtorAccount = null,
+            remittanceInformationUnstructured = "Assign",
+            remittanceInformationUnstructuredArray = emptyList(),
+            bankTransactionCode = "PMNT",
+            internalTransactionId = "int-tag",
+            creditorName = null,
+            creditorAccount = null,
+            debtorName = null,
+            remittanceInformationStructuredArray = null,
+            note = null,
+            expenseTag = null
+        )
+        db.bankoDao().upsertTransaction(
+            com.banko.app.database.Entities.Transaction(
+                id = tx.id, bookingDate = "2024-01-15T10:30:00", valueDate = "2024-01-15T12:00:00",
+                amount = "10.00", currency = "EUR", debtorAccountId = null,
+                remittanceInformationUnstructured = "Assign", remittanceInformationUnstructuredArray = emptyList(),
+                bankTransactionCode = "PMNT", internalTransactionId = "int-tag",
+                creditorName = null, creditorAccountId = null, debtorName = null,
+                remittanceInformationStructuredArray = null, note = null, expenseTagId = null
+            )
+        )
+        db.bankoDao().upsertExpenseTag(
+            com.banko.app.database.Entities.ExpenseTag(
+                id = "tag-1", name = "Groceries", color = 0xFF00FF, isEarning = false, aka = null
+            )
+        )
+        coEvery { remote.assignExpenseTag("tx-tag", "tag-1") } returns Result.Success(Unit)
+
+        repo.assignExpenseTag("tx-tag", "tag-1")
+
+        val stored = repo.getTransactionById("tx-tag")
+        assertEquals("tag-1", stored?.expenseTag?.id)
+    }
+
+    @Test
+    fun `should not assign expense tag locally when remote assign fails`() = runBlocking {
+        val tx = Transaction(
+            id = "tx-untagged",
+            bookingDate = LocalDateTime.parse("2024-01-15T10:30:00"),
+            valueDate = LocalDateTime.parse("2024-01-15T12:00:00"),
+            amount = 10.00,
+            currency = "EUR",
+            debtorAccount = null,
+            remittanceInformationUnstructured = "Keep untagged",
+            remittanceInformationUnstructuredArray = emptyList(),
+            bankTransactionCode = "PMNT",
+            internalTransactionId = "int-untagged",
+            creditorName = null,
+            creditorAccount = null,
+            debtorName = null,
+            remittanceInformationStructuredArray = null,
+            note = null,
+            expenseTag = null
+        )
+        db.bankoDao().upsertTransaction(
+            com.banko.app.database.Entities.Transaction(
+                id = tx.id, bookingDate = "2024-01-15T10:30:00", valueDate = "2024-01-15T12:00:00",
+                amount = "10.00", currency = "EUR", debtorAccountId = null,
+                remittanceInformationUnstructured = "Keep untagged", remittanceInformationUnstructuredArray = emptyList(),
+                bankTransactionCode = "PMNT", internalTransactionId = "int-untagged",
+                creditorName = null, creditorAccountId = null, debtorName = null,
+                remittanceInformationStructuredArray = null, note = null, expenseTagId = null
+            )
+        )
+        coEvery { remote.assignExpenseTag("tx-untagged", "tag-1") } returns Result.Error.HttpError(500, "Server error")
+
+        val exception = runCatching { repo.assignExpenseTag("tx-untagged", "tag-1") }.exceptionOrNull()
+        assertNotNull(exception)
+        assertTrue(exception is RuntimeException)
+
+        val stored = repo.getTransactionById("tx-untagged")
+        assertNull(stored?.expenseTag)
     }
 
     // ── fetchAndStoreTransactions with nested entities ────────────

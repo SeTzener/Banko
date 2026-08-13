@@ -2,9 +2,6 @@ package com.banko.app.di
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
-import com.banko.app.ApiExpenseTagRepository
-import com.banko.app.ApiTransactionRepository
-import com.banko.app.DatabaseTransactionRepository
 import com.banko.app.api.auth.AuthRepository
 import com.banko.app.api.auth.SessionManager
 import com.banko.app.api.auth.TokenStorage
@@ -12,10 +9,12 @@ import com.banko.app.api.services.BankoApiService
 import com.banko.app.api.services.FrankfurterService
 import com.banko.app.database.BankoDatabase
 import com.banko.app.database.CreateDatabase
-import com.banko.app.database.repository.ExpenseTagRepository
+import com.banko.app.data.local.ExpenseTagLocalDataSource
 import com.banko.app.data.local.TransactionLocalDataSource
+import com.banko.app.data.remote.ExpenseTagRemoteDataSource
 import com.banko.app.data.remote.TransactionRemoteDataSource
 import com.banko.app.data.repository.CurrencyRepository
+import com.banko.app.data.repository.ExpenseTagRepository
 import com.banko.app.data.repository.TransactionRepository
 import com.banko.app.domain.AssignExpenseTagToTransactionUseCase
 import com.banko.app.domain.CurrencyPreferences
@@ -37,17 +36,16 @@ expect val platformModule: Module
 
 val  sharedModule = module {
     single<BankoDatabase> { CreateDatabase(get()).getDatabase() }
-    singleOf(::ExpenseTagRepository)
     single { TokenStorage() }
     single { BankoApiService(tokenStorage = get()) }
     single { AuthRepository(get(), get()) }
     single { SessionManager(get()) }
-    singleOf(::DatabaseTransactionRepository)
-    singleOf(::ApiTransactionRepository)
-    singleOf(::ApiExpenseTagRepository)
     singleOf(::TransactionLocalDataSource)
     singleOf(::TransactionRemoteDataSource)
     singleOf(::TransactionRepository)
+    singleOf(::ExpenseTagLocalDataSource)
+    singleOf(::ExpenseTagRemoteDataSource)
+    singleOf(::ExpenseTagRepository)
     single { FrankfurterService() }
     singleOf(::CurrencyRepository)
     single { CurrencyPreferences(get<DataStore<Preferences>>()) }
@@ -66,21 +64,3 @@ val  sharedModule = module {
     viewModelOf(::DetailsScreenViewModel)
     viewModelOf(::BankLinkingViewModel)
 }
-
-//    Example 1
-//    single {
-        // MyRepositoryImpl(get())
-//    }
-
-//    Example 2
-//    singleOf(::MyRepositoryImpl).bind<MyRepository>()
-
-//    Example 3 (import the viewModel before to add the ::)
-//    viewModelOf(::DetailsScreenViewModel)
-
-// In the below implementations KoinContext{} is a @Composable function.
-// This is necessary when I want to inject a viewModel or anything else in a composable function.
-// KoinContext {
-//  val viewModel = koinViewModel<DetailsScreenViewModel>()
-//  val myRepo = koinInject<MyRepository>()
-// )

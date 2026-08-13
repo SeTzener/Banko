@@ -47,4 +47,12 @@ class TransactionLocalDataSource(
     suspend fun deleteTransaction(transactionId: String) {
         dao.deleteTransaction(transactionId)
     }
+
+    suspend fun saveNote(id: String, note: String) {
+        dao.saveNote(id, note)
+    }
+
+    suspend fun assignExpenseTag(transactionId: String, expenseTagId: String?) {
+        dao.assignExpenseTag(transactionId, expenseTagId)
+    }
 }

@@ -56,4 +56,20 @@ class TransactionRepository(
             is Result.Success -> local.deleteTransaction(transactionId)
         }
     }
+
+    suspend fun saveNote(id: String, note: String) {
+        val apiResult = remote.saveNote(id, note)
+        when (apiResult) {
+            is Result.Error -> throw RuntimeException("Failed to save note: $apiResult")
+            is Result.Success -> local.saveNote(id, note)
+        }
+    }
+
+    suspend fun assignExpenseTag(transactionId: String, expenseTagId: String?) {
+        val apiResult = remote.assignExpenseTag(transactionId, expenseTagId)
+        when (apiResult) {
+            is Result.Error -> throw RuntimeException("Failed to assign expense tag: $apiResult")
+            is Result.Success -> local.assignExpenseTag(transactionId, expenseTagId)
+        }
+    }
 }

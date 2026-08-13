@@ -1,28 +1,19 @@
 package com.banko.app.domain
 
-import com.banko.app.DatabaseExpenseTagRepository
-import com.banko.app.DatabaseTransactionRepository
-import kotlinx.coroutines.flow.first
+import com.banko.app.data.repository.ExpenseTagRepository
+import com.banko.app.data.repository.TransactionRepository
 
 class AssignExpenseTagToTransactionUseCase(
-    private val transactionRepository: DatabaseTransactionRepository,
-    private val expenseTagRepository: DatabaseExpenseTagRepository
+    private val transactionRepository: TransactionRepository,
+    private val expenseTagRepository: ExpenseTagRepository
 ) {
     suspend operator fun invoke(transactionId: String, expenseTagId: String?) {
-        val transaction = transactionRepository.findRawTransactionById(transactionId)
+        val transaction = transactionRepository.getTransactionById(transactionId)
             ?: error("no transaction in db with id $transactionId")
-        if (expenseTagId == null) {
-            transactionRepository.upsertTransaction(
-                transaction = transaction.copy(expenseTagId = null),
-                expenseTag = null
-            )
-            return
+        if (expenseTagId != null) {
+            expenseTagRepository.getExpenseTagById(expenseTagId)
+                ?: error("no expense tag found in db with id $expenseTagId")
         }
-        val tag = expenseTagRepository.findExpenseTagById(expenseTagId).first()
-            ?: error("no expense tag found in db with id $expenseTagId")
-        transactionRepository.upsertTransaction(
-            transaction = transaction.copy(expenseTagId = tag.id),
-            expenseTag = tag
-        )
+        transactionRepository.assignExpenseTag(transactionId, expenseTagId)
     }
 }

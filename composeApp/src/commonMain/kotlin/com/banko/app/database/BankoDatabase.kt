@@ -19,7 +19,7 @@ import com.banko.app.database.Entities.Transaction
         DebtorAccount::class,
         ExchangeRate::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = true
 )
 @ConstructedBy(BankoDatabaseConstructor::class)
