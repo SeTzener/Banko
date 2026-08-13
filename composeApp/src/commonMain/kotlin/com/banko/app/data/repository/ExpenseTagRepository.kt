@@ -31,8 +31,4 @@ class ExpenseTagRepository(
         remote.deleteExpenseTag(expenseTagId)
         local.deleteExpenseTag(expenseTagId)
     }
-
-    suspend fun assignExpenseTag(transactionId: String, expenseTagId: String?) {
-        remote.assignExpenseTag(transactionId, expenseTagId)
-    }
 }

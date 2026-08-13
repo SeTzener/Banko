@@ -1,12 +1,10 @@
 package com.banko.app.ui.screens.details
 
-import com.banko.app.data.repository.ExpenseTagRepository
 import com.banko.app.domain.AssignExpenseTagToTransactionUseCase
 import com.banko.app.domain.GetAllExpenseTagUseCase
 import com.banko.app.domain.SaveNoteUseCase
 import com.banko.app.data.repository.TransactionRepository
 import com.banko.app.domain.model.ExpenseTag as DomainExpenseTag
-import com.banko.app.domain.model.Transaction as DomainTransaction
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -24,6 +22,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -33,7 +32,6 @@ class DetailsScreenViewModelTest {
     private val getExpenseTagsUseCase = mockk<GetAllExpenseTagUseCase>(relaxed = true)
     private val saveNoteUseCase = mockk<SaveNoteUseCase>(relaxed = true)
     private val transactionRepository = mockk<TransactionRepository>(relaxed = true)
-    private val expenseTagRepository = mockk<ExpenseTagRepository>(relaxed = true)
     private val testDispatcher: TestDispatcher = StandardTestDispatcher()
 
     @Before
@@ -51,7 +49,6 @@ class DetailsScreenViewModelTest {
         getExpenseTags = getExpenseTagsUseCase,
         saveNoteUseCase = saveNoteUseCase,
         transactionRepository = transactionRepository,
-        expenseTagRepository = expenseTagRepository,
     )
 
     @Test
@@ -68,7 +65,7 @@ class DetailsScreenViewModelTest {
     }
 
     @Test
-    fun `should assign expense tag via API then update locally`() = runTest(testDispatcher) {
+    fun `should assign expense tag via use case`() = runTest(testDispatcher) {
         val vm = createViewModel()
         advanceUntilIdle()
 
@@ -76,33 +73,13 @@ class DetailsScreenViewModelTest {
         advanceUntilIdle()
 
         coVerify {
-            expenseTagRepository.assignExpenseTag("tx-1", "tag-1")
             updateTransactionUseCase.invoke(transactionId = "tx-1", expenseTagId = "tag-1")
         }
     }
 
     @Test
-    fun `should roll back tag assignment on API failure`() = runTest(testDispatcher) {
-        coEvery { expenseTagRepository.assignExpenseTag(any(), any()) } throws RuntimeException("API error")
-        val previousTransaction = DomainTransaction(
-            id = "tx-1",
-            bookingDate = kotlinx.datetime.LocalDateTime(2024, 1, 15, 10, 30, 0),
-            valueDate = kotlinx.datetime.LocalDateTime(2024, 1, 15, 10, 30, 0),
-            amount = 10.0,
-            currency = "EUR",
-            debtorAccount = null,
-            remittanceInformationUnstructured = "Test",
-            remittanceInformationUnstructuredArray = emptyList(),
-            bankTransactionCode = "PMNT",
-            internalTransactionId = "int-1",
-            creditorName = null,
-            creditorAccount = null,
-            debtorName = null,
-            remittanceInformationStructuredArray = null,
-            note = null,
-            expenseTag = DomainExpenseTag(id = "old-tag", name = "Old", color = 0, isEarning = false, aka = emptyList())
-        )
-        coEvery { transactionRepository.getTransactionById("tx-1") } returns previousTransaction
+    fun `should set error when assignment fails`() = runTest(testDispatcher) {
+        coEvery { updateTransactionUseCase.invoke(any(), any()) } throws RuntimeException("API error")
 
         val vm = createViewModel()
         advanceUntilIdle()
@@ -110,10 +87,7 @@ class DetailsScreenViewModelTest {
         vm.assignExpenseTag("tx-1", "tag-1")
         advanceUntilIdle()
 
-        coVerify {
-            expenseTagRepository.assignExpenseTag("tx-1", "tag-1")
-            updateTransactionUseCase.invoke(transactionId = "tx-1", expenseTagId = "old-tag")
-        }
+        assertNotNull(vm.screenState.value.error)
     }
 
     @Test

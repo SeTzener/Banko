@@ -66,6 +66,10 @@ class TransactionRepository(
     }
 
     suspend fun assignExpenseTag(transactionId: String, expenseTagId: String?) {
-        local.assignExpenseTag(transactionId, expenseTagId)
+        val apiResult = remote.assignExpenseTag(transactionId, expenseTagId)
+        when (apiResult) {
+            is Result.Error -> throw RuntimeException("Failed to assign expense tag: $apiResult")
+            is Result.Success -> local.assignExpenseTag(transactionId, expenseTagId)
+        }
     }
 }

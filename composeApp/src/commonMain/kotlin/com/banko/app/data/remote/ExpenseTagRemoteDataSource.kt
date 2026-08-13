@@ -33,11 +33,4 @@ class ExpenseTagRemoteDataSource(
             is Result.Success -> Unit
         }
     }
-
-    suspend fun assignExpenseTag(transactionId: String, expenseTagId: String?) {
-        when (val result = apiService.assignExpenseTag(transactionId, expenseTagId)) {
-            is Result.Error -> throw RuntimeException("Failed to assign expense tag: $result")
-            is Result.Success -> Unit
-        }
-    }
 }

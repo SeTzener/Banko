@@ -56,4 +56,7 @@ class TransactionRemoteDataSource(
 
     suspend fun saveNote(id: String, note: String): Result<String> =
         apiService.saveNote(id, note)
+
+    suspend fun assignExpenseTag(transactionId: String, expenseTagId: String?): Result<Unit> =
+        apiService.assignExpenseTag(transactionId, expenseTagId)
 }
