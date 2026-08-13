@@ -3,16 +3,13 @@ package com.banko.app.data.mapper
 import com.banko.app.database.Entities.FullTransaction
 import com.banko.app.domain.model.CreditorAccount as DomainCreditorAccount
 import com.banko.app.domain.model.DebtorAccount as DomainDebtorAccount
-import com.banko.app.domain.model.ExpenseTag as DomainExpenseTag
 import com.banko.app.domain.model.Transaction as DomainTransaction
 import com.banko.app.database.Entities.Transaction as DaoTransaction
 import com.banko.app.database.Entities.CreditorAccount as DaoCreditorAccount
 import com.banko.app.database.Entities.DebtorAccount as DaoDebtorAccount
-import com.banko.app.database.Entities.ExpenseTag as DaoExpenseTag
 import com.banko.app.api.dto.bankoApi.Transaction as DtoTransaction
 import com.banko.app.api.dto.bankoApi.CreditorAccount as DtoCreditorAccount
 import com.banko.app.api.dto.bankoApi.DebtorAccount as DtoDebtorAccount
-import com.banko.app.api.dto.bankoApi.ExpenseTag as DtoExpenseTag
 import kotlinx.datetime.LocalDateTime
 
 fun FullTransaction.toDomain(): DomainTransaction = DomainTransaction(
@@ -40,13 +37,6 @@ fun List<FullTransaction>.toDomain(): List<DomainTransaction> = map { it.toDomai
 
 fun DaoCreditorAccount.toDomain() = DomainCreditorAccount(id = id, iban = iban, bban = bban)
 fun DaoDebtorAccount.toDomain() = DomainDebtorAccount(id = id, iban = iban, bban = bban)
-fun DaoExpenseTag.toDomain() = DomainExpenseTag(
-    id = id,
-    name = name,
-    color = color,
-    isEarning = isEarning,
-    aka = aka ?: emptyList()
-)
 
 fun DtoTransaction.toDomain(): DomainTransaction = DomainTransaction(
     id = id,
@@ -71,13 +61,6 @@ fun DtoTransaction.toDomain(): DomainTransaction = DomainTransaction(
 
 fun DtoCreditorAccount.toDomain() = DomainCreditorAccount(id = id, iban = iban, bban = bban)
 fun DtoDebtorAccount.toDomain() = DomainDebtorAccount(id = id, iban = iban, bban = bban)
-fun DtoExpenseTag.toDomain() = DomainExpenseTag(
-    id = id,
-    name = name,
-    color = color,
-    isEarning = isEarning,
-    aka = aka ?: emptyList()
-)
 
 fun DomainTransaction.toDao(): DaoTransaction = DaoTransaction(
     id = id,
@@ -102,18 +85,3 @@ fun DomainTransaction.toDao(): DaoTransaction = DaoTransaction(
 
 fun DomainCreditorAccount.toDao() = DaoCreditorAccount(id = id, iban = iban, bban = bban)
 fun DomainDebtorAccount.toDao() = DaoDebtorAccount(id = id, iban = iban, bban = bban)
-fun DomainExpenseTag.toDao() = DaoExpenseTag(
-    id = id,
-    name = name,
-    color = color,
-    isEarning = isEarning,
-    aka = if (aka.isEmpty()) null else aka
-)
-
-fun DomainExpenseTag.toDto() = DtoExpenseTag(
-    id = id,
-    name = name,
-    color = color,
-    isEarning = isEarning,
-    aka = if (aka.isEmpty()) null else aka
-)

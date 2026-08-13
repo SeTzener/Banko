@@ -6,16 +6,13 @@ typealias DaoTransaction = com.banko.app.database.Entities.Transaction
 typealias DtoTransaction = com.banko.app.api.dto.bankoApi.Transaction
 
 // DebtorAccount
-typealias ModelDebtorAccount = com.banko.app.ui.models.DebtorAccount
 typealias DaoDebtorAccount = com.banko.app.database.Entities.DebtorAccount
 typealias DtoDebtorAccount = com.banko.app.api.dto.bankoApi.DebtorAccount
 
 // Creditor Account
-typealias ModelCreditorAccount = com.banko.app.ui.models.CreditorAccount
 typealias DaoCreditorAccount = com.banko.app.database.Entities.CreditorAccount
 typealias DtoCreditorAccount = com.banko.app.api.dto.bankoApi.CreditorAccount
 
 // Expense Tag
-typealias ModelExpenseTag = com.banko.app.ui.models.ExpenseTag
 typealias DaoExpenseTag = com.banko.app.database.Entities.ExpenseTag
 typealias DtoExpenseTag = com.banko.app.api.dto.bankoApi.ExpenseTag
