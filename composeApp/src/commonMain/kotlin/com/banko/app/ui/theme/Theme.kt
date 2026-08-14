@@ -39,7 +39,7 @@ fun BankoTheme(
         else -> LightColorScheme
     }
     val typography = Typography.copy(
-        titleLarge = typography.titleLarge.copy(
+        headlineMedium = typography.headlineMedium.copy(
             fontFamily = FontFamily(
                 Font(Res.font.Lobster_Regular)
             )
