@@ -545,8 +545,8 @@ private fun TopContent() {
     ) {
         Text(
             text = stringResource(Res.string.app_name),
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.primary
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.primary,
         )
     }
 }

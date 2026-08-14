@@ -109,6 +109,7 @@
     <string name="profile_delete_account_confirm_yes">Delete</string>
     <string name="profile_delete_account_confirm_cancel">Cancel</string>
     <string name="profile_re_accept_consent">Re-accept Privacy Policy</string>
+    <string name="profile_section_title">PROFILE</string>
 
     <!-- Bank Linking -->
     <string name="add_new_bank">Add New Bank</string>
