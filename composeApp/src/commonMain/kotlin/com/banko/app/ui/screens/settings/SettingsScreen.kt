@@ -46,6 +46,7 @@ import banko.composeapp.generated.resources.ic_currency
 import banko.composeapp.generated.resources.ic_expense_tags
 import banko.composeapp.generated.resources.linked_banks
 import banko.composeapp.generated.resources.profile
+import banko.composeapp.generated.resources.profile_section_title
 import banko.composeapp.generated.resources.settings
 import com.banko.app.domain.model.currencyDisplayForCode
 import com.banko.app.ui.components.SettingsCard
@@ -112,7 +113,7 @@ fun SettingsScreen(component: SettingsComponent) {
             Row {
                 Text(
                     modifier = Modifier.padding(bottom = 16.dp),
-                    text = stringResource(Res.string.profile),
+                    text = stringResource(Res.string.profile_section_title),
                     color = MaterialTheme.colorScheme.primary,
                     style = MaterialTheme.typography.titleSmall
                 )
