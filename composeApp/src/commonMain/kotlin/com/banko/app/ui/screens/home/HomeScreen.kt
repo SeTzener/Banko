@@ -84,6 +84,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
+import banko.composeapp.generated.resources.Lobster_Regular
 import banko.composeapp.generated.resources.Res
 import banko.composeapp.generated.resources.app_name
 import banko.composeapp.generated.resources.ic_delete
@@ -546,7 +547,7 @@ private fun TopContent() {
         Text(
             text = stringResource(Res.string.app_name),
             style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.primary
+            color = MaterialTheme.colorScheme.primary,
         )
     }
 }
