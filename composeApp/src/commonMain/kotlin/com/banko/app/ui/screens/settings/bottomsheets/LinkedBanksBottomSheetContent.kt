@@ -22,10 +22,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
+import kotlinx.datetime.Clock
 import com.banko.app.ui.theme.Amber
 import com.banko.app.ui.theme.Crimson
 import com.banko.app.ui.theme.Firebrick
@@ -39,7 +44,10 @@ import banko.composeapp.generated.resources.linked
 import banko.composeapp.generated.resources.linked_banks
 import banko.composeapp.generated.resources.no_linked_banks
 import banko.composeapp.generated.resources.processing
+import banko.composeapp.generated.resources.processing_stale_hint
 import banko.composeapp.generated.resources.re_authorize
+import banko.composeapp.generated.resources.restart
+import banko.composeapp.generated.resources.restart_available_in
 import com.banko.app.api.dto.bankoApi.BankAuthorizationStatus
 import com.banko.app.api.dto.bankoApi.BankAuthDto
 import com.banko.app.ui.components.BankLogo
@@ -54,6 +62,11 @@ fun LinkedBanksBottomSheetContent(
     onReAuthorize: (String) -> Unit,
     onClose: () -> Unit,
 ) {
+    val hasProcessingBanks = screenState.bankAuthorizations.any {
+        it.status == BankAuthorizationStatus.Processing
+    }
+    val nowMillis by rememberProcessingClock(active = hasProcessingBanks)
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -110,7 +123,8 @@ fun LinkedBanksBottomSheetContent(
                         }
                         BankAuthorizationRow(
                             auth = auth,
-                            onReAuthorize = { onReAuthorize(auth.institutionId ?: "") },
+                            nowMillis = nowMillis,
+                            onReAuthorize = { onReAuthorize(auth.institutionId.orEmpty()) },
                         )
                     }
                 }
@@ -121,11 +135,35 @@ fun LinkedBanksBottomSheetContent(
     }
 }
 
+/**
+ * One shared 1-second ticker for the whole sheet. Recomputing from
+ * [Clock.System.now] on every tick keeps the countdown correct after the app
+ * has been in the background, instead of relying on decrementing a stored value.
+ */
+@Composable
+private fun rememberProcessingClock(active: Boolean): State<Long> =
+    produceState(
+        initialValue = Clock.System.now().toEpochMilliseconds(),
+        key1 = active,
+    ) {
+        if (!active) return@produceState
+        while (true) {
+            value = Clock.System.now().toEpochMilliseconds()
+            delay(1_000L)
+        }
+    }
+
 @Composable
 private fun BankAuthorizationRow(
     auth: BankAuthDto,
+    nowMillis: Long,
     onReAuthorize: () -> Unit,
 ) {
+    val isProcessing = auth.status == BankAuthorizationStatus.Processing
+    val restartInMillis = if (isProcessing) auth.processingRemainingMillis(nowMillis) else 0L
+    val canRestart = restartInMillis == 0L
+    val hasInstitutionId = !auth.institutionId.isNullOrBlank()
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -148,10 +186,36 @@ private fun BankAuthorizationRow(
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 StatusBadge(status = auth.status)
+                if (isProcessing) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = if (canRestart) {
+                            stringResource(Res.string.processing_stale_hint)
+                        } else {
+                            stringResource(
+                                Res.string.restart_available_in,
+                                formatProcessingCountdown(restartInMillis),
+                            )
+                        },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
-            if (auth.status == BankAuthorizationStatus.Expired || auth.status == BankAuthorizationStatus.Error) {
-                TextButton(onClick = onReAuthorize) {
-                    Text(text = stringResource(Res.string.re_authorize))
+            when {
+                isProcessing && hasInstitutionId -> {
+                    TextButton(
+                        onClick = onReAuthorize,
+                        enabled = canRestart,
+                    ) {
+                        Text(text = stringResource(Res.string.restart))
+                    }
+                }
+                (auth.status == BankAuthorizationStatus.Expired ||
+                    auth.status == BankAuthorizationStatus.Error) && hasInstitutionId -> {
+                    TextButton(onClick = onReAuthorize) {
+                        Text(text = stringResource(Res.string.re_authorize))
+                    }
                 }
             }
         }
