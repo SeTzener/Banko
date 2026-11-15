@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "111670564504",
+    "project_id": "banko-40638",
+    "storage_bucket": "banko-40638.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:111670564504:android:c6153301f1b3234fc762ed",
+        "android_client_info": {
+          "package_name": "com.banko.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDlQ9953p4ao1H4JU4lewicwfaO45ZJLwo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

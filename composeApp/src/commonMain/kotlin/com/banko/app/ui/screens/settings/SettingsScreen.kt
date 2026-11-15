@@ -24,6 +24,7 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -66,6 +67,20 @@ fun SettingsScreen(component: SettingsComponent) {
     var currencyDropdownExpanded by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
+    LaunchedEffect(component.openLinkedBanksOnStart) {
+        if (component.openLinkedBanksOnStart) {
+            currentBottomSheet = BottomSheetType.LINKED_BANKS
+        }
+    }
+
+    // Refresh every time the sheet opens so a link restarted from another
+    // screen shows its new status and countdown.
+    LaunchedEffect(currentBottomSheet) {
+        if (currentBottomSheet == BottomSheetType.LINKED_BANKS) {
+            viewModel.loadBankAuthorizations()
+        }
+    }
+
     if (currentBottomSheet == BottomSheetType.EXPENSE_TAGS) {
         ModalBottomSheet(
             onDismissRequest = { currentBottomSheet = BottomSheetType.NONE },
@@ -90,7 +105,12 @@ fun SettingsScreen(component: SettingsComponent) {
         ) {
             LinkedBanksBottomSheetContent(
                 screenState = screenState,
-                onReAuthorize = { institutionId -> component.onReAuthorize(institutionId) },
+                onReAuthorize = { institutionId ->
+                    // Close first so returning from the linker does not reopen
+                    // a sheet that shows the old attempt.
+                    currentBottomSheet = BottomSheetType.NONE
+                    component.onReAuthorize(institutionId)
+                },
                 onClose = { currentBottomSheet = BottomSheetType.NONE },
             )
         }

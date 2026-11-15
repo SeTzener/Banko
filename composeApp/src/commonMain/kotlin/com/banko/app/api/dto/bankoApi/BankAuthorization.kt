@@ -11,6 +11,18 @@ enum class BankAuthorizationStatus {
     Expired
 }
 
+/**
+ * Backend-computed lifecycle state of an end-user agreement (EUA).
+ * [RequiresReauthorization] is the flag the UI should act on.
+ */
+@Serializable
+enum class BankAuthorizationState {
+    Valid,
+    ExpiringSoon,
+    Expired,
+    Error
+}
+
 @Serializable
 data class GoCardlessInstitutionDto(
     val id: String = "",
@@ -103,6 +115,14 @@ data class BankAuthDto(
     val createdAt: String = "",
     @SerialName("updatedAt")
     val updatedAt: String = "",
+    @SerialName("expiresAt")
+    val expiresAt: String? = null,
+    @SerialName("daysUntilExpiry")
+    val daysUntilExpiry: Int? = null,
+    @SerialName("requiresReauthorization")
+    val requiresReauthorization: Boolean = false,
+    @SerialName("authorizationState")
+    val authorizationState: BankAuthorizationState = BankAuthorizationState.Valid,
     val accounts: List<BankAccountSummaryDto> = emptyList(),
 )
 

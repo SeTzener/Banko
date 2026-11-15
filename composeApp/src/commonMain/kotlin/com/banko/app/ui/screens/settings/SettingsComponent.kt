@@ -8,4 +8,5 @@ class SettingsComponent(
     val onNavigateToProfile: () -> Unit = {},
     val onNavigateToBankLinking: () -> Unit = {},
     val onReAuthorize: (institutionId: String) -> Unit = {},
+    val openLinkedBanksOnStart: Boolean = false,
 ): ComponentContext by componentContext

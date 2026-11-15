@@ -2,10 +2,16 @@ package com.banko.app.ui.screens.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.banko.app.api.dto.bankoApi.BankAuthDto
+import com.banko.app.api.dto.bankoApi.BankAuthorizationState
+import com.banko.app.api.services.BankoApiService
+import com.banko.app.api.utils.Result
 import com.banko.app.data.repository.CurrencyRepository
 import com.banko.app.data.repository.TransactionRepository
 import com.banko.app.domain.CurrencyPreferences
 import com.banko.app.domain.model.isCurrencySupported
+import com.banko.app.push.BankReminderScheduler
+import com.banko.app.push.buildBankReminders
 import kotlin.math.roundToLong
 import com.banko.app.ui.models.toUi
 import com.banko.app.ui.utils.ErrorState
@@ -36,6 +42,8 @@ class HomeScreenViewModel(
     private val repository: TransactionRepository,
     private val currencyRepository: CurrencyRepository,
     private val currencyPreferences: CurrencyPreferences,
+    private val apiService: BankoApiService,
+    private val bankReminderScheduler: BankReminderScheduler,
 ) : ViewModel() {
     private val _state = MutableStateFlow(HomeScreenState())
     val state: StateFlow<HomeScreenState> = _state.asStateFlow()
@@ -94,6 +102,9 @@ class HomeScreenViewModel(
         s.tagFilter is TagFilter.Uncategorized
     }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
+    val bankAttentionState: StateFlow<BankAttentionState> = _state.map { it.bankAttention }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, BankAttentionState())
+
     private var transactionsJob: Job? = null
     private var syncJob: Job? = null
     private var lastMonthSelection: YearMonth? = null
@@ -101,6 +112,7 @@ class HomeScreenViewModel(
 
     init {
         initializeTimespanSelection()
+        loadBankAttention()
     }
 
     override fun onCleared() {
@@ -123,6 +135,7 @@ class HomeScreenViewModel(
     private fun refreshData() {
         viewModelScope.launch {
             _state.update { it.copy(isRefreshing = true) }
+            loadBankAttention()
             try {
                 val sel = _state.value.selectedTimespan
                 repository.fetchAndStoreTransactionsForDateRange(sel.fromDate, sel.toDate)
@@ -373,6 +386,53 @@ class HomeScreenViewModel(
         }
     }
 
+    /**
+     * Loads the backend's EUA lifecycle summary for the persistent Home banner.
+     * Failures are intentionally silent and never clear the previous value:
+     * being offline must not hide a real warning or interrupt the session.
+     */
+    private fun loadBankAttention() {
+        viewModelScope.launch {
+            when (val result = apiService.getBankAuthorizations()) {
+                is Result.Success -> {
+                    val attention = result.value.bankAuthorizations
+                        .filter { it.requiresReauthorization }
+                    _state.update {
+                        it.copy(
+                            bankAttention = BankAttentionState(
+                                requiresReauthorization = attention.isNotEmpty(),
+                                authorizationState = attention.mostSevereState(),
+                                affectedBanks = attention
+                                    .mapNotNull { auth -> auth.institutionName?.takeIf(String::isNotBlank) }
+                                    .distinct(),
+                                daysUntilExpiry = attention
+                                    .mapNotNull { auth -> auth.daysUntilExpiry }
+                                    .minOrNull(),
+                            )
+                        )
+                    }
+                    // Refresh the local reminders with the same authoritative
+                    // data. On Android the bridge has no delegate, so this is a
+                    // no-op and FCM stays in charge.
+                    bankReminderScheduler.replaceAll(
+                        buildBankReminders(
+                            authorizations = result.value.bankAuthorizations,
+                            nowEpochMillis = Clock.System.now().toEpochMilliseconds(),
+                        )
+                    )
+                }
+                is Result.Error -> {
+                    // No authorizations yet is not an outage: hide the banner
+                    // and drop reminders for connections that no longer exist.
+                    if (result is Result.Error.HttpError && result.code == 404) {
+                        _state.update { it.copy(bankAttention = BankAttentionState()) }
+                        bankReminderScheduler.replaceAll(emptyList())
+                    }
+                }
+            }
+        }
+    }
+
     private fun generateMonthRange(from: LocalDateTime): List<YearMonth> {
         val now = beginningOfCurrentMonth()
         val months = mutableListOf<YearMonth>()
@@ -392,3 +452,15 @@ class HomeScreenViewModel(
         return months
     }
 }
+
+private val BankAuthorizationState.severity: Int
+    get() = when (this) {
+        BankAuthorizationState.Expired -> 0
+        BankAuthorizationState.Error -> 1
+        BankAuthorizationState.ExpiringSoon -> 2
+        BankAuthorizationState.Valid -> 3
+    }
+
+private fun List<BankAuthDto>.mostSevereState(): BankAuthorizationState =
+    minByOrNull { it.authorizationState.severity }?.authorizationState
+        ?: BankAuthorizationState.Valid

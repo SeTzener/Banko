@@ -7,7 +7,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class BottomNavItem(val route: RootComponent.Configuration, val label: String, val icon: ImageVector) {
     object Home : BottomNavItem(RootComponent.Configuration.Home, "Home", Icons.Default.Home)
-    object Settings : BottomNavItem(RootComponent.Configuration.Settings, "Settings", Icons.Default.Settings)
+    object Settings : BottomNavItem(RootComponent.Configuration.Settings(), "Settings", Icons.Default.Settings)
 }
 
 val bottomNavItems = listOf(
