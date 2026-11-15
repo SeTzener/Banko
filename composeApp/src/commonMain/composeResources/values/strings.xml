@@ -142,4 +142,20 @@
     <string name="back">Back</string>
     <string name="banks">BANKS</string>
     <string name="iban_label">IBAN: %1$s</string>
+
+    <!-- Push notifications -->
+    <string name="push_eua_warning_title">Bank connection expiring soon</string>
+    <string name="push_eua_warning_message">One of your bank connections is about to expire. Reconnect it to keep syncing transactions.</string>
+    <string name="push_eua_expired_title">Bank connection expired</string>
+    <string name="push_eua_expired_message">One of your bank connections has expired. Reconnect it to resume syncing transactions.</string>
+    <string name="push_dialog_manage">Manage connections</string>
+    <string name="push_dialog_dismiss">Not now</string>
+
+    <!-- Persistent bank attention banner -->
+    <string name="bank_attention_expired_title">Bank connection expired</string>
+    <string name="bank_attention_expired_message">Re-authorize your bank connection to resume syncing transactions.</string>
+    <string name="bank_attention_expiring_title">Bank connection expiring soon</string>
+    <string name="bank_attention_expiring_message">Re-authorize your bank connection to keep syncing transactions.</string>
+    <string name="bank_attention_manage">Manage</string>
+    <string name="expiring_soon">Expiring soon</string>
 </resources>

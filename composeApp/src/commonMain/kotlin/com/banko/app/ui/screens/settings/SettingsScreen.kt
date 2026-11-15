@@ -67,6 +67,12 @@ fun SettingsScreen(component: SettingsComponent) {
     var currencyDropdownExpanded by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
+    LaunchedEffect(component.openLinkedBanksOnStart) {
+        if (component.openLinkedBanksOnStart) {
+            currentBottomSheet = BottomSheetType.LINKED_BANKS
+        }
+    }
+
     // Refresh every time the sheet opens so a link restarted from another
     // screen shows its new status and countdown.
     LaunchedEffect(currentBottomSheet) {

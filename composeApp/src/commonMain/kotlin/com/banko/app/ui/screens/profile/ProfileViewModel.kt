@@ -98,7 +98,6 @@ class ProfileViewModel(
             _state.value = _state.value.copy(isLoading = true, error = null)
             when (apiService.deleteAccount()) {
                 is Result.Success -> {
-                    tokenStorage.clear()
                     sessionManager.logout()
                 }
                 is Result.Error -> {
@@ -120,6 +119,8 @@ class ProfileViewModel(
     }
 
     fun logout() {
-        sessionManager.logout()
+        viewModelScope.launch {
+            sessionManager.logout()
+        }
     }
 }

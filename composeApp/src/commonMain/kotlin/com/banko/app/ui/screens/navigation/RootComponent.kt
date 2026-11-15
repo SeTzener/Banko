@@ -7,6 +7,7 @@ import com.arkivanov.decompose.router.stack.bringToFront
 import com.arkivanov.decompose.router.stack.childStack
 import com.arkivanov.decompose.router.stack.pop
 import com.banko.app.api.auth.SessionManager
+import com.banko.app.push.PushMessageStore
 import com.banko.app.ui.models.Transaction
 import com.banko.app.ui.screens.banklinking.BankLinkingComponent
 import com.banko.app.ui.screens.details.DetailsComponent
@@ -18,6 +19,7 @@ import kotlinx.serialization.Serializable
 class RootComponent(
     componentContext: ComponentContext,
     val sessionManager: SessionManager,
+    val pushMessageStore: PushMessageStore,
 ) : ComponentContext by componentContext {
 
     val navigation = StackNavigation<Configuration>()
@@ -29,7 +31,6 @@ class RootComponent(
         childFactory = ::createChild
     )
 
-    @OptIn(ExperimentalDecomposeApi::class)
     private fun createChild(
         config: Configuration,
         context: ComponentContext,
@@ -40,7 +41,10 @@ class RootComponent(
                     componentContext = context,
                     onNavigateToDetails = { transaction ->
                         navigation.bringToFront(Configuration.Details(transaction))
-                    }
+                    },
+                    onNavigateToLinkedBanks = {
+                        navigation.bringToFront(Configuration.Settings(openLinkedBanks = true))
+                    },
                 )
             )
 
@@ -59,6 +63,7 @@ class RootComponent(
                     onReAuthorize = { institutionId ->
                         navigation.bringToFront(Configuration.BankLinking(institutionId = institutionId))
                     },
+                    openLinkedBanksOnStart = config.openLinkedBanks,
                 )
             )
             is Configuration.Profile -> Child.Profile(
@@ -95,7 +100,9 @@ class RootComponent(
             Configuration()
 
         @Serializable
-        data object Settings : Configuration()
+        data class Settings(
+            val openLinkedBanks: Boolean = false,
+        ) : Configuration()
 
         @Serializable
         data object Profile : Configuration()

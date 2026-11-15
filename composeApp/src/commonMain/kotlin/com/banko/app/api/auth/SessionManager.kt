@@ -1,6 +1,7 @@
 package com.banko.app.api.auth
 
 import com.banko.app.api.utils.Result
+import com.banko.app.push.PushRegistrationManager
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -12,10 +13,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.datetime.Clock
 
 private const val PROACTIVE_REFRESH_FRACTION = 0.7
 private const val MINIMUM_REFRESH_DELAY_MILLIS = 60_000L
+private const val PUSH_UNREGISTER_TIMEOUT_MILLIS = 3_000L
 
 sealed interface AuthState {
     data object Loading : AuthState
@@ -24,7 +27,8 @@ sealed interface AuthState {
 }
 
 class SessionManager(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val pushRegistrationManager: PushRegistrationManager,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var refreshJob: Job? = null
@@ -36,6 +40,7 @@ class SessionManager(
         authRepository.onSessionExpired = { handleSessionExpired() }
         if (authRepository.isLoggedIn) {
             _authState.value = AuthState.Authenticated
+            pushRegistrationManager.onAuthenticated()
             refreshTokenAndSchedule()
         } else {
             _authState.value = AuthState.Unauthenticated
@@ -47,6 +52,7 @@ class SessionManager(
         return when (val result = authRepository.login(email, password)) {
             is Result.Success -> {
                 _authState.value = AuthState.Authenticated
+                pushRegistrationManager.onAuthenticated()
                 scheduleProactiveRefresh()
                 Result.Success(Unit)
             }
@@ -62,6 +68,7 @@ class SessionManager(
         return when (val result = authRepository.register(email, password, fullName, consentGiven)) {
             is Result.Success -> {
                 _authState.value = AuthState.Authenticated
+                pushRegistrationManager.onAuthenticated()
                 scheduleProactiveRefresh()
                 Result.Success(Unit)
             }
@@ -72,8 +79,12 @@ class SessionManager(
         }
     }
 
-    fun logout() {
+    suspend fun logout() {
         refreshJob?.cancel()
+        // Best effort and bounded: signing out must work offline.
+        withTimeoutOrNull(PUSH_UNREGISTER_TIMEOUT_MILLIS) {
+            pushRegistrationManager.unregisterCurrentToken()
+        }
         authRepository.logout()
         _authState.value = AuthState.Unauthenticated
     }
@@ -89,6 +100,10 @@ class SessionManager(
             when (val result = authRepository.refreshToken()) {
                 is Result.Success -> {
                     if (isActive) _authState.value = AuthState.Authenticated
+                    // The token fetched at launch may have been expired, so the
+                    // first registration attempt can fail. Retry now that the
+                    // access token has been refreshed.
+                    pushRegistrationManager.onAuthenticated()
                     scheduleProactiveRefresh()
                 }
                 is Result.Error.HttpError -> {

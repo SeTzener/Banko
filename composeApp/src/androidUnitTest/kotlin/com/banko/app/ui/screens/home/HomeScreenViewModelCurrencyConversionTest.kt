@@ -1,10 +1,13 @@
 package com.banko.app.ui.screens.home
 
+import com.banko.app.api.dto.bankoApi.GetBankAuthorizationsResponse
+import com.banko.app.api.services.BankoApiService
+import com.banko.app.api.utils.Result
 import com.banko.app.data.repository.CurrencyRepository
 import com.banko.app.data.repository.TransactionRepository
 import com.banko.app.domain.CurrencyPreferences
+import com.banko.app.push.BankReminderScheduler
 import com.banko.app.domain.model.Transaction as DomainTransaction
-import com.banko.app.ui.models.toUi
 import com.banko.app.utils.beginningOfCurrentMonth
 import com.banko.app.utils.getLastDayOfMonth
 import io.mockk.coEvery
@@ -33,12 +36,16 @@ class HomeScreenViewModelCurrencyConversionTest {
     private val repository = mockk<TransactionRepository>(relaxed = true)
     private val currencyRepository = mockk<CurrencyRepository>(relaxed = true)
     private val currencyPreferences = mockk<CurrencyPreferences>(relaxed = true)
+    private val apiService = mockk<BankoApiService>(relaxed = true)
+    private val bankReminderScheduler = mockk<BankReminderScheduler>(relaxed = true)
     private val testDispatcher: TestDispatcher = StandardTestDispatcher()
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         coEvery { repository.getOldestTransactions() } returns LocalDateTime(2024, 1, 1, 0, 0)
+        coEvery { apiService.getBankAuthorizations() } returns
+            Result.Success(GetBankAuthorizationsResponse())
     }
 
     @After
@@ -75,7 +82,7 @@ class HomeScreenViewModelCurrencyConversionTest {
             currencyRepository.getRatesForDateRange("USD", "EUR", any(), any())
         } returns mapOf(LocalDate(2026, 1, 15) to 0.92)
 
-        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences, apiService, bankReminderScheduler)
         advanceUntilIdle()
 
         val state = vm.state.value
@@ -91,7 +98,7 @@ class HomeScreenViewModelCurrencyConversionTest {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(listOf(tx))
         coEvery { currencyPreferences.selectedCurrency } returns flowOf("EUR")
 
-        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences, apiService, bankReminderScheduler)
         advanceUntilIdle()
 
         val state = vm.state.value
@@ -106,7 +113,7 @@ class HomeScreenViewModelCurrencyConversionTest {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(listOf(tx))
         coEvery { currencyPreferences.selectedCurrency } returns flowOf("EUR")
 
-        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences, apiService, bankReminderScheduler)
         advanceUntilIdle()
 
         val state = vm.state.value
@@ -124,7 +131,7 @@ class HomeScreenViewModelCurrencyConversionTest {
             currencyRepository.getRatesForDateRange("USD", "EUR", any(), any())
         } returns mapOf(LocalDate(2026, 1, 16) to 0.92)
 
-        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences, apiService, bankReminderScheduler)
         advanceUntilIdle()
 
         val state = vm.state.value
@@ -146,7 +153,7 @@ class HomeScreenViewModelCurrencyConversionTest {
             currencyRepository.getRatesForDateRange("GBP", "EUR", any(), any())
         } returns mapOf(LocalDate(2026, 1, 15) to 1.17)
 
-        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences, apiService, bankReminderScheduler)
         advanceUntilIdle()
 
         val state = vm.state.value
@@ -168,7 +175,7 @@ class HomeScreenViewModelCurrencyConversionTest {
             currencyRepository.getRatesForDateRange("USD", "EUR", any(), any())
         } returns mapOf(LocalDate(2026, 1, 15) to 0.9234567)
 
-        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences, apiService, bankReminderScheduler)
         advanceUntilIdle()
 
         val state = vm.state.value
@@ -193,7 +200,7 @@ class HomeScreenViewModelCurrencyConversionTest {
             currencyRepository.getRatesForDateRange("USD", "EUR", fromDate, toDate)
         } returns mapOf(fromDate to 0.91)
 
-        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences, apiService, bankReminderScheduler)
         advanceUntilIdle()
 
         coVerify {

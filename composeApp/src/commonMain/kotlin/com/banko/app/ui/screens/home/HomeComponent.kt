@@ -5,7 +5,8 @@ import com.banko.app.ui.models.Transaction
 
 class HomeComponent(
     componentContext: ComponentContext,
-    private val onNavigateToDetails: (Transaction) -> Unit
+    private val onNavigateToDetails: (Transaction) -> Unit,
+    private val onNavigateToLinkedBanks: () -> Unit = {},
 ): ComponentContext by componentContext {
     private fun onEvent(event: HomeEvent, transaction: Transaction){
         when(event) {
@@ -15,5 +16,9 @@ class HomeComponent(
 
     fun navigateToDetails(transaction: Transaction) {
         onEvent(HomeEvent.DetailsButtonClick, transaction)
+    }
+
+    fun navigateToLinkedBanks() {
+        onNavigateToLinkedBanks()
     }
 }

@@ -14,6 +14,8 @@ import com.banko.app.api.dto.bankoApi.GoCardlessInstitutionDto
 import com.banko.app.api.dto.bankoApi.LoginRequest
 import com.banko.app.api.dto.bankoApi.RefreshRequest
 import com.banko.app.api.dto.bankoApi.RegisterRequest
+import com.banko.app.api.dto.bankoApi.RegisterDeviceRequest
+import com.banko.app.api.dto.bankoApi.RegisterDeviceResponse
 import com.banko.app.api.dto.bankoApi.Transactions
 import com.banko.app.api.dto.bankoApi.UpdateProfileRequest
 import com.banko.app.api.dto.bankoApi.UpsertEndUserAgreementRequest
@@ -344,6 +346,19 @@ class BankoApiService(
     suspend fun getBankAuthorizations(): Result<GetBankAuthorizationsResponse> {
         return client.getSafe("$baseUrl/Settings/BankAuthorization") {
             contentType(ContentType.Application.Json)
+        }
+    }
+
+    suspend fun registerDevice(token: String, platform: String): Result<RegisterDeviceResponse> {
+        return client.postSafe("$baseUrl/Devices") {
+            contentType(ContentType.Application.Json)
+            setBody(RegisterDeviceRequest(token = token, platform = platform))
+        }
+    }
+
+    suspend fun unregisterDevice(token: String): Result<Unit> {
+        return client.deleteSafe("$baseUrl/Devices") {
+            parameter("token", token)
         }
     }
 }

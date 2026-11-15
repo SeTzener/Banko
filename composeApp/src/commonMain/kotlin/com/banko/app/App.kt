@@ -16,7 +16,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
-import com.arkivanov.decompose.ExperimentalDecomposeApi
 import com.arkivanov.decompose.extensions.compose.jetbrains.stack.Children
 import com.arkivanov.decompose.extensions.compose.jetbrains.stack.animation.slide
 import com.arkivanov.decompose.extensions.compose.jetbrains.stack.animation.stackAnimation
@@ -27,6 +26,7 @@ import com.arkivanov.decompose.router.stack.bringToFront
 import com.banko.app.api.auth.AuthState
 import com.banko.app.ui.screens.auth.AuthComponent
 import com.banko.app.ui.screens.auth.AuthScreen
+import com.banko.app.ui.components.dialogs.PushMessageDialog
 import com.banko.app.ui.screens.banklinking.BankLinkingScreen
 import com.banko.app.ui.screens.details.DetailsScreen
 import com.banko.app.ui.screens.home.HomeScreen
@@ -37,11 +37,11 @@ import com.banko.app.ui.screens.navigation.bottomNavItems
 import com.banko.app.ui.screens.settings.SettingsScreen
 import com.banko.app.ui.theme.BankoTheme
 
-@OptIn(ExperimentalDecomposeApi::class)
 @Composable
 @Preview
 fun App(root: RootComponent, authComponent: AuthComponent) {
     val authState by root.sessionManager.authState.collectAsState()
+    val pushMessage by root.pushMessageStore.message.collectAsState()
 
     BankoTheme {
         when (authState) {
@@ -111,6 +111,20 @@ fun App(root: RootComponent, authComponent: AuthComponent) {
                             }
                         }
                     }
+                }
+
+                val currentPushMessage = pushMessage
+                if (currentPushMessage != null) {
+                    PushMessageDialog(
+                        message = currentPushMessage,
+                        onDismiss = { root.pushMessageStore.dismiss() },
+                        onManageConnections = {
+                            root.pushMessageStore.dismiss()
+                            root.navigation.bringToFront(
+                                RootComponent.Configuration.Settings(openLinkedBanks = true)
+                            )
+                        },
+                    )
                 }
             }
         }

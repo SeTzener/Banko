@@ -54,6 +54,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -86,10 +87,18 @@ import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import banko.composeapp.generated.resources.Res
 import banko.composeapp.generated.resources.app_name
+import banko.composeapp.generated.resources.bank_attention_expired_message
+import banko.composeapp.generated.resources.bank_attention_expired_title
+import banko.composeapp.generated.resources.bank_attention_expiring_message
+import banko.composeapp.generated.resources.bank_attention_expiring_title
+import banko.composeapp.generated.resources.bank_attention_manage
 import banko.composeapp.generated.resources.ic_delete
 import banko.composeapp.generated.resources.ic_tag
 import banko.composeapp.generated.resources.ic_tag_filled
 import com.banko.app.ModelTransaction
+import com.banko.app.api.dto.bankoApi.BankAuthorizationState
+import com.banko.app.ui.theme.Amber
+import com.banko.app.ui.theme.Firebrick
 import com.banko.app.ui.components.BankLogo
 import com.banko.app.ui.components.CircularIndicator
 import com.banko.app.ui.components.ErrorSnackbarHost
@@ -116,6 +125,7 @@ fun HomeScreen(component: HomeComponent) {
     val selectedCategoryId by viewModel.selectedCategoryId.collectAsState()
     val isUncategorizedSelected by viewModel.isUncategorizedSelected.collectAsState()
     val selectedCurrency by viewModel.selectedCurrency.collectAsState()
+    val bankAttention by viewModel.bankAttentionState.collectAsState()
 
     HomeScreen(
         transactionListState = transactionListState,
@@ -125,7 +135,9 @@ fun HomeScreen(component: HomeComponent) {
         selectedCurrency = selectedCurrency,
         selectedCategoryId = selectedCategoryId,
         isUncategorizedSelected = isUncategorizedSelected,
+        bankAttention = bankAttention,
         navigateToDetails = component::navigateToDetails,
+        onManageBanks = component::navigateToLinkedBanks,
         onTimespanSelected = { viewModel.handleEvent(TransactionsEvent.SelectTimespan(it)) },
         onRefresh = { viewModel.handleEvent(event = TransactionsEvent.Refresh) },
         clearError = { viewModel.clearError() },
@@ -145,7 +157,9 @@ fun HomeScreen(
     selectedCurrency: String,
     selectedCategoryId: String?,
     isUncategorizedSelected: Boolean,
+    bankAttention: BankAttentionState = BankAttentionState(),
     navigateToDetails: (ModelTransaction) -> Unit,
+    onManageBanks: () -> Unit = {},
     onTimespanSelected: (TimespanSelection) -> Unit,
     onRefresh: () -> Unit,
     clearError: () -> Unit,
@@ -384,6 +398,10 @@ fun HomeScreen(
                     .onGloballyPositioned { foregroundHeightPx = it.size.height.toFloat() }
             ) {
                 TopContent()
+                BankAttentionBanner(
+                    attention = bankAttention,
+                    onManage = onManageBanks,
+                )
                 TimespanBar(
                     selectedTimespan = timespanState.selectedTimespan,
                     availableMonths = timespanState.availableMonths,
@@ -548,6 +566,64 @@ private fun TopContent() {
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.primary,
         )
+    }
+}
+
+/**
+ * Persistent, backend-driven warning that a bank connection needs attention.
+ * It stays in the fixed Home header so it remains visible while transactions
+ * scroll, and mirrors what an EUA expiry push is trying to tell the user.
+ */
+@Composable
+private fun BankAttentionBanner(
+    attention: BankAttentionState,
+    onManage: () -> Unit,
+) {
+    if (!attention.isVisible) return
+
+    val isExpired = attention.authorizationState == BankAuthorizationState.Expired
+    val accent = if (isExpired) Firebrick else Amber
+    val titleRes = if (isExpired) {
+        Res.string.bank_attention_expired_title
+    } else {
+        Res.string.bank_attention_expiring_title
+    }
+    val messageRes = if (isExpired) {
+        Res.string.bank_attention_expired_message
+    } else {
+        Res.string.bank_attention_expiring_message
+    }
+
+    Surface(
+        color = accent.copy(alpha = 0.14f),
+        shape = RoundedCornerShape(12.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+    ) {
+        Row(
+            modifier = Modifier.padding(start = 12.dp, top = 8.dp, bottom = 8.dp, end = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(titleRes),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = accent,
+                )
+                Text(
+                    text = stringResource(messageRes),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+            TextButton(onClick = onManage) {
+                Text(
+                    text = stringResource(Res.string.bank_attention_manage),
+                    color = accent,
+                )
+            }
+        }
     }
 }
 

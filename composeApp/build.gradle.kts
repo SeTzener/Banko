@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
+    alias(libs.plugins.googleServices)
 }
 
 kotlin {
@@ -81,11 +82,14 @@ kotlin {
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
+            implementation(libs.androidx.core.ktx)
             implementation(libs.decompose)
             implementation(libs.koin.android)
             implementation(libs.koin.android.compose)
             implementation(libs.ktor.client.android)
             implementation(libs.multiplatform.settings.no.arg)
+            implementation(project.dependencies.platform(libs.firebase.bom))
+            implementation(libs.firebase.messaging)
         }
 
         commonTest.dependencies {

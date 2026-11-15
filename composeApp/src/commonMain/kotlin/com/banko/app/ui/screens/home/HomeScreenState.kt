@@ -1,6 +1,7 @@
 package com.banko.app.ui.screens.home
 
 import com.banko.app.ModelTransaction
+import com.banko.app.api.dto.bankoApi.BankAuthorizationState
 import com.banko.app.ui.utils.ErrorState
 import com.banko.app.utils.beginningOfCurrentMonth
 import com.banko.app.utils.computeYearEndDate
@@ -51,6 +52,19 @@ data class UiState(
     val isSyncing: Boolean = false,
 )
 
+/**
+ * Backend-driven summary of bank connections that need the user's attention.
+ * Kept separate from transactions so an offline refresh never hides a warning.
+ */
+data class BankAttentionState(
+    val requiresReauthorization: Boolean = false,
+    val authorizationState: BankAuthorizationState = BankAuthorizationState.Valid,
+    val affectedBanks: List<String> = emptyList(),
+    val daysUntilExpiry: Int? = null,
+) {
+    val isVisible: Boolean get() = requiresReauthorization
+}
+
 data class HomeScreenState(
     val transactions: List<ModelTransaction> = emptyList(),
     val isLoading: Boolean = false,
@@ -64,6 +78,7 @@ data class HomeScreenState(
     val isSyncing: Boolean = false,
     val isLoadingMore: Boolean = false,
     val tagFilter: TagFilter = TagFilter.None,
+    val bankAttention: BankAttentionState = BankAttentionState(),
 )
 
 sealed class TransactionsEvent {

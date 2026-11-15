@@ -2,13 +2,20 @@ package com.banko.app.ui.screens.home
 
 import com.banko.app.domain.model.ExpenseTag as DomainExpenseTag
 import com.banko.app.domain.model.Transaction as DomainTransaction
+import com.banko.app.api.dto.bankoApi.BankAuthorizationState
+import com.banko.app.api.dto.bankoApi.BankAuthDto
+import com.banko.app.api.dto.bankoApi.GetBankAuthorizationsResponse
+import com.banko.app.api.services.BankoApiService
+import com.banko.app.api.utils.Result
 import com.banko.app.data.repository.CurrencyRepository
 import com.banko.app.data.repository.TransactionRepository
 import com.banko.app.domain.CurrencyPreferences
+import com.banko.app.push.BankReminderScheduler
 import com.banko.app.ui.utils.ErrorType
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -36,6 +43,8 @@ class HomeScreenViewModelTest {
     private val repository = mockk<TransactionRepository>(relaxed = true)
     private val currencyRepository = mockk<CurrencyRepository>(relaxed = true)
     private val currencyPreferences = mockk<CurrencyPreferences>(relaxed = true)
+    private val apiService = mockk<BankoApiService>(relaxed = true)
+    private val bankReminderScheduler = mockk<BankReminderScheduler>(relaxed = true)
     private val testDispatcher: TestDispatcher = StandardTestDispatcher()
 
     @Before
@@ -43,6 +52,8 @@ class HomeScreenViewModelTest {
         Dispatchers.setMain(testDispatcher)
         coEvery { repository.getOldestTransactions() } returns LocalDateTime(2024, 1, 1, 0, 0)
         coEvery { currencyPreferences.selectedCurrency } returns flowOf("NOK")
+        coEvery { apiService.getBankAuthorizations() } returns
+            Result.Success(GetBankAuthorizationsResponse())
     }
 
     @After
@@ -54,7 +65,7 @@ class HomeScreenViewModelTest {
     fun `should load cached db data on init`() = runTest(testDispatcher) {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
 
-        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences, apiService, bankReminderScheduler)
         advanceUntilIdle()
 
         coVerify { repository.getOldestTransactions() }
@@ -66,7 +77,7 @@ class HomeScreenViewModelTest {
     fun `should have correct default selected timespan on init`() = runTest(testDispatcher) {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
 
-        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences, apiService, bankReminderScheduler)
         advanceUntilIdle()
 
         val timespan = vm.state.value.selectedTimespan
@@ -80,7 +91,7 @@ class HomeScreenViewModelTest {
     fun `should query oldest transactions on init`() = runTest(testDispatcher) {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
 
-        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences, apiService, bankReminderScheduler)
         advanceUntilIdle()
 
         coVerify { repository.getOldestTransactions() }
@@ -93,7 +104,7 @@ class HomeScreenViewModelTest {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
         coEvery { repository.fetchAndStoreTransactionsForDateRange(any(), any()) } returns Unit
 
-        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences, apiService, bankReminderScheduler)
         advanceUntilIdle()
 
         vm.handleEvent(TransactionsEvent.Refresh)
@@ -106,7 +117,7 @@ class HomeScreenViewModelTest {
     fun `should set isRefreshing during refresh`() = runTest(testDispatcher) {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
 
-        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences, apiService, bankReminderScheduler)
         advanceUntilIdle()
 
         vm.handleEvent(TransactionsEvent.Refresh)
@@ -138,7 +149,7 @@ class HomeScreenViewModelTest {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(listOf(domainTx))
         coEvery { repository.deleteTransaction("tx-1") } returns Unit
 
-        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences, apiService, bankReminderScheduler)
         advanceUntilIdle()
 
         assertEquals(1, vm.state.value.transactions.size)
@@ -155,7 +166,7 @@ class HomeScreenViewModelTest {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
         coEvery { repository.deleteTransaction(any()) } throws RuntimeException("Delete failed")
 
-        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences, apiService, bankReminderScheduler)
         advanceUntilIdle()
 
         vm.handleEvent(TransactionsEvent.DeleteTransaction("tx-1"))
@@ -168,7 +179,7 @@ class HomeScreenViewModelTest {
     fun `should select month timespan and reload transactions`() = runTest(testDispatcher) {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
 
-        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences, apiService, bankReminderScheduler)
         advanceUntilIdle()
 
         val monthSel = TimespanSelection.Month(YearMonth(2024, 6))
@@ -185,7 +196,7 @@ class HomeScreenViewModelTest {
     fun `should select year timespan and reload transactions`() = runTest(testDispatcher) {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
 
-        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences, apiService, bankReminderScheduler)
         advanceUntilIdle()
 
         vm.handleEvent(TransactionsEvent.SelectTimespan(TimespanSelection.Year(2025)))
@@ -201,7 +212,7 @@ class HomeScreenViewModelTest {
     fun `should toggle from month to year and back`() = runTest(testDispatcher) {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
 
-        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences, apiService, bankReminderScheduler)
         advanceUntilIdle()
 
         assertEquals(false, vm.state.value.isYearView)
@@ -221,7 +232,7 @@ class HomeScreenViewModelTest {
     fun `should load more data for older month`() = runTest(testDispatcher) {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
 
-        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences, apiService, bankReminderScheduler)
         advanceUntilIdle()
 
         vm.handleEvent(TransactionsEvent.LoadMore)
@@ -236,7 +247,7 @@ class HomeScreenViewModelTest {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
         coEvery { repository.deleteTransaction(any()) } throws RuntimeException("Delete failed")
 
-        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences, apiService, bankReminderScheduler)
         advanceUntilIdle()
 
         vm.handleEvent(TransactionsEvent.DeleteTransaction("tx-1"))
@@ -252,7 +263,7 @@ class HomeScreenViewModelTest {
     fun `timespanState mirrors timespan changes`() = runTest(testDispatcher) {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
 
-        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences, apiService, bankReminderScheduler)
         advanceUntilIdle()
 
         val monthSel = TimespanSelection.Month(YearMonth(2024, 6))
@@ -269,7 +280,7 @@ class HomeScreenViewModelTest {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
         coEvery { repository.deleteTransaction(any()) } throws RuntimeException("Delete failed")
 
-        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences, apiService, bankReminderScheduler)
         advanceUntilIdle()
 
         vm.handleEvent(TransactionsEvent.DeleteTransaction("tx-1"))
@@ -305,7 +316,7 @@ class HomeScreenViewModelTest {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(listOf(domainTx))
         coEvery { repository.deleteTransaction("tx-1") } returns Unit
 
-        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences, apiService, bankReminderScheduler)
         advanceUntilIdle()
 
         assertEquals(1, vm.transactionListState.value.transactions.size)
@@ -320,7 +331,7 @@ class HomeScreenViewModelTest {
     fun `sub-state flows do not emit when unrelated fields change`() = runTest(testDispatcher) {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
 
-        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences, apiService, bankReminderScheduler)
         advanceUntilIdle()
 
         val tsEmissions = mutableListOf<TimespanState>()
@@ -344,7 +355,7 @@ class HomeScreenViewModelTest {
     fun `sub-state initial values match combined state defaults`() = runTest(testDispatcher) {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
 
-        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences, apiService, bankReminderScheduler)
         advanceUntilIdle()
 
         val combined = vm.state.value
@@ -357,7 +368,7 @@ class HomeScreenViewModelTest {
     fun `SelectTag with same tag deselects`() = runTest(testDispatcher) {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
 
-        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences, apiService, bankReminderScheduler)
         advanceUntilIdle()
 
         vm.handleEvent(TransactionsEvent.SelectTag("tag-1"))
@@ -374,7 +385,7 @@ class HomeScreenViewModelTest {
     fun `SelectTag with different tag replaces selection`() = runTest(testDispatcher) {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
 
-        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences, apiService, bankReminderScheduler)
         advanceUntilIdle()
 
         vm.handleEvent(TransactionsEvent.SelectTag("tag-1"))
@@ -390,7 +401,7 @@ class HomeScreenViewModelTest {
     fun `SelectTag with null selects uncategorized`() = runTest(testDispatcher) {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
 
-        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences, apiService, bankReminderScheduler)
         advanceUntilIdle()
 
         vm.handleEvent(TransactionsEvent.SelectTag(null))
@@ -403,7 +414,7 @@ class HomeScreenViewModelTest {
     fun `toggle null tag deselects uncategorized`() = runTest(testDispatcher) {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
 
-        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences, apiService, bankReminderScheduler)
         advanceUntilIdle()
 
         vm.handleEvent(TransactionsEvent.SelectTag(null))
@@ -420,7 +431,7 @@ class HomeScreenViewModelTest {
     fun `changing month timespan resets tagFilter`() = runTest(testDispatcher) {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
 
-        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences, apiService, bankReminderScheduler)
         advanceUntilIdle()
 
         vm.handleEvent(TransactionsEvent.SelectTag("tag-1"))
@@ -437,7 +448,7 @@ class HomeScreenViewModelTest {
     fun `changing year timespan resets tagFilter`() = runTest(testDispatcher) {
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
 
-        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences, apiService, bankReminderScheduler)
         advanceUntilIdle()
 
         vm.handleEvent(TransactionsEvent.SelectTag("tag-1"))
@@ -473,7 +484,7 @@ class HomeScreenViewModelTest {
         )
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(listOf(txWithTag, txNoTag))
 
-        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences, apiService, bankReminderScheduler)
         advanceUntilIdle()
 
         assertEquals(2, vm.filteredTransactionListState.value.transactions.size)
@@ -503,7 +514,7 @@ class HomeScreenViewModelTest {
         )
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(listOf(txTag1, txTag2))
 
-        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences, apiService, bankReminderScheduler)
         advanceUntilIdle()
 
         vm.handleEvent(TransactionsEvent.SelectTag("tag-1"))
@@ -537,7 +548,7 @@ class HomeScreenViewModelTest {
         )
         coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(listOf(txWithTag, txNoTag))
 
-        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences)
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences, apiService, bankReminderScheduler)
         advanceUntilIdle()
 
         vm.handleEvent(TransactionsEvent.SelectTag(null))
@@ -547,4 +558,142 @@ class HomeScreenViewModelTest {
         assertEquals(1, filtered.transactions.size)
         assertEquals("tx-2", filtered.transactions.first().id)
     }
+
+    @Test
+    fun `bank attention surfaces connections that need reauthorization`() = runTest(testDispatcher) {
+        coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
+        coEvery { apiService.getBankAuthorizations() } returns Result.Success(
+            GetBankAuthorizationsResponse(
+                bankAuthorizations = listOf(
+                    BankAuthDto(
+                        id = "auth-1",
+                        institutionName = "ING",
+                        requiresReauthorization = true,
+                        authorizationState = BankAuthorizationState.ExpiringSoon,
+                        daysUntilExpiry = 5,
+                    ),
+                    BankAuthDto(
+                        id = "auth-2",
+                        institutionName = "Bien Sparebank",
+                        requiresReauthorization = true,
+                        authorizationState = BankAuthorizationState.Expired,
+                    ),
+                    BankAuthDto(
+                        id = "auth-3",
+                        institutionName = "Healthy Bank",
+                        requiresReauthorization = false,
+                        authorizationState = BankAuthorizationState.Valid,
+                    ),
+                )
+            )
+        )
+
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences, apiService, bankReminderScheduler)
+        advanceUntilIdle()
+
+        val attention = vm.bankAttentionState.value
+        assertTrue(attention.isVisible)
+        assertEquals(BankAuthorizationState.Expired, attention.authorizationState)
+        assertEquals(listOf("ING", "Bien Sparebank"), attention.affectedBanks)
+        assertEquals(5, attention.daysUntilExpiry)
+    }
+
+    @Test
+    fun `bank attention stays hidden when every connection is valid`() = runTest(testDispatcher) {
+        coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
+        coEvery { apiService.getBankAuthorizations() } returns Result.Success(
+            GetBankAuthorizationsResponse(
+                bankAuthorizations = listOf(
+                    BankAuthDto(
+                        id = "auth-1",
+                        institutionName = "Healthy Bank",
+                        requiresReauthorization = false,
+                        authorizationState = BankAuthorizationState.Valid,
+                    )
+                )
+            )
+        )
+
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences, apiService, bankReminderScheduler)
+        advanceUntilIdle()
+
+        val attention = vm.bankAttentionState.value
+        assertEquals(false, attention.isVisible)
+        assertEquals(BankAuthorizationState.Valid, attention.authorizationState)
+    }
+
+    @Test
+    fun `bank attention survives an offline refresh`() = runTest(testDispatcher) {
+        coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
+        coEvery { apiService.getBankAuthorizations() } returns Result.Success(
+            GetBankAuthorizationsResponse(
+                bankAuthorizations = listOf(
+                    BankAuthDto(
+                        id = "auth-1",
+                        institutionName = "ING",
+                        requiresReauthorization = true,
+                        authorizationState = BankAuthorizationState.Expired,
+                    )
+                )
+            )
+        )
+
+        val vm = HomeScreenViewModel(repository, currencyRepository, currencyPreferences, apiService, bankReminderScheduler)
+        advanceUntilIdle()
+        assertTrue(vm.bankAttentionState.value.isVisible)
+
+        coEvery { apiService.getBankAuthorizations() } returns
+            Result.Error.NetworkError(RuntimeException("offline"))
+        vm.handleEvent(TransactionsEvent.Refresh)
+        advanceUntilIdle()
+
+        assertTrue(vm.bankAttentionState.value.isVisible)
+        assertEquals(BankAuthorizationState.Expired, vm.bankAttentionState.value.authorizationState)
+    }
+
+    @Test
+    fun `successful authorization fetch schedules local reminders for every bank`() =
+        runTest(testDispatcher) {
+            coEvery { repository.getTransactionsForDateRange(any(), any()) } returns flowOf(emptyList())
+            coEvery { apiService.getBankAuthorizations() } returns Result.Success(
+                GetBankAuthorizationsResponse(
+                    bankAuthorizations = listOf(
+                        BankAuthDto(
+                            id = "auth-1",
+                            institutionName = "ING",
+                            expiresAt = "2099-01-20T12:00:00Z",
+                            authorizationState = BankAuthorizationState.Valid,
+                        ),
+                        BankAuthDto(
+                            id = "auth-2",
+                            institutionName = "DNB",
+                            expiresAt = "2099-02-20T12:00:00Z",
+                            authorizationState = BankAuthorizationState.Valid,
+                        ),
+                    )
+                )
+            )
+
+            HomeScreenViewModel(
+                repository,
+                currencyRepository,
+                currencyPreferences,
+                apiService,
+                bankReminderScheduler,
+            )
+            advanceUntilIdle()
+
+            verify(atLeast = 1) {
+                bankReminderScheduler.replaceAll(
+                    match { reminders ->
+                        reminders.map { it.id }.toSet() == setOf(
+                            "banko-eua-warning-auth-1",
+                            "banko-eua-expired-auth-1",
+                            "banko-eua-warning-auth-2",
+                            "banko-eua-expired-auth-2",
+                        )
+                    }
+                )
+            }
+        }
 }

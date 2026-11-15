@@ -20,6 +20,12 @@ import com.banko.app.domain.AssignExpenseTagToTransactionUseCase
 import com.banko.app.domain.CurrencyPreferences
 import com.banko.app.domain.GetAllExpenseTagUseCase
 import com.banko.app.domain.SaveNoteUseCase
+import com.banko.app.push.BankReminderBridge
+import com.banko.app.push.BankReminderScheduler
+import com.banko.app.push.PushMessageStore
+import com.banko.app.push.PushRegistrationManager
+import com.banko.app.push.PushStorage
+import com.banko.app.push.PushTokenBridge
 import com.banko.app.ui.screens.details.DetailsScreenViewModel
 import com.banko.app.ui.screens.banklinking.BankLinkingViewModel
 import com.banko.app.ui.screens.home.HomeScreenViewModel
@@ -39,7 +45,12 @@ val  sharedModule = module {
     single { TokenStorage() }
     single { BankoApiService(tokenStorage = get()) }
     single { AuthRepository(get(), get()) }
-    single { SessionManager(get()) }
+    single { PushStorage() }
+    single { PushTokenBridge() }
+    single { PushMessageStore(get()) }
+    single { PushRegistrationManager(get(), get(), get(), get()) }
+    single<BankReminderScheduler> { BankReminderBridge }
+    single { SessionManager(get(), get()) }
     singleOf(::TransactionLocalDataSource)
     singleOf(::TransactionRemoteDataSource)
     singleOf(::TransactionRepository)

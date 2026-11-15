@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Banko</string>
+    <string name="notification_channel_name">Banko notifications</string>
+    <string name="notification_channel_description">Bank connection and security notifications</string>
 </resources>

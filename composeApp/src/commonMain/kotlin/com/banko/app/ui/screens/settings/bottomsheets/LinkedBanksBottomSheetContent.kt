@@ -14,7 +14,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -39,6 +38,7 @@ import banko.composeapp.generated.resources.Res
 import banko.composeapp.generated.resources.error_status
 import banko.composeapp.generated.resources.expired
 import banko.composeapp.generated.resources.expense_tags_bottom_sheet_button_close
+import banko.composeapp.generated.resources.expiring_soon
 import banko.composeapp.generated.resources.iban_label
 import banko.composeapp.generated.resources.linked
 import banko.composeapp.generated.resources.linked_banks
@@ -48,14 +48,13 @@ import banko.composeapp.generated.resources.processing_stale_hint
 import banko.composeapp.generated.resources.re_authorize
 import banko.composeapp.generated.resources.restart
 import banko.composeapp.generated.resources.restart_available_in
+import com.banko.app.api.dto.bankoApi.BankAuthorizationState
 import com.banko.app.api.dto.bankoApi.BankAuthorizationStatus
 import com.banko.app.api.dto.bankoApi.BankAuthDto
 import com.banko.app.ui.components.BankLogo
 import com.banko.app.ui.screens.settings.SettingsScreenState
-import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LinkedBanksBottomSheetContent(
     screenState: SettingsScreenState,
@@ -185,7 +184,7 @@ private fun BankAuthorizationRow(
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
-                StatusBadge(status = auth.status)
+                StatusBadge(auth = auth)
                 if (isProcessing) {
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
@@ -211,8 +210,7 @@ private fun BankAuthorizationRow(
                         Text(text = stringResource(Res.string.restart))
                     }
                 }
-                (auth.status == BankAuthorizationStatus.Expired ||
-                    auth.status == BankAuthorizationStatus.Error) && hasInstitutionId -> {
+                auth.needsReauthorization() && hasInstitutionId -> {
                     TextButton(onClick = onReAuthorize) {
                         Text(text = stringResource(Res.string.re_authorize))
                     }
@@ -259,15 +257,26 @@ private fun BankAuthorizationRow(
     }
 }
 
+/**
+ * Prefers the backend-computed EUA state, which can also report an agreement
+ * that is still [BankAuthorizationState.ExpiringSoon]. The raw status is only
+ * used for in-flight or failed links, where no agreement state exists yet.
+ */
 @Composable
 private fun StatusBadge(
-    status: BankAuthorizationStatus,
+    auth: BankAuthDto,
 ) {
-    val (text, color) = when (status) {
-        BankAuthorizationStatus.Linked -> stringResource(Res.string.linked) to MediumSeaGreen
-        BankAuthorizationStatus.Processing -> stringResource(Res.string.processing) to Amber
-        BankAuthorizationStatus.Expired -> stringResource(Res.string.expired) to Firebrick
-        BankAuthorizationStatus.Error -> stringResource(Res.string.error_status) to Crimson
+    val (text, color) = when {
+        auth.status == BankAuthorizationStatus.Processing ->
+            stringResource(Res.string.processing) to Amber
+        auth.status == BankAuthorizationStatus.Error ||
+            auth.authorizationState == BankAuthorizationState.Error ->
+            stringResource(Res.string.error_status) to Crimson
+        auth.authorizationState == BankAuthorizationState.Expired ->
+            stringResource(Res.string.expired) to Firebrick
+        auth.authorizationState == BankAuthorizationState.ExpiringSoon ->
+            stringResource(Res.string.expiring_soon) to Amber
+        else -> stringResource(Res.string.linked) to MediumSeaGreen
     }
 
     Row(
@@ -289,6 +298,14 @@ private fun StatusBadge(
         )
     }
 }
+
+private fun BankAuthDto.needsReauthorization(): Boolean =
+    requiresReauthorization ||
+        authorizationState == BankAuthorizationState.Expired ||
+        authorizationState == BankAuthorizationState.ExpiringSoon ||
+        authorizationState == BankAuthorizationState.Error ||
+        status == BankAuthorizationStatus.Expired ||
+        status == BankAuthorizationStatus.Error
 
 private fun maskIban(iban: String): String {
     if (iban.length <= 8) return iban

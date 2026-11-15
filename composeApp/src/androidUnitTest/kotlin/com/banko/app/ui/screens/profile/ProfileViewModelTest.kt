@@ -11,21 +11,17 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProfileViewModelTest {
@@ -175,8 +171,7 @@ class ProfileViewModelTest {
         viewModel.deleteAccount()
         advanceUntilIdle()
 
-        verify { tokenStorage.clear() }
-        verify { sessionManager.logout() }
+        coVerify { sessionManager.logout() }
     }
 
     @Test
@@ -197,13 +192,14 @@ class ProfileViewModelTest {
     }
 
     @Test
-    fun `logout calls sessionManager logout`() {
+    fun `logout calls sessionManager logout`() = runTest(testDispatcher) {
         every { tokenStorage.accountId } returns "acc-1"
 
         val viewModel = ProfileViewModel(tokenStorage, sessionManager, apiService)
         viewModel.logout()
+        advanceUntilIdle()
 
-        verify { sessionManager.logout() }
+        coVerify { sessionManager.logout() }
     }
 
     @Test
