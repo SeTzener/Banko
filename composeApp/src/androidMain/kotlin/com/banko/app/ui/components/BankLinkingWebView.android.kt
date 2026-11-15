@@ -1,6 +1,7 @@
 package com.banko.app.ui.components
 
 import android.annotation.SuppressLint
+import android.view.View
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -43,6 +44,12 @@ actual fun BankLinkingWebView(
                 settings.domStorageEnabled = true
                 settings.allowFileAccess = true
                 settings.databaseEnabled = true
+                // Bank authorization forms are taller than the screen. Keep
+                // the page in a scrollable viewport instead of clipping it.
+                settings.useWideViewPort = true
+                settings.loadWithOverviewMode = true
+                isVerticalScrollBarEnabled = true
+                overScrollMode = View.OVER_SCROLL_ALWAYS
 
                 webViewClient = object : WebViewClient() {
                     override fun shouldOverrideUrlLoading(
